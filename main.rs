@@ -84,19 +84,105 @@ fn lex(file: &String) -> Vec<Tok> {
     return res;
 }
 
+fn strtoi64(x: &String) -> Option<i64> {
+    let mut res: i64 = 0;
+    let mut reversed: bool = false;
+    let mut wasdigit: bool = false;
+    for i in x.chars() {
+        res = res*10 + match i {
+            '0' => 0,
+            '1' => 1,
+            '2' => 2,
+            '3' => 3,
+            '4' => 4,
+            '5' => 5,
+            '6' => 6,
+            '7' => 7,
+            '8' => 8,
+            '9' => 9,
+            '-' => 0,
+            '+' => 0,
+            _ => return None,
+        };
+        if i == '-' || i == '+' {
+            if wasdigit {
+                return None;
+            }
+            if i == '-' {
+                reversed = !reversed;
+            }
+        } else {
+            wasdigit = true;
+        }
+    }
+    if !wasdigit {
+        return None;
+    }
+    return Some(if reversed {
+        -1
+    } else {
+        1
+    } * res);
+}
+
+//////////////////////////////////////////////////
 #[derive(Debug)] enum Op {
     Push(i64),
     PRINT,
     PLUS,
 }
-fn parse(pr: &Vec<Tok>) -> Vec<Op> {
+fn parse(pr: &Vec<Tok>) -> Option<Vec<Op>> {
+    let mut res: Vec<Op> = vec![];
     for i in pr {
-        println!("val=`{}`, loc.lin={}, loc.ind={}", i.1, i.0.0, i.0.1);
+        let val: &String = &i.1;
+        let loc: &Loc = &i.0;
+        let lin: &i64 = &loc.0;
+        let ind: &i64 = &loc.1;
+        println!("val=`{}`, loc.lin={}, loc.ind={}", val, lin, ind);
+        res.append(&mut match strtoi64(val) {
+            Some(x) => vec![
+                Op::Push(x),
+            ],
+            None => {
+                match val.as_str() {
+                    "" => {
+                        continue;
+                    },
+                    "+f" => vec![
+                        Op::PLUS,
+                    ],
+                    "putc" => vec![
+                        Op::PRINT,
+                    ],
+                    _ => {
+                        println!("Unknown token: `{}`", val);
+                        return None;
+                    },
+                }
+            }
+        });
     }
-    return vec![];
+    return Some(res);
 }
 
 fn sim(pr: &Vec<Op>) -> i32 {
+    let mut stack: Vec<i64> = vec![];
+    for i in pr {
+        println!("sim: {:?}", i);
+        match i {
+            Op::Push(x) => stack.push(*x),
+            Op::PRINT => print!("print: {}", stack.pop().unwrap()),
+            Op::PLUS => {
+                let a: i64 = stack.pop().unwrap();
+                let b: i64 = stack.pop().unwrap();
+                stack.push(a + b)
+            },
+            _ => {
+                println!("Unknown op: {:?}", i);
+                return -1;
+            },
+        }
+    }
     return 0;
 }
 
@@ -107,10 +193,19 @@ fn clah(args: &Vec<String>) {
             match mode {
                 Mode::SIM => {
                     for i in &args[2..] {
-                        let err: i32 = sim(&parse(&lex(&match get(i) {
-    Some(x) => x,
-    None => continue,
-                        })));
+                        let err: i32 = sim(&match parse(&lex(&match get(i) {
+                            Some(x) => x,
+                            None => continue,
+                        })) {
+                            Some(x) => {
+                                println!("[Parsing succed]");
+                                x
+                            },
+                            None => {
+                                println!("[Parsing failed]");
+                                continue;
+                            },
+                        });
                         if err == 0 {
                             println!("[Simulation of `{}` succed]", i);
                         } else {
