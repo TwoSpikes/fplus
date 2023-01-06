@@ -49,17 +49,39 @@ fn get(name: &String) -> Option<String> {
     }
 }
 
-struct Loc {
-    lin: i64,
-    ind: i64,
-}
-struct Tok {
-    loc: Loc,
-    val: String,
-}
+#[derive(Clone)]
+struct Loc (i64, i64);
+struct Tok (Loc, String);
 
 fn lex(file: &String) -> Vec<Tok> {
-    return vec![];
+    let mut res: Vec<Tok> = vec![];
+    let mut tmp: String = "".to_owned();
+    let mut ploc: Loc = Loc(1, 1);
+    let mut loc:  Loc = Loc(1, 1);
+    for i in file.chars() {
+        loc.1 += 1;
+        if i == '\n' {
+            loc.0 += 1;
+            loc.1  = 1;
+            res.push(Tok(ploc, tmp.to_owned()));
+            tmp = "".to_owned();
+            ploc = loc.clone();
+            continue;
+        }
+        if i == ' ' || i == '\t' {
+            if tmp.len() > 0 {
+                res.push(Tok(ploc, tmp.to_owned()));
+                ploc = loc.clone();
+                tmp = "".to_owned();
+            }
+            continue;
+        }
+        tmp.push(i);
+    }
+    if tmp.len() > 0 {
+        res.push(Tok(ploc, tmp.to_owned()));
+    }
+    return res;
 }
 
 #[derive(Debug)] enum Op {
@@ -68,6 +90,9 @@ fn lex(file: &String) -> Vec<Tok> {
     PLUS,
 }
 fn parse(pr: &Vec<Tok>) -> Vec<Op> {
+    for i in pr {
+        println!("val=`{}`, loc.lin={}, loc.ind={}", i.1, i.0.0, i.0.1);
+    }
     return vec![];
 }
 
