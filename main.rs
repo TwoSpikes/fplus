@@ -131,6 +131,9 @@ fn strtoi64(x: &String) -> Option<i64> {
     PLUS,
     //gotoif
     GIF,
+    PUSHNTH,
+    LT,
+    NOT,
 }
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     let mut res: Vec<Result<Op, &str>> = vec![];
@@ -151,7 +154,6 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
         let loc: &Loc = &i.0;
         let lin: &i64 = &loc.0;
         let ind: &i64 = &loc.1;
-        //println!("val=`{}`, loc.lin={}, loc.ind={}", val, lin, ind);
         res.append(&mut match strtoi64(val) {
             Some(x) => {
                 vec![
@@ -165,7 +167,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "" => {
                         continue;
                     },
-                    "+f" => vec![
+                    "+" => vec![
                         Ok(Op::PLUS),
                     ],
                     "putc" => vec![
@@ -175,12 +177,21 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                         state = State::LBL;
                         continue;
                     },
-                    "impl" => {
+                    "fn" => {
                         state = State::FN;
                         continue;
                     },
                     ":if" => vec![
                         Ok(Op::GIF),
+                    ],
+                    "pushnth" => vec![
+                        Ok(Op::PUSHNTH),
+                    ],
+                    "<" => vec![
+                        Ok(Op::LT),
+                    ],
+                    "!" => vec![
+                        Ok(Op::NOT),
                     ],
                     _ => vec![
                         Err(val.as_str()),
@@ -198,8 +209,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                         let pos: usize = match labels.iter().position(|x| String::from(x.0).eq(val)) {
                             Some(pos) => pos,
                             None => {
-                                println!("{}:{}:{}: label declaration to implement not found: {}", filename, lin, ind, val);
-                                return None;
+                        if let "main" = &*val.as_str() {
+                            main = Some(res.len().try_into().unwrap());
+                        }
+                                labels.push((val.as_str(), Some(res.len().try_into().unwrap())));
+                                state = State::NONE;
+                                continue;
                             }
                         };
                         labels[pos].1 = Some(res.len().try_into().unwrap());
@@ -218,7 +233,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     labels.push(("", None));
 
     //linking
-    println!("Linking... labels={:?}\nres={:?}", labels, res);
+    println!("linking: labels={:?}\nres={:?}", labels, res);
     let mut linkres: Vec<Op> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {
@@ -229,16 +244,13 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
             //found label call
             Err(x) => {
                 let mut ret: i64 = -1;
-                let mut found: bool = false;
                 //tring to find declaration
                 for j in &labels {
                     //if found by name
                     if String::from(j.0).eq(&String::from(x)) {
-                        found = true;
                         match j.1 {
                             //found defenition
                             Some(def) => {
-                                println!("found label definition: {}", def);
                                 linkres.push(Op::Push(def));
                             },
                             //not found definition
@@ -250,6 +262,10 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     } else {
                         ret += 1;
                     }
+                }
+                if ret >= <usize as TryInto<i64>>::try_into(labels.len()).unwrap() - 1 {
+                    println!("label not found: {x}");
+                    return None;
                 }
             },
         };
@@ -280,14 +296,15 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
     let mut ind: i64 = main - 1;
     while ind < pr.len().try_into().unwrap() {
         ind += 1;
-        let i: &Op = &pr[<i64 as TryInto<usize>>::try_into(ind).unwrap()];
+        let i: &Op = &pr[{let tmp: usize = <i64 as TryInto<usize>>::try_into(ind).unwrap(); if tmp >= pr.len() {break;} else {tmp}}];
         println!("sim:{}: {:?}", ind, i);
         match i {
             Op::Push(x) => {
                 stack.push(*x);
             },
             Op::PRINT => {
-                print!("print: {}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
+                println!("print: debug: {:?}", stack);
+                println!("print: {}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
             },
             Op::PLUS => {
                 let a: i64 = stack.pop().unwrap();
@@ -303,6 +320,21 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
                     ind = addr.try_into().unwrap();
                 }
             },
+            Op::PUSHNTH => {
+                let a: i64 = stack.pop().unwrap();
+                println!("pushnth: a={} len={}", a, stack.len());
+                let b: i64 = stack[stack.len()-1-a as usize];
+                stack.push(b);
+            }
+            Op::LT => {
+                let a: i64 = stack.pop().unwrap();
+                let b: i64 = stack.pop().unwrap();
+                stack.push((b < a).try_into().unwrap());
+            }
+            Op::NOT => {
+                let a: i64 = stack.pop().unwrap();
+                stack.push((a == 0) as i64);
+            }
             _ => {
                 println!("Unknown op: {:?}", i);
                 return None;
