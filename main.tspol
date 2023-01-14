@@ -1,3 +1,7 @@
-34 35 +f
+lbl foo
+impl foo
+  34 35 +f putc
 
-putc
+lbl main
+impl main
+  1 foo :if
