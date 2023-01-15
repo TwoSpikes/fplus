@@ -3,11 +3,9 @@ fn loop
  0 pushnth 100 < !
   end :if
  1 +
- 1 loop :if
-
+ loop :
 fn main
  1
- 1 loop :if
-
+ loop :
 fn end
- 699 putc
+ 0 exit

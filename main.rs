@@ -131,9 +131,12 @@ fn strtoi64(x: &String) -> Option<i64> {
     PLUS,
     //gotoif
     GIF,
+    //goto
+    G,
     PUSHNTH,
     LT,
     NOT,
+    EXIT,
 }
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     let mut res: Vec<Result<Op, &str>> = vec![];
@@ -184,6 +187,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     ":if" => vec![
                         Ok(Op::GIF),
                     ],
+                    ":" => vec![
+                        Ok(Op::G),
+                    ],
                     "pushnth" => vec![
                         Ok(Op::PUSHNTH),
                     ],
@@ -192,6 +198,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     ],
                     "!" => vec![
                         Ok(Op::NOT),
+                    ],
+                    "exit" => vec![
+                        Ok(Op::EXIT),
                     ],
                     _ => vec![
                         Err(val.as_str()),
@@ -314,11 +323,15 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
             Op::GIF => {
                 let addr: i64 = stack.pop().unwrap() - 1;
                 let cond: i64 = stack.pop().unwrap();
-                println!("sim: debug: ifgotoifing to {} if {}", addr, cond);
+                println!("sim: gotoifing to {} if {}", addr, cond);
                 if cond != 0 {
-                    println!("sim: debug: gotoifing is true stack={:?}", stack);
                     ind = addr.try_into().unwrap();
                 }
+            },
+            Op::G => {
+                let addr: i64 = stack.pop().unwrap() - 1;
+                println!("sim: gotoifing to {}", addr);
+                ind = addr.try_into().unwrap();
             },
             Op::PUSHNTH => {
                 let a: i64 = stack.pop().unwrap();
@@ -334,6 +347,10 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
             Op::NOT => {
                 let a: i64 = stack.pop().unwrap();
                 stack.push((a == 0) as i64);
+            }
+            Op::EXIT => {
+                let a: i64 = stack.pop().unwrap();
+                return Some(a.try_into().unwrap());
             }
             _ => {
                 println!("Unknown op: {:?}", i);
