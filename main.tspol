@@ -1,2 +1,10 @@
+/*
+fn strrev /* "cba" 0 3 */
+  0  1 nbrot
+
 fn main
-  inp puts
+  inp strrev puts
+*/
+
+fn main
+  65 66 1 nbrot 2 puts /* "AB" */

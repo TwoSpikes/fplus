@@ -133,7 +133,6 @@ fn strtoi64(x: &String) -> Option<i64> {
     } * res);
 }
 
-//////////////////////////////////////////////////
 #[derive(Debug)] enum Op {
     Push(i64),
     PRINT,
@@ -145,10 +144,12 @@ fn strtoi64(x: &String) -> Option<i64> {
     //goto
     G,
     PUSHNTH,
+    NBROT,
     LT,
     NOT,
     EXIT,
 }
+//////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     let mut res: Vec<Result<Op, &str>> = vec![];
     #[derive(Debug)]
@@ -163,6 +164,8 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     let mut state: State = State::NONE;
     let mut labels: Vec<(&str, Option<i64>)> = Vec::new();
     let mut main: Option<usize> = None;
+    //multi-line comment
+    let mut mlc: u32 = 0;
     for i in pr {
         let val: &String = &i.1;
         let loc: &Loc = &i.0;
@@ -175,6 +178,26 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                 ]
             },
             None => {
+                match val.as_str() {
+                    "/*" => {
+                        mlc += 1;
+                    },
+                    "*/" => {
+                        if mlc <= 0 {
+                            println!("comment underflow!");
+                            return None;
+                        }
+                        mlc -= 1;
+                        continue;
+                    },
+                    _ => {
+                        
+                    },
+                }
+                if mlc > 0 {
+                    continue;
+                }
+
                 match state {
                     State::NONE =>
                 match val.as_str() {
@@ -209,6 +232,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     ],
                     "pushnth" => vec![
                         Ok(Op::PUSHNTH),
+                    ],
+                    "nbrot" => vec![
+                        Ok(Op::NBROT),
                     ],
                     "<" => vec![
                         Ok(Op::LT),
@@ -373,20 +399,25 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
                 println!("pushnth: a={} len={}", a, stack.len());
                 let b: i64 = stack[stack.len()-1-a as usize];
                 stack.push(b);
-            }
+            },
+            Op::NBROT => {
+                let l: i64 = stack.pop().unwrap();
+                let a: i64 = stack.pop().unwrap();
+                stack.insert(stack.len()-0-l as usize, a);
+            },
             Op::LT => {
                 let a: i64 = stack.pop().unwrap();
                 let b: i64 = stack.pop().unwrap();
                 stack.push((b < a).try_into().unwrap());
-            }
+            },
             Op::NOT => {
                 let a: i64 = stack.pop().unwrap();
                 stack.push((a == 0) as i64);
-            }
+            },
             Op::EXIT => {
                 let a: i64 = stack.pop().unwrap();
                 return Some(a.try_into().unwrap());
-            }
+            },
             _ => {
                 println!("Unknown op: {:?}", i);
                 return None;
