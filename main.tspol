@@ -1,2 +1,2 @@
 fn main
-  80 65 80 65 4 puts
+  inp puts

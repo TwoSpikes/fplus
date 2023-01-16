@@ -5,6 +5,15 @@ use std::io::Read;
 use std::str::Chars; 
 use std::convert::TryInto;
 
+fn from(u: &String) -> Vec<i64> {
+    let len: usize = u.len();
+    let mut res: Vec<i64> = Vec::with_capacity(len);
+    for x in u.chars() {
+        res.push(x as i64);
+    }
+    res
+}
+
 fn usage() {
     println!("usage: subcommand option... source...");
     println!("subcommand:");
@@ -335,8 +344,11 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
                 println!("puts: {}", string);
             },
             Op::INP => {
-                println!("inp is not implemented yet");
-                return None;
+                let mut input: String = String::new();
+                let stdin = std::io::stdin();
+                stdin.read_line(&mut input);
+                stack.append(&mut from(&input));
+                stack.push(input.len().try_into().unwrap());
             },
             Op::PLUS => {
                 let a: i64 = stack.pop().unwrap();
