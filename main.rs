@@ -128,6 +128,8 @@ fn strtoi64(x: &String) -> Option<i64> {
 #[derive(Debug)] enum Op {
     Push(i64),
     PRINT,
+    PUTS,
+    INP,
     PLUS,
     //gotoif
     GIF,
@@ -175,6 +177,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     ],
                     "putc" => vec![
                         Ok(Op::PRINT),
+                    ],
+                    "puts" => vec![
+                        Ok(Op::PUTS),
+                    ],
+                    "inp" => vec![
+                        Ok(Op::INP),
                     ],
                     "lbl" => {
                         state = State::LBL;
@@ -314,6 +322,21 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
             Op::PRINT => {
                 println!("print: debug: {:?}", stack);
                 println!("print: {}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
+            },
+            Op::PUTS => {
+                let strlen: usize = stack.pop().unwrap().try_into().unwrap();
+                println!("puts: debug: {:?}", stack);
+                let mut i: usize = 0;
+                let mut string: String = "".to_owned();
+                while i < strlen {
+                    string.push(char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
+                    i += 1;
+                }
+                println!("puts: {}", string);
+            },
+            Op::INP => {
+                println!("inp is not implemented yet");
+                return None;
             },
             Op::PLUS => {
                 let a: i64 = stack.pop().unwrap();

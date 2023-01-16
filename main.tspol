@@ -1,11 +1,2 @@
-fn loop
- 0 pushnth putc
- 0 pushnth 100 < !
-  end :if
- 1 +
- loop :
 fn main
- 1
- loop :
-fn end
- 0 exit
+  80 65 80 65 4 puts
