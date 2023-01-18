@@ -139,15 +139,21 @@ fn strtoi64(x: &String) -> Option<i64> {
     PUTS,
     INP,
     PLUS,
+    MUL,
     //gotoif
     GIF,
     //goto
     G,
     PUSHNTH,
+    DROPNTH,
     NBROT,
     LT,
     NOT,
     EXIT,
+    //print stack
+    PSTK,
+    //print stack & exit
+    PSTKE,
 }
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
@@ -171,6 +177,26 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
         let loc: &Loc = &i.0;
         let lin: &i64 = &loc.0;
         let ind: &i64 = &loc.1;
+        match val.as_str() {
+            "/*" => {
+                mlc += 1;
+            },
+            "*/" => {
+                if mlc <= 0 {
+                    println!("comment underflow!");
+                    return None;
+                }
+                mlc -= 1;
+                continue;
+            },
+            _ => {
+                
+            },
+        }
+        if mlc > 0 {
+            continue;
+        }
+
         res.append(&mut match strtoi64(val) {
             Some(x) => {
                 vec![
@@ -178,26 +204,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                 ]
             },
             None => {
-                match val.as_str() {
-                    "/*" => {
-                        mlc += 1;
-                    },
-                    "*/" => {
-                        if mlc <= 0 {
-                            println!("comment underflow!");
-                            return None;
-                        }
-                        mlc -= 1;
-                        continue;
-                    },
-                    _ => {
-                        
-                    },
-                }
-                if mlc > 0 {
-                    continue;
-                }
-
+                
                 match state {
                     State::NONE =>
                 match val.as_str() {
@@ -206,6 +213,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     },
                     "+" => vec![
                         Ok(Op::PLUS),
+                    ],
+                    "*" => vec![
+                        Ok(Op::MUL),
                     ],
                     "putc" => vec![
                         Ok(Op::PRINT),
@@ -233,6 +243,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "pushnth" => vec![
                         Ok(Op::PUSHNTH),
                     ],
+                    "dropnth" => vec![
+                        Ok(Op::DROPNTH),
+                    ],
                     "nbrot" => vec![
                         Ok(Op::NBROT),
                     ],
@@ -244,6 +257,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     ],
                     "exit" => vec![
                         Ok(Op::EXIT),
+                    ],
+                    "???" => vec![
+                        Ok(Op::PSTKE),
+                    ],
+                    "??#" => vec![
+                        Ok(Op::PSTK),
                     ],
                     _ => vec![
                         Err(val.as_str()),
@@ -359,12 +378,14 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
                 println!("print: {}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
             },
             Op::PUTS => {
-                let strlen: usize = stack.pop().unwrap().try_into().unwrap();
                 println!("puts: debug: {:?}", stack);
+                let strlen: usize = stack.pop().unwrap().try_into().unwrap();
                 let mut i: usize = 0;
                 let mut string: String = "".to_owned();
                 while i < strlen {
-                    string.push(char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
+                    let chr = char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap();
+                    println!("add {}", chr);
+                    string.push(chr);
                     i += 1;
                 }
                 println!("puts: {}", string);
@@ -381,6 +402,11 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
                 let b: i64 = stack.pop().unwrap();
                 stack.push(a + b)
             },
+            Op::MUL => {
+                let a: i64 = stack.pop().unwrap();
+                let b: i64 = stack.pop().unwrap();
+                stack.push(a * b)
+            },
             Op::GIF => {
                 let addr: i64 = stack.pop().unwrap() - 1;
                 let cond: i64 = stack.pop().unwrap();
@@ -396,9 +422,12 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
             },
             Op::PUSHNTH => {
                 let a: i64 = stack.pop().unwrap();
-                println!("pushnth: a={} len={}", a, stack.len());
                 let b: i64 = stack[stack.len()-1-a as usize];
                 stack.push(b);
+            },
+            Op::DROPNTH => {
+                let a: i64 = stack.pop().unwrap();
+                stack.remove(stack.len()-1-a as usize);
             },
             Op::NBROT => {
                 let l: i64 = stack.pop().unwrap();
@@ -417,6 +446,13 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
             Op::EXIT => {
                 let a: i64 = stack.pop().unwrap();
                 return Some(a.try_into().unwrap());
+            },
+            Op::PSTK => {
+                println!("pstk {:?}", stack);
+            },
+            Op::PSTKE => {
+                println!("pstke {:?}", stack);
+                return None;
             },
             _ => {
                 println!("Unknown op: {:?}", i);
@@ -456,7 +492,7 @@ fn clah(args: &Vec<String>) {
                                 }
                             },
                             None => {
-                                println!("[Simulation of `{}` failed", i);
+                                println!("[Simulation of `{}` failed]", i);
                             }
                         }
                     }
