@@ -11,12 +11,19 @@ fn strrev_start
   0 pushnth 2 + dropnth
   strrev_start :
 fn strrev_end
-  0 dropnth end :
+  1 + pushnth 1 pushnth 2 + dropnth :
 
 fn main
-  65 66 67 3
+  then 87 104 97 116 39 115 32 121 111 117 114 32 110 97 109 101 63 32  18
+  strrev :
+fn then
+  puts flush
+  end inp
   strrev :
 
 fn end
+  endthen 121 111 117 114 32 110 97 109 101 32 105 115 32 13 strrev :
+fn endthen
   puts
+  puts flush
   0 exit

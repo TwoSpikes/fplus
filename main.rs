@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::process::exit; 
 use std::fs; 
 use std::io; 
@@ -137,6 +138,7 @@ fn strtoi64(x: &String) -> Option<i64> {
     Push(i64),
     PRINT,
     PUTS,
+    FLUSH,
     INP,
     PLUS,
     MUL,
@@ -222,6 +224,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     ],
                     "puts" => vec![
                         Ok(Op::PUTS),
+                    ],
+                    "flush" => vec![
+                        Ok(Op::FLUSH),
                     ],
                     "inp" => vec![
                         Ok(Op::INP),
@@ -349,12 +354,10 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
 }
 
 fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
-    println!("simulating {}: {:?}", filename, pr);
-    let mut stack: Vec<i64> = vec![];
+   let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
         Some(x) => match x {
             Op::Push(y) => {
-                println!("sim: debug: main label was found: {}", y);
                 y
             },
             _ => {
@@ -368,7 +371,6 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
     while ind < pr.len().try_into().unwrap() {
         ind += 1;
         let i: &Op = &pr[{let tmp: usize = <i64 as TryInto<usize>>::try_into(ind).unwrap(); if tmp >= pr.len() {break;} else {tmp}}];
-        println!("sim:{}: {:?}", ind, i);
         match i {
             Op::Push(x) => {
                 stack.push(*x);
@@ -378,17 +380,19 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
                 println!("print: {}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
             },
             Op::PUTS => {
-                println!("puts: debug: {:?}", stack);
+                //println!("puts: debug: {:?}", stack);
                 let strlen: usize = stack.pop().unwrap().try_into().unwrap();
                 let mut i: usize = 0;
                 let mut string: String = "".to_owned();
                 while i < strlen {
                     let chr = char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap();
-                    println!("add {}", chr);
                     string.push(chr);
                     i += 1;
                 }
-                println!("puts: {}", string);
+                print!("{}", string);
+            },
+            Op::FLUSH => {
+                std::io::stdout().flush();
             },
             Op::INP => {
                 let mut input: String = String::new();
@@ -410,14 +414,12 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
             Op::GIF => {
                 let addr: i64 = stack.pop().unwrap() - 1;
                 let cond: i64 = stack.pop().unwrap();
-                println!("sim: gotoifing to {} if {}", addr, cond);
                 if cond != 0 {
                     ind = addr.try_into().unwrap();
                 }
             },
             Op::G => {
                 let addr: i64 = stack.pop().unwrap() - 1;
-                println!("sim: gotoifing to {}", addr);
                 ind = addr.try_into().unwrap();
             },
             Op::PUSHNTH => {
