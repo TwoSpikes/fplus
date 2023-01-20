@@ -174,6 +174,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     let mut main: Option<usize> = None;
     //multi-line comment
     let mut mlc: u32 = 0;
+    let mut callstk: Vec<Option<usize>> = Vec::new();
     for i in pr {
         let val: &String = &i.1;
         let loc: &Loc = &i.0;
@@ -242,9 +243,15 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     ":if" => vec![
                         Ok(Op::GIF),
                     ],
-                    ":" => vec![
-                        Ok(Op::G),
-                    ],
+                    ":" => {
+                        res.push(Ok(Op::G));
+                        if callstk.len() > 0 {
+                        println!("fucking callstk: {:?}", callstk);
+                            let callstktmp: i64 = callstk.pop().unwrap().unwrap().try_into().unwrap();
+                            res.insert(callstktmp as usize, Ok(Op::Push(callstktmp + (res.len() as i64 - callstktmp) + 1)));
+                        }
+                        continue;
+                    },
                     "pushnth" => vec![
                         Ok(Op::PUSHNTH),
                     ],
@@ -269,6 +276,10 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "??#" => vec![
                         Ok(Op::PSTK),
                     ],
+                    "call" => {
+                        callstk.push(Some(res.len()+0));
+                        continue;
+                    },
                     _ => vec![
                         Err(val.as_str()),
                     ],
@@ -371,6 +382,7 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
     while ind < pr.len().try_into().unwrap() {
         ind += 1;
         let i: &Op = &pr[{let tmp: usize = <i64 as TryInto<usize>>::try_into(ind).unwrap(); if tmp >= pr.len() {break;} else {tmp}}];
+        //println!("{}: sim: {:?}", ind, i);
         match i {
             Op::Push(x) => {
                 stack.push(*x);
@@ -485,6 +497,7 @@ fn clah(args: &Vec<String>) {
                                 continue;
                             },
                         }, i);
+                        println!("");
                         match err {
                             Some(x) => {
                                 if x == 0 {
