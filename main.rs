@@ -58,7 +58,7 @@ fn get(name: &String) -> Option<String> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct Loc (i64, i64);
 struct Tok (Loc, String);
 
@@ -67,8 +67,25 @@ fn lex(file: &String) -> Vec<Tok> {
     let mut tmp: String = "".to_owned();
     let mut ploc: Loc = Loc(1, 1);
     let mut loc:  Loc = Loc(1, 1);
+    let mut quotes: bool = false;
     for i in file.chars() {
         loc.1 += 1;
+        //if '"'  then remember it
+        if i == '"' {
+            tmp.push(i);
+            if quotes {
+                res.push(Tok(ploc, tmp.to_owned()));
+                tmp = "".to_owned();
+                ploc = loc.clone();
+            }
+            quotes = !quotes;
+            continue;
+        }
+        if quotes {
+            tmp.push(i);
+            continue;
+        }
+        //if '\n' then just push it
         if i == '\n' {
             loc.0 += 1;
             loc.1  = 1;
@@ -77,6 +94,7 @@ fn lex(file: &String) -> Vec<Tok> {
             ploc = loc.clone();
             continue;
         }
+        //if ' ' or '\t' then push tmp
         if i == ' ' || i == '\t' {
             if tmp.len() > 0 {
                 res.push(Tok(ploc, tmp.to_owned()));
@@ -207,6 +225,10 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     None => ' ',
                 } as i64)),
             ]
+        } else if val.as_str().chars().nth(0) == Some('\"') {
+            let mut tmp: Vec<Result<Op, &str>> = val[1..val.len()-1].chars().map(|x| Ok(Op::Push(x as i64))).collect();
+            tmp.push(Ok(Op::Push((val.len()-2).try_into().unwrap())));
+            tmp
         } else {match strtoi64(val) {
             Some(x) => {
                 vec![

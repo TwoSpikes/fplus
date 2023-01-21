@@ -14,9 +14,8 @@ fn strrev_end
   1 + pushnth 1 pushnth 2 + dropnth :
 
 fn main
-  call 'W 'h 'a 't ' 'i 's ' 'y 'o 'u 'r ' 'n 'a 'm 'e '? ' 19 strrev :
+  call "What is your name? " strrev :
   puts flush
-  call inp strrev :
-  call 'Y 'o 'u 'r '  'n 'a 'm 'e '  'i 's '  13 strrev : puts
-  puts flush
+  call "Your name is " strrev : puts
+  call inp strrev : puts flush
   0 exit
