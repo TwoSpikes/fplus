@@ -200,7 +200,14 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
             continue;
         }
 
-        res.append(&mut match strtoi64(val) {
+        res.append(&mut if val.as_str().chars().nth(0) == Some('\'') {
+            vec![
+                Ok(Op::Push(match val.as_str().chars().nth(1) {
+                    Some(x) => x,
+                    None => ' ',
+                } as i64)),
+            ]
+        } else {match strtoi64(val) {
             Some(x) => {
                 vec![
                     Ok(Op::Push(x)),
@@ -314,7 +321,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     },
                 }
             }
-        });
+        }});
     }
     //to avoid not founding labels
     labels.push(("", None));

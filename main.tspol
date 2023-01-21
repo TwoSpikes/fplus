@@ -14,9 +14,9 @@ fn strrev_end
   1 + pushnth 1 pushnth 2 + dropnth :
 
 fn main
-  call 87 104 97 116 39 115 32 121 111 117 114 32 110 97 109 101 63 32 18 strrev :
+  call 'W 'h 'a 't ' 'i 's ' 'y 'o 'u 'r ' 'n 'a 'm 'e '? ' 19 strrev :
   puts flush
   call inp strrev :
-  call 121 111 117 114 32 110 97 109 101 32 105 115 32 13 strrev : puts
+  call 'Y 'o 'u 'r '  'n 'a 'm 'e '  'i 's '  13 strrev : puts
   puts flush
   0 exit
