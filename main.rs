@@ -518,6 +518,7 @@ fn sim(pr: &mut Vec<Op>,
                 stack.push(argv.len().try_into().unwrap());
             },
             Op::ARGV => {
+                println!("argv {:?}", stack);
                 let a: i64 = stack.pop().unwrap();
                 for j in argv[a as usize].chars() {
                     stack.push(j as i64);
@@ -560,7 +561,11 @@ fn clah(args: &Vec<String>) {
                     }
                 }
                 {
-                    for i in &argv {
+                    let mut ind: isize = -1;
+                    let mut i: String = "".to_owned();
+                    while {ind+=1;ind}<argv.len().try_into().unwrap() {
+                        i = argv[ind as usize].clone();
+                        fargs.insert(0, args[0].clone());
                         let err: Option<i32> = sim(&mut match parse(&lex(&match get(&i) {
                             Some(x) => x,
                             None => continue,
@@ -573,7 +578,13 @@ fn clah(args: &Vec<String>) {
                                 println!("[Parsing failed]");
                                 continue;
                             },
-                        }, &i, fargs.clone());
+                        }, &i, if ind==(argv.len()-1).try_into().unwrap() {
+                            fargs.clone()
+                        } else {
+                            vec![
+                                args[0].clone(),
+                            ]
+                        });
                         println!("");
                         match err {
                             Some(x) => {
