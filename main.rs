@@ -174,6 +174,9 @@ fn strtoi64(x: &String) -> Option<i64> {
     PSTK,
     //print stack & exit
     PSTKE,
+    DUMP,
+    ARGC,
+    ARGV,
 }
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
@@ -305,10 +308,19 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "??#" => vec![
                         Ok(Op::PSTK),
                     ],
+                    "dump" => vec![
+                        Ok(Op::DUMP),
+                    ],
                     "call" => {
                         callstk.push(Some(res.len()+0));
                         continue;
                     },
+                    "argc" => vec![
+                        Ok(Op::ARGC),
+                    ],
+                    "argv" => vec![
+                        Ok(Op::ARGV),
+                    ],
                     _ => vec![
                         Err(val.as_str()),
                     ],
@@ -349,7 +361,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     labels.push(("", None));
 
     //linking
-    println!("linking: labels={:?}\nres={:?}", labels, res);
+    println!("linking...");
     let mut linkres: Vec<Op> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {
@@ -393,8 +405,11 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     return Some(linkres);
 }
 
-fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
-   let mut stack: Vec<i64> = vec![];
+fn sim(pr: &mut Vec<Op>,
+       filename: &String,
+       argv: Vec<String>) -> Option<i32> {
+    //println!("sim: argv: {:?}", argv);
+    let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
         Some(x) => match x {
             Op::Push(y) => {
@@ -417,8 +432,7 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
                 stack.push(*x);
             },
             Op::PRINT => {
-                println!("print: debug: {:?}", stack);
-                println!("print: {}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
+                print!("{}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
             },
             Op::PUTS => {
                 //println!("puts: debug: {:?}", stack);
@@ -484,7 +498,7 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
             },
             Op::NOT => {
                 let a: i64 = stack.pop().unwrap();
-                stack.push((a == 0) as i64);
+                stack.push((a == 0).try_into().unwrap());
             },
             Op::EXIT => {
                 let a: i64 = stack.pop().unwrap();
@@ -496,6 +510,19 @@ fn sim(pr: &mut Vec<Op>, filename: &String) -> Option<i32> {
             Op::PSTKE => {
                 println!("pstke {:?}", stack);
                 return None;
+            },
+            Op::DUMP => {
+                println!("dump: {}", stack.pop().unwrap());
+            },
+            Op::ARGC => {
+                stack.push(argv.len().try_into().unwrap());
+            },
+            Op::ARGV => {
+                let a: i64 = stack.pop().unwrap();
+                for j in argv[a as usize].chars() {
+                    stack.push(j as i64);
+                }
+                stack.push(argv[a as usize].len().try_into().unwrap());
             },
             _ => {
                 println!("Unknown op: {:?}", i);
@@ -512,11 +539,32 @@ fn clah(args: &Vec<String>) {
             println!("[command line arguments reading succed]");
             match mode {
                 Mode::SIM => {
-                    for i in &args[2..] {
-                        let err: Option<i32> = sim(&mut match parse(&lex(&match get(i) {
+                let mut argv: Vec<String> = Vec::new();
+                //fucking arguments
+                let mut fargs: Vec<String> = Vec::new();
+                {
+                    let mut i: String = "".to_owned();
+                    let mut ind: isize = 1;
+                    let mut isargs: bool = false;
+                    while {ind+=1;ind} < args.len().try_into().unwrap() {
+                        i = args[ind as usize].clone();
+                        if i == "--" {
+                            isargs = true;
+                            continue;
+                        }
+                        if isargs {
+                            fargs.push(i);
+                            continue;
+                        }
+                        argv.push(i);
+                    }
+                }
+                {
+                    for i in &argv {
+                        let err: Option<i32> = sim(&mut match parse(&lex(&match get(&i) {
                             Some(x) => x,
                             None => continue,
-                        }), i) {
+                        }), &i) {
                             Some(x) => {
                                 println!("[Parsing succed]");
                                 x
@@ -525,7 +573,7 @@ fn clah(args: &Vec<String>) {
                                 println!("[Parsing failed]");
                                 continue;
                             },
-                        }, i);
+                        }, &i, fargs.clone());
                         println!("");
                         match err {
                             Some(x) => {
@@ -540,6 +588,7 @@ fn clah(args: &Vec<String>) {
                             }
                         }
                     }
+                }
                 },
                 _ => {
                     println!("Unknown mode: {:?}", mode);

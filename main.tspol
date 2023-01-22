@@ -14,8 +14,5 @@ fn strrev_end
   1 + pushnth 1 pushnth 2 + dropnth :
 
 fn main
-  call "What is your name? " strrev :
-  puts flush
-  call "Your name is " strrev : puts
-  call inp strrev : puts flush
-  0 exit
+  call 0 argv strrev : puts 10 putc
+  argc dump
