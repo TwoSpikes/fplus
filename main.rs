@@ -58,32 +58,67 @@ fn get(name: &String) -> Option<String> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct Loc (i64, i64);
+#[derive(Debug)]
 struct Tok (Loc, String);
 
-fn lex(file: &String) -> Vec<Tok> {
+fn lex(file: &String) -> Option<Vec<Tok>> {
     let mut res: Vec<Tok> = vec![];
     let mut tmp: String = "".to_owned();
     let mut ploc: Loc = Loc(1, 1);
     let mut loc:  Loc = Loc(1, 1);
-    let mut quotes: bool = false;
+    #[derive(Debug)]
+    enum Quotes {
+        NO,
+        IN,
+        POSTF,
+    }
+    let mut quotes: Quotes = Quotes::NO;
     for i in file.chars() {
         loc.1 += 1;
         //if '"'  then remember it
         if i == '"' {
             tmp.push(i);
-            if quotes {
-                res.push(Tok(ploc, tmp.to_owned()));
-                tmp = "".to_owned();
-                ploc = loc.clone();
-            }
-            quotes = !quotes;
+            quotes = match quotes {
+                Quotes::NO => Quotes::IN,
+                Quotes::IN => Quotes::POSTF,
+                Quotes::POSTF => {
+                    res.push(Tok(ploc, tmp.to_owned()));
+                    tmp = "".to_owned();
+                    ploc = loc.clone();
+                    Quotes::NO
+                },
+                _ => {
+                    println!("lex: unknown quotes: {:?}", quotes);
+                    return None;
+                },
+            };
             continue;
         }
-        if quotes {
-            tmp.push(i);
-            continue;
+        match quotes {
+            Quotes::NO => {
+                
+            },
+            Quotes::IN => {
+                tmp.push(i);
+                continue;
+            },
+            Quotes::POSTF => {
+                if i == '\n' || i == ' ' {
+                    quotes = Quotes::NO;
+                    res.push(Tok(ploc, tmp.to_owned()));
+                    tmp = "".to_owned();
+                    ploc = loc.clone();
+                } else {
+                    tmp.push(i);
+                }
+                continue;
+            },
+            _ => {
+                println!("lex: unknown quotes: {:?}", quotes);
+                return None;
+            },
         }
         //if '\n' then just push it
         if i == '\n' {
@@ -108,7 +143,7 @@ fn lex(file: &String) -> Vec<Tok> {
     if tmp.len() > 0 {
         res.push(Tok(ploc, tmp.to_owned()));
     }
-    return res;
+    return Some(res);
 }
 
 fn strtoi64(x: &String) -> Option<i64> {
@@ -180,6 +215,7 @@ fn strtoi64(x: &String) -> Option<i64> {
 }
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
+    println!("parse loc={:?} val={:?}", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
     let mut res: Vec<Result<Op, &str>> = vec![];
     #[derive(Debug)]
     enum State {
@@ -228,10 +264,40 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     None => ' ',
                 } as i64)),
             ]
-        } else if val.as_str().chars().nth(0) == Some('\"') {
-            let mut tmp: Vec<Result<Op, &str>> = val[1..val.len()-1].chars().map(|x| Ok(Op::Push(x as i64))).collect();
-            tmp.push(Ok(Op::Push((val.len()-2).try_into().unwrap())));
-            tmp
+        } else if val.chars().nth(0) == Some('\"') {
+            let mut postfix: Option<usize> = None;
+            let mut tmp: Vec<i64> = {
+                let mut res: Vec<i64> = Vec::new();
+                let mut jnd: isize = -1;
+                let mut j: char = ' ';
+                while {jnd+=1;jnd} < val[1..].len().try_into().unwrap() {
+                    j = match val[1..].chars().nth(jnd as usize) {
+                        Some(x) => x,
+                        None => {
+                            break;
+                        },
+                    };
+                    if j == '"' {
+                        postfix = Some(jnd as usize);
+                        continue;
+                    }
+                    res.push(j as i64);
+                }
+                res
+            };
+            let tmpStr: String = tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>();
+            let tmpstr: &str = tmpStr.as_str();
+            let mut tmpres: Vec<Result<Op, &str>> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().map(|x| Ok(Op::Push(x as i64))).collect();
+            println!("postfix is {} tmp is {:?}", postfix.unwrap(), tmp);
+            match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
+                "" => tmpres.push(Ok(Op::Push((val.len()-2).try_into().unwrap()))),
+                "c" => {},
+                _ => {
+                    println!("custom string postfixes are not implemented yet: {}", tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
+                    return None;
+                },
+            }
+            tmpres
         } else {match strtoi64(val) {
             Some(x) => {
                 vec![
@@ -566,10 +632,16 @@ fn clah(args: &Vec<String>) {
                     while {ind+=1;ind}<argv.len().try_into().unwrap() {
                         i = argv[ind as usize].clone();
                         fargs.insert(0, args[0].clone());
-                        let err: Option<i32> = sim(&mut match parse(&lex(&match get(&i) {
+                        let err: Option<i32> = sim(&mut match parse(&match lex(&match get(&i) {
                             Some(x) => x,
                             None => continue,
-                        }), &i) {
+                        }) {
+                            Some(x) => x,
+                            None => {
+                                println!("[Lexing failed]");
+                                continue;
+                            }
+                        }, &i) {
                             Some(x) => {
                                 println!("[Parsing succed]");
                                 x

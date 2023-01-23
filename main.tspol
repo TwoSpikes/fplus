@@ -13,12 +13,5 @@ fn strrev_start
 fn strrev_end
   1 + pushnth 1 pushnth 2 + dropnth :
 
-fn _main
-  call 0 argv strrev : puts 10 putc
-  argc dump
-fn test
-  call 0 argv strrev :
-  puts
-  0 exit
 fn main
-  test :
+  call "main.tspol"c 10 strrev : puts
