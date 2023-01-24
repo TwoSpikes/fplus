@@ -323,7 +323,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "flush" => vec![
                         Ok(Op::FLUSH),
                     ],
-                    "inp" => vec![
+                    "input" => vec![
                         Ok(Op::INP),
                     ],
                     "lbl" => {
@@ -514,7 +514,7 @@ fn sim(pr: &mut Vec<Op>,
                 let mut input: String = String::new();
                 let stdin = std::io::stdin();
                 stdin.read_line(&mut input);
-                stack.append(&mut from(&input));
+                stack.append(&mut from(&input).iter().rev().map(|x| *x).collect::<Vec<i64>>());
                 stack.push(input.len().try_into().unwrap());
             },
             Op::PLUS => {
