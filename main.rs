@@ -1,9 +1,4 @@
 use std::io::Write;
-use std::process::exit; 
-use std::fs; 
-use std::io; 
-use std::io::Read;
-use std::str::Chars; 
 use std::convert::TryInto;
 
 fn from(u: &String) -> Vec<i64> {
@@ -287,11 +282,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
             };
             let tmpStr: String = tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>();
             let tmpstr: &str = tmpStr.as_str();
-            let mut tmpres: Vec<Result<Op, &str>> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().map(|x| Ok(Op::Push(x as i64))).collect();
+            let mut tmpres: Vec<Result<Op, &str>> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| Ok(Op::Push(x as i64))).collect();
             println!("postfix is {} tmp is {:?}", postfix.unwrap(), tmp);
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
                 "" => tmpres.push(Ok(Op::Push((val.len()-2).try_into().unwrap()))),
-                "c" => {},
+                "r" => {},
+                "c" => tmpres.push(Ok(Op::Push(0))),
                 _ => {
                     println!("custom string postfixes are not implemented yet: {}", tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
                     return None;
@@ -344,7 +340,6 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     ":" => {
                         res.push(Ok(Op::G));
                         if callstk.len() > 0 {
-                        println!("fucking callstk: {:?}", callstk);
                             let callstktmp: i64 = callstk.pop().unwrap().unwrap().try_into().unwrap();
                             res.insert(callstktmp as usize, Ok(Op::Push(callstktmp + (res.len() as i64 - callstktmp) + 1)));
                         }

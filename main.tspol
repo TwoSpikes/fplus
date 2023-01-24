@@ -14,4 +14,4 @@ fn strrev_end
   1 + pushnth 1 pushnth 2 + dropnth :
 
 fn main
-  call "main.tspol"c 10 strrev : puts
+  "helb" puts
