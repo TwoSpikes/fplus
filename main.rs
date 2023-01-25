@@ -58,7 +58,22 @@ struct Loc (i64, i64);
 #[derive(Debug)]
 struct Tok (Loc, String);
 
-fn lex(file: &String) -> Option<Vec<Tok>> {
+#[derive(Debug)]
+enum Retlex {
+    //normal
+    N(Vec<Tok>),
+    //error
+    E,
+    //empty file
+    EMPTY,
+}
+fn lex(file: &String) -> Retlex {
+    use crate::Retlex::EMPTY;
+    use crate::Retlex::N;
+    use crate::Retlex::E;
+    if file.len() == 0 {
+        return EMPTY;
+    }
     let mut res: Vec<Tok> = vec![];
     let mut tmp: String = "".to_owned();
     let mut ploc: Loc = Loc(1, 1);
@@ -86,7 +101,7 @@ fn lex(file: &String) -> Option<Vec<Tok>> {
                 },
                 _ => {
                     println!("lex: unknown quotes: {:?}", quotes);
-                    return None;
+                    return E;
                 },
             };
             continue;
@@ -112,7 +127,7 @@ fn lex(file: &String) -> Option<Vec<Tok>> {
             },
             _ => {
                 println!("lex: unknown quotes: {:?}", quotes);
-                return None;
+                return E;
             },
         }
         //if '\n' then just push it
@@ -138,7 +153,7 @@ fn lex(file: &String) -> Option<Vec<Tok>> {
     if tmp.len() > 0 {
         res.push(Tok(ploc, tmp.to_owned()));
     }
-    return Some(res);
+    return N(res);
 }
 
 fn strtoi64(x: &String) -> Option<i64> {
@@ -496,7 +511,7 @@ fn sim(pr: &mut Vec<Op>,
                 print!("{}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
             },
             Op::PUTS => {
-                //println!("puts: debug: {:?}", stack);
+                //println!("debug: puts: {:?}", stack);
                 let strlen: usize = stack.pop().unwrap().try_into().unwrap();
                 let mut i: usize = 0;
                 let mut string: String = "".to_owned();
@@ -536,6 +551,7 @@ fn sim(pr: &mut Vec<Op>,
             },
             Op::G => {
                 let addr: i64 = stack.pop().unwrap() - 1;
+                //println!("debug: g: addr={} stk={:?}", addr, stack);
                 ind = addr.try_into().unwrap();
             },
             Op::PUSHNTH => {
@@ -627,16 +643,28 @@ fn clah(args: &Vec<String>) {
                     while {ind+=1;ind}<argv.len().try_into().unwrap() {
                         i = argv[ind as usize].clone();
                         fargs.insert(0, args[0].clone());
-                        let err: Option<i32> = sim(&mut match parse(&match lex(&match get(&i) {
+                        let err: Option<i32> = sim(&mut match parse(&{
+    use crate::Retlex::EMPTY;
+    use crate::Retlex::N;
+    use crate::Retlex::E;
+                            match lex(&match get(&i) {
                             Some(x) => x,
                             None => continue,
                         }) {
-                            Some(x) => x,
-                            None => {
-                                println!("[Lexing failed]");
-                                continue;
-                            }
-                        }, &i) {
+                                EMPTY => {
+                                    println!("[empty file]");
+                                    continue;
+                                },
+                                E => {
+                                    println!("[lexing failed]");
+                                    continue;
+                                },
+                                N(x) => x,
+                                _ => {
+                                    println!("Unknown lexing return state");
+                                    continue;
+                                },
+                        }}, &i) {
                             Some(x) => {
                                 println!("[Parsing succed]");
                                 x
