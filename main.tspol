@@ -1,2 +1,2 @@
-"What is your name? " puts flush input
-"Your name is " puts puts
+fn main
+  0 argv puts

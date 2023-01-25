@@ -598,9 +598,8 @@ fn sim(pr: &mut Vec<Op>,
                 stack.push(argv.len().try_into().unwrap());
             },
             Op::ARGV => {
-                println!("argv {:?}", stack);
                 let a: i64 = stack.pop().unwrap();
-                for j in argv[a as usize].chars() {
+                for j in argv[a as usize].chars().rev() {
                     stack.push(j as i64);
                 }
                 stack.push(argv[a as usize].len().try_into().unwrap());
