@@ -197,7 +197,8 @@ fn strtoi64(x: &String) -> Option<i64> {
     } * res);
 }
 
-#[derive(Debug)] enum Op {
+#[derive(Debug, Clone, Copy)]
+enum Op {
     Push(i64),
     PRINT,
     PUTS,
@@ -436,7 +437,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     //to avoid not founding labels
     labels.push(("", None));
 
-    //linking
+    return link(&res, &labels, &main);
+}
+fn link(res: &Vec<Result<Op, &str>>, labels: &Vec<(&str, Option<i64>)>, main: &Option<usize>) -> Option<Vec<Op>> {
     println!("linking...");
     let mut linkres: Vec<Op> = Vec::new();
     let mut ind: i64 = -1;
@@ -444,14 +447,14 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
         ind += 1;
         match i {
             //simple operation
-            Ok(x) => linkres.push(x),
+            Ok(x) => linkres.push(*x),
             //found label call
             Err(x) => {
                 let mut ret: i64 = -1;
                 //tring to find declaration
-                for j in &labels {
+                for j in &*labels {
                     //if found by name
-                    if String::from(j.0).eq(&String::from(x)) {
+                    if String::from(j.0).eq(&String::from(*x)) {
                         match j.1 {
                             //found defenition
                             Some(def) => {
@@ -475,7 +478,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
         };
     }
     linkres.push(Op::Push(match main {
-        Some(x) => x.try_into().unwrap(),
+        Some(x) => *x as i64,
         None => 0,
     }));
     return Some(linkres);

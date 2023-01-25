@@ -1,0 +1,2 @@
+"What is your name? " puts flush input
+"Your name is " puts puts
