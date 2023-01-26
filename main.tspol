@@ -1,2 +1,71 @@
+/*
 fn main
-  0 argv puts
+  argc 2 < err :if
+  "Your subcommand is: " puts 1 argv puts flush
+  0 exit
+fn err
+  "No subcommand provided" puts 10 putc
+  usage :
+fn usage
+  "usage: subcommand option... source..." puts 10 putc
+  "subcommand:" puts 10 putc
+  "  sim  simulate (interpret) program" puts 10 putc
+  "NI = not implemented" puts 10 putc
+  1 exit
+*/
+
+/* removes string from stack */
+fn strrem /* foo3*3 */
+  1 pushnth 1 + nbrot
+  0 1 nbrot
+fn strrem_loop
+  1 nbrot
+    1 +
+  1 nbrot
+  2 dropnth
+  1 pushnth 1 pushnth < ! strrem_end :if
+  strrem_loop :
+fn strrem_end
+  0 dropnth 0 dropnth :
+
+/* only works with right string */
+fn streq
+  0 pushnth 1 + pushnth 1 pushnth = ! streq_len_false :if
+  0 pushnth 1 + dropnth
+  0 1 nbrot
+fn streqr_loop
+  1 nbrot
+    1 +
+  1 nbrot
+  /* if not equal then false */
+  2 pushnth 2 pushnth 2 pushnth 1 nbrot -1 * + 4 + pushnth = ! streq_false :if
+  2 dropnth
+  0 pushnth 2 pushnth -1 * + 2 + dropnth
+  1 pushnth 1 pushnth < streqr_loop :if
+  streq_true :
+
+fn streq_loop2
+  1 nbrot
+    1 +
+  1 nbrot
+  1 pushnth 1 pushnth < ! streq_end :if
+  2 dropnth
+  0 pushnth 2 pushnth -1 * + dropnth
+  streq_loop2 :
+fn streq_end
+  0 dropnth 0 dropnth 0 dropnth 0 dropnth
+  1 nbrot :
+fn streq_false
+  1 nbrot -1 * + 1 + 0 1 nbrot
+  0 1 pushnth 2 * 2 + nbrot
+  streq_loop2 :
+fn streq_true
+  0 dropnth 0 dropnth 1 1 nbrot :
+fn streq_len_false
+  call strrem :
+  call strrem :
+  0 1 nbrot :
+
+fn main
+  call input input streq : dump
+  0 exit

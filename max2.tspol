@@ -1,0 +1,6 @@
+/* maximum from 2 numbers */
+fn max2 /* 34 35 * */
+  2 pushnth 2 pushnth < max2_else :if
+  1 dropnth :
+fn max2_else
+  2 dropnth :

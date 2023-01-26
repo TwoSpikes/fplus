@@ -14,6 +14,7 @@ fn usage() {
     println!("usage: subcommand option... source...");
     println!("subcommand:");
     println!("  sim  simulate (interpret) program");
+    println!("NI = not implemented");
 }
 #[derive(Debug)]
 enum Mode {
@@ -214,7 +215,9 @@ enum Op {
     DROPNTH,
     NBROT,
     LT,
+    EQ,
     NOT,
+    OR,
     EXIT,
     //print stack
     PSTK,
@@ -226,7 +229,11 @@ enum Op {
 }
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
-    println!("parse loc={:?} val={:?}", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
+    if false {
+        println!("parsing: loc={:?} val={:?}", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
+    } else {
+        println!("parsing...");
+    }
     let mut res: Vec<Result<Op, &str>> = vec![];
     #[derive(Debug)]
     enum State {
@@ -299,7 +306,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
             let tmpStr: String = tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>();
             let tmpstr: &str = tmpStr.as_str();
             let mut tmpres: Vec<Result<Op, &str>> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| Ok(Op::Push(x as i64))).collect();
-            println!("postfix is {} tmp is {:?}", postfix.unwrap(), tmp);
+            //println!("postfix is {} tmp is {:?}", postfix.unwrap(), tmp);
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
                 "" => tmpres.push(Ok(Op::Push((val.len()-2).try_into().unwrap()))),
                 "r" => {},
@@ -373,8 +380,14 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "<" => vec![
                         Ok(Op::LT),
                     ],
+                    "=" => vec![
+                        Ok(Op::EQ),
+                    ],
                     "!" => vec![
                         Ok(Op::NOT),
+                    ],
+                    "|" => vec![
+                        Ok(Op::OR),
                     ],
                     "exit" => vec![
                         Ok(Op::EXIT),
@@ -437,10 +450,19 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     //to avoid not founding labels
     labels.push(("", None));
 
-    return link(&res, &labels, &main);
+    match link(&res, &labels, &main) {
+        Some(x) => {
+            println!("  [Linking succed]");
+            Some(x)
+        },
+        None => {
+            println!("[Linking failed]");
+            None
+        },
+    }
 }
 fn link(res: &Vec<Result<Op, &str>>, labels: &Vec<(&str, Option<i64>)>, main: &Option<usize>) -> Option<Vec<Op>> {
-    println!("linking...");
+    println!("  linking...");
     let mut linkres: Vec<Op> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {
@@ -487,7 +509,7 @@ fn link(res: &Vec<Result<Op, &str>>, labels: &Vec<(&str, Option<i64>)>, main: &O
 fn sim(pr: &mut Vec<Op>,
        filename: &String,
        argv: Vec<String>) -> Option<i32> {
-    //println!("sim: argv: {:?}", argv);
+    println!("simulation...");
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
         Some(x) => match x {
@@ -502,10 +524,10 @@ fn sim(pr: &mut Vec<Op>,
         None => return Some(0),
     };
     let mut ind: i64 = main - 1;
-    while ind < pr.len().try_into().unwrap() {
+    while ind != pr.len().try_into().unwrap() {
         ind += 1;
         let i: &Op = &pr[{let tmp: usize = <i64 as TryInto<usize>>::try_into(ind).unwrap(); if tmp >= pr.len() {break;} else {tmp}}];
-        //println!("{}: sim: {:?}", ind, i);
+        //println!("{}: sim={:?} stk={:?}", ind, i, stack);
         match i {
             Op::Push(x) => {
                 stack.push(*x);
@@ -576,9 +598,19 @@ fn sim(pr: &mut Vec<Op>,
                 let b: i64 = stack.pop().unwrap();
                 stack.push((b < a).try_into().unwrap());
             },
+            Op::EQ => {
+                let a: i64 = stack.pop().unwrap();
+                let b: i64 = stack.pop().unwrap();
+                stack.push((b == a).try_into().unwrap());
+            },
             Op::NOT => {
                 let a: i64 = stack.pop().unwrap();
                 stack.push((a == 0).try_into().unwrap());
+            },
+            Op::OR => {
+                let a: i64 = stack.pop().unwrap();
+                let b: i64 = stack.pop().unwrap();
+                stack.push(((a != 0) || (b != 0)).try_into().unwrap());
             },
             Op::EXIT => {
                 let a: i64 = stack.pop().unwrap();
@@ -610,6 +642,7 @@ fn sim(pr: &mut Vec<Op>,
             },
         }
     }
+    //println!("ind is {} len is {}", ind, pr.len());
     return Some(0);
 }
 
