@@ -1,22 +1,21 @@
-/*
-fn main
-  argc 2 < err :if
-  "Your subcommand is: " puts 1 argv puts flush
-  0 exit
-fn err
-  "No subcommand provided" puts 10 putc
-  usage :
-fn usage
-  "usage: subcommand option... source..." puts 10 putc
-  "subcommand:" puts 10 putc
-  "  sim  simulate (interpret) program" puts 10 putc
-  "NI = not implemented" puts 10 putc
-  1 exit
-*/
+fn strcpy 1 pushnth 1 + nbrot
+  0
+  1 nbrot
+fn strcpy_loop
+  1 nbrot
+    1 +
+  1 nbrot
+  0 pushnth 1 + pushnth
+  2 nbrot
+  1 pushnth 1 pushnth < ! strcpy_end :if
+  strcpy_loop :
+fn strcpy_end
+  0 pushnth 1 + nbrot
+  0 pushnth 1 + 2 * pushnth
+  1 pushnth 1 + 2 * 1 + dropnth
+  :
 
-/* removes string from stack */
-fn strrem /* foo3*3 */
-  1 pushnth 1 + nbrot
+fn strrem 1 pushnth 1 + nbrot
   0 1 nbrot
 fn strrem_loop
   1 nbrot
@@ -28,8 +27,8 @@ fn strrem_loop
 fn strrem_end
   0 dropnth 0 dropnth :
 
-/* only works with right string */
 fn streq
+  1 pushnth 1 + 0 pushnth 2 + pushnth + 1 + nbrot
   0 pushnth 1 + pushnth 1 pushnth = ! streq_len_false :if
   0 pushnth 1 + dropnth
   0 1 nbrot
@@ -67,5 +66,20 @@ fn streq_len_false
   0 1 nbrot :
 
 fn main
-  call input input streq : dump
+  argc 2 < err :if
+  "Your subcommand is: " puts 1 argv puts 10 putc
+  1 argv "sim" call streq : sim-mode :if
+  "Unknown subcommand: " puts 1 argv puts 10 putc
+  1 exit
+fn err
+  "No subcommand provided" puts 10 putc
+  usage :
+fn usage
+  "usage: subcommand option... source..." puts 10 putc
+  "subcommand:" puts 10 putc
+  "  sim  simulate (interpret) program" puts 10 putc
+  "NI = not implemented" puts 10 putc
+  1 exit
+fn sim-mode
+  "sim-mode is not implemented yet" puts 10 putc
   0 exit

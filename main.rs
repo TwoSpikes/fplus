@@ -509,7 +509,7 @@ fn link(res: &Vec<Result<Op, &str>>, labels: &Vec<(&str, Option<i64>)>, main: &O
 fn sim(pr: &mut Vec<Op>,
        filename: &String,
        argv: Vec<String>) -> Option<i32> {
-    println!("simulation...");
+    println!("[simulation...]");
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
         Some(x) => match x {
