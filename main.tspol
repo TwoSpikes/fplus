@@ -70,6 +70,7 @@ fn main
   "Your subcommand is: " puts 1 argv puts 10 putc
   1 argv "sim" call streq : sim-mode :if
   1 argv "version" call streq : version :if
+  1 argv "usage" call streq : usage :if
   "Unknown subcommand: " puts 1 argv puts 10 putc
   1 exit
 fn err
