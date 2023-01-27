@@ -71,9 +71,12 @@ fn main
   1 argv "sim" call streq : sim-mode :if
   1 argv "s" call streq : sim-mode :if
   1 argv "version" call streq : version :if
+  1 argv "ver" call streq : version :if
   1 argv "v" call streq : version :if
   1 argv "usage" call streq : usage :if
   1 argv "u" call streq : usage :if
+  1 argv "help" call streq : usage :if
+  1 argv "h" call streq : usage :if
   "Unknown subcommand: " puts 1 argv puts 10 putc
   usage :
   1 exit
