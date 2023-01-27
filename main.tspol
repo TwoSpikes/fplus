@@ -69,6 +69,7 @@ fn main
   argc 2 < err :if
   "Your subcommand is: " puts 1 argv puts 10 putc
   1 argv "sim" call streq : sim-mode :if
+  1 argv "version" call streq : version :if
   "Unknown subcommand: " puts 1 argv puts 10 putc
   1 exit
 fn err
@@ -80,6 +81,12 @@ fn usage
   "  sim  simulate (interpret) program" puts 10 putc
   "NI = not implemented" puts 10 putc
   1 exit
+fn version
+  "F+, a stack-based programming language written on itself on Rust" puts 10 putc
+  "version: 0.1.0 build 0000" puts 10 putc
+  "download: https://github.com/TwoSpikes/fplus" puts 10 putc
+  "2022-2023 @ TwoSpikes" puts 10 putc
+  0 exit
 fn sim-mode
   "files: " puts 10 putc
   call 1 sim-mode-files-loop :
