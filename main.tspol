@@ -93,10 +93,14 @@ fn version
   "2022-2023 @ TwoSpikes" puts 10 putc
   0 exit
 fn sim-mode
+  argc 3 < no-files :if
   "files: " puts 10 putc
   call 1 sim-mode-files-loop :
   "sim-mode is not implemented yet" puts 10 putc
   1 exit
+fn no-files
+  "No source file provided" puts 10 putc
+  usage :
 fn sim-mode-files-loop
   1 +
   0 pushnth argc < ! 2 pushnth :if
