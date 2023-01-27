@@ -86,7 +86,9 @@ fn err
 fn usage
   "usage: subcommand option... source..." puts 10 putc
   "subcommand:" puts 10 putc
-  "  sim  simulate (interpret) program" puts 10 putc
+  "  sim, s                simulate (interpret) program" puts 10 putc
+  "  version, ver, v       print version information and exit" puts 10 putc
+  "  usage, u, help, h     print this message and exit" puts 10 putc
   "NI = not implemented" puts 10 putc
   1 exit
 fn version
