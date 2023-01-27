@@ -75,6 +75,7 @@ fn main
   1 argv "usage" call streq : usage :if
   1 argv "u" call streq : usage :if
   "Unknown subcommand: " puts 1 argv puts 10 putc
+  usage :
   1 exit
 fn err
   "No subcommand provided" puts 10 putc
