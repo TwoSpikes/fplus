@@ -327,28 +327,14 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                 
                 match state {
                     State::NONE =>
-                match val.as_str() {
-                    "" => {
-                        continue;
-                    },
-                    "+" => vec![
-                        Ok(Op::PLUS),
-                    ],
-                    "*" => vec![
-                        Ok(Op::MUL),
-                    ],
-                    "putc" => vec![
-                        Ok(Op::PRINT),
-                    ],
-                    "puts" => vec![
-                        Ok(Op::PUTS),
-                    ],
-                    "flush" => vec![
-                        Ok(Op::FLUSH),
-                    ],
-                    "input" => vec![
-                        Ok(Op::INP),
-                    ],
+                vec![match val.as_str() {
+                    "" => continue,
+                    "+" => Ok(Op::PLUS),
+                    "*" => Ok(Op::MUL),
+                    "putc" => Ok(Op::PRINT),
+                    "puts" => Ok(Op::PUTS),
+                    "flush" => Ok(Op::FLUSH),
+                    "input" => Ok(Op::INP),
                     "lbl" => {
                         state = State::LBL;
                         continue;
@@ -357,9 +343,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                         state = State::FN;
                         continue;
                     },
-                    ":if" => vec![
-                        Ok(Op::GIF),
-                    ],
+                    ":if" => Ok(Op::GIF),
                     ":" => {
                         res.push(Ok(Op::G));
                         if callstk.len() > 0 {
@@ -368,53 +352,25 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                         }
                         continue;
                     },
-                    "pushnth" => vec![
-                        Ok(Op::PUSHNTH),
-                    ],
-                    "dropnth" => vec![
-                        Ok(Op::DROPNTH),
-                    ],
-                    "nbrot" => vec![
-                        Ok(Op::NBROT),
-                    ],
-                    "<" => vec![
-                        Ok(Op::LT),
-                    ],
-                    "=" => vec![
-                        Ok(Op::EQ),
-                    ],
-                    "!" => vec![
-                        Ok(Op::NOT),
-                    ],
-                    "|" => vec![
-                        Ok(Op::OR),
-                    ],
-                    "exit" => vec![
-                        Ok(Op::EXIT),
-                    ],
-                    "???" => vec![
-                        Ok(Op::PSTKE),
-                    ],
-                    "??#" => vec![
-                        Ok(Op::PSTK),
-                    ],
-                    "dump" => vec![
-                        Ok(Op::DUMP),
-                    ],
+                    "pushnth" => Ok(Op::PUSHNTH),
+                    "dropnth" => Ok(Op::DROPNTH),
+                    "nbrot" => Ok(Op::NBROT),
+                    "<" => Ok(Op::LT),
+                    "=" => Ok(Op::EQ),
+                    "!" => Ok(Op::NOT),
+                    "|" => Ok(Op::OR),
+                    "exit" => Ok(Op::EXIT),
+                    "???" => Ok(Op::PSTKE),
+                    "??#" => Ok(Op::PSTK),
+                    "dump" => Ok(Op::DUMP),
                     "call" => {
                         callstk.push(Some(res.len()+0));
                         continue;
                     },
-                    "argc" => vec![
-                        Ok(Op::ARGC),
-                    ],
-                    "argv" => vec![
-                        Ok(Op::ARGV),
-                    ],
-                    _ => vec![
-                        Err(val.as_str()),
-                    ],
-                },
+                    "argc" => Ok(Op::ARGC),
+                    "argv" => Ok(Op::ARGV),
+                    _ => Err(val.as_str()),
+                }],
                     State::LBL => {
                         if let "main" = &*val.as_str() {
                             main = Some(res.len().try_into().unwrap());

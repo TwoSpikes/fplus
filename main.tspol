@@ -81,5 +81,12 @@ fn usage
   "NI = not implemented" puts 10 putc
   1 exit
 fn sim-mode
+  "files: " puts 10 putc
+  call 1 sim-mode-files-loop :
   "sim-mode is not implemented yet" puts 10 putc
-  0 exit
+  1 exit
+fn sim-mode-files-loop
+  1 +
+  0 pushnth argc < ! 2 pushnth :if
+  0 pushnth argv puts 10 putc
+  sim-mode-files-loop :
