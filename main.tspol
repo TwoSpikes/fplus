@@ -93,7 +93,7 @@ fn usage
   1 exit
 fn version
   "F+, a stack-based programming language written on itself on Rust" puts 10 putc
-  "version: 0.1.0 build 0000" puts 10 putc
+  "version: 0.1.0 build 00(weekly).01" puts 10 putc
   "download: https://github.com/TwoSpikes/fplus" puts 10 putc
   "2022-2023 @ TwoSpikes" puts 10 putc
   0 exit
