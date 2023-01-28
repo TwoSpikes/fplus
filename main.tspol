@@ -93,7 +93,7 @@ fn usage
   1 exit
 fn version
   "F+, a stack-based programming language written on itself on Rust" puts 10 putc
-  "version: 0.1.0 build 00(weekly).002" puts 10 putc
+  "version: 0.1.0 build 00(weekly).03" puts 10 putc
   "download: https://github.com/TwoSpikes/fplus" puts 10 putc
   "2022-2023 @ TwoSpikes" puts 10 putc
   0 exit
@@ -111,4 +111,6 @@ fn sim-mode-files-loop
   0 pushnth argc < ! 2 pushnth :if
   /* print filename */
   0 pushnth argv puts 10 putc
+  /* print file */
+  0 pushnth argv read puts
   sim-mode-files-loop :
