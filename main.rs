@@ -226,6 +226,8 @@ enum Op {
     DUMP,
     ARGC,
     ARGV,
+    //read file to string
+    READ,
 }
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
@@ -369,6 +371,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     },
                     "argc" => Ok(Op::ARGC),
                     "argv" => Ok(Op::ARGV),
+                    "read" => Ok(Op::READ),
                     _ => Err(val.as_str()),
                 }],
                     State::LBL => {
@@ -591,6 +594,24 @@ fn sim(pr: &mut Vec<Op>,
                     stack.push(j as i64);
                 }
                 stack.push(argv[a as usize].len().try_into().unwrap());
+            },
+            Op::READ => {
+                let mut filename: String = "".to_owned();
+                let filename_len: usize  = stack.pop().unwrap().try_into().unwrap();
+                let mut ind: usize = 0;
+                while {ind+=1;ind} < filename_len+1 {
+                    let i: i64 = stack.pop().unwrap();
+                    filename.push(i as u8 as char);
+                }
+                let file: String = match std::fs::read_to_string(filename) {
+                    Ok(x) => x.chars().rev().collect(),
+                    Err(x) => {
+                        stack.push(-1);
+                        continue;
+                    },
+                };
+                stack.append(&mut file.chars().map(|x| x as i64).collect::<Vec<i64>>());
+                stack.push(file.len().try_into().unwrap());
             },
             _ => {
                 println!("Unknown op: {:?}", i);
