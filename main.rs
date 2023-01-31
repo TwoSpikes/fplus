@@ -13,11 +13,14 @@ fn from(u: &String) -> Vec<i64> {
 fn usage() {
     println!("usage: subcommand option... source...");
     println!("subcommand:");
-    println!("  sim  simulate (interpret) program");
+    println!("  sim, s                simulate (interpret) program");
+    println!("  version, ver, v       print version information and exit");
+    println!("  usage, u, help, h     print this message and exit");
     println!("NI = not implemented");
 }
 #[derive(Debug)]
 enum Mode {
+    NONE,
     SIM,
 }
 fn cla(args: &Vec<String>) -> Result<Mode, i32> {
@@ -28,13 +31,21 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
         return Err({err += 1; err});
     }
     match args[1].as_str() {
-        "sim" => {
+        "sim" | "s" => {
             if args.len() <= 2 {
                 println!("No source file provided");
                 usage();
                 return Err({err+=1; err});
             }
             return Ok(Mode::SIM);
+        },
+        "version" | "ver" | "v" => {
+            println!("F+, a stack-based interpreting programming language\n\
+                     written on Rust to write compiling version of itself on itself");
+            println!("version: 0.1.0");
+            println!("download: https://github.com/TwoSpikes/fplus");
+            println!("2022-2023 @ TwoSpikes");
+            return Ok(Mode::NONE);
         },
         _ => {
             println!("Unknown subcommand: `{}`", args[1]);
@@ -207,10 +218,8 @@ enum Op {
     INP,
     PLUS,
     MUL,
-    //gotoif
-    GIF,
-    //goto
-    G,
+    GIF,    //gotoif
+    G,      //goto
     PUSHNTH,
     DROPNTH,
     NBROT,
@@ -219,15 +228,12 @@ enum Op {
     NOT,
     OR,
     EXIT,
-    //print stack
-    PSTK,
-    //print stack & exit
-    PSTKE,
+    PSTK,  //print stack
+    PSTKE, //print stack & exit
     DUMP,
     ARGC,
     ARGV,
-    //read file to string
-    READ,
+    READ,  //read file to string
 }
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
@@ -252,11 +258,13 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
     //multi-line comment
     let mut mlc: u32 = 0;
     let mut callstk: Vec<Option<usize>> = Vec::new();
-    for i in pr {
+    let mut ind: isize = -1;
+    while {ind+=1;ind} < pr.len().try_into().unwrap() {
+        let i: &Tok = &pr[ind as usize];
         let val: &String = &i.1;
         let loc: &Loc = &i.0;
         let lin: &i64 = &loc.0;
-        let ind: &i64 = &loc.1;
+        let index: &i64 = &loc.1;
         match val.as_str() {
             "/*" => {
                 mlc += 1;
@@ -364,6 +372,16 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "exit" => Ok(Op::EXIT),
                     "???" => Ok(Op::PSTKE),
                     "??#" => Ok(Op::PSTK),
+                    "addr" => Ok(Op::Push(res.len().try_into().unwrap())),
+                    "paddr" => {
+                        println!("paddr: {}", res.len());
+                        continue;
+                    },
+                    "paddre" => {
+                        println!("paddre: {}", res.len());
+                        ind = res.len().try_into().unwrap();
+                        continue;
+                    },
                     "dump" => Ok(Op::DUMP),
                     "call" => {
                         callstk.push(Some(res.len()+0));
@@ -576,7 +594,7 @@ fn sim(pr: &mut Vec<Op>,
                 return Some(a.try_into().unwrap());
             },
             Op::PSTK => {
-                println!("pstk {:?}", stack);
+                println!("pstk  {:?}", stack);
             },
             Op::PSTKE => {
                 println!("pstke {:?}", stack);
@@ -707,6 +725,9 @@ fn clah(args: &Vec<String>) {
                         }
                     }
                 }
+                },
+                Mode::NONE => {
+                    return;
                 },
                 _ => {
                     println!("Unknown mode: {:?}", mode);

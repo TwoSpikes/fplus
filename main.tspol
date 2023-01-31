@@ -1,83 +1,104 @@
-fn strcpy 1 pushnth 1 + nbrot
+/*
+fn vecrev
   0
   1 nbrot
-fn strcpy_loop
+fn vecrev_start
+  1 pushnth 1 pushnth < ! vecrev_end :if
+  1 nbrot
+    1 +
+  1 nbrot
+  0 pushnth 1 + pushnth
+  2 pushnth 1 + nbrot
+  0 pushnth 2 + dropnth
+  vecrev_start :
+fn vecrev_end
+  1 + pushnth 1 pushnth 2 + dropnth :
+
+fn max2 /* 34 35 * */
+  2 pushnth 2 pushnth < max2_else :if
+  1 dropnth :
+fn max2_else
+  2 dropnth :
+
+fn veccpy 1 pushnth 1 + nbrot
+  0
+  1 nbrot
+fn veccpy_loop
   1 nbrot
     1 +
   1 nbrot
   0 pushnth 1 + pushnth
   2 nbrot
-  1 pushnth 1 pushnth < ! strcpy_end :if
-  strcpy_loop :
-fn strcpy_end
+  1 pushnth 1 pushnth < ! veccpy_end :if
+  veccpy_loop :
+fn veccpy_end
   0 pushnth 1 + nbrot
   0 pushnth 1 + 2 * pushnth
   1 pushnth 1 + 2 * 1 + dropnth
   :
 
-fn strrem 1 pushnth 1 + nbrot
+fn vecrem 1 pushnth 1 + nbrot
   0 1 nbrot
-fn strrem_loop
+fn vecrem_loop
   1 nbrot
     1 +
   1 nbrot
   2 dropnth
-  1 pushnth 1 pushnth < ! strrem_end :if
-  strrem_loop :
-fn strrem_end
+  1 pushnth 1 pushnth < ! vecrem_end :if
+  vecrem_loop :
+fn vecrem_end
   0 dropnth 0 dropnth :
 
-fn streq
+fn veceq
   1 pushnth 1 + 0 pushnth 2 + pushnth + 1 + nbrot
-  0 pushnth 1 + pushnth 1 pushnth = ! streq_len_false :if
+  0 pushnth 1 + pushnth 1 pushnth = ! veceq_len_false :if
   0 pushnth 1 + dropnth
   0 1 nbrot
-fn streqr_loop
+fn veceqr_loop
   1 nbrot
     1 +
   1 nbrot
   /* if not equal then false */
-  2 pushnth 2 pushnth 2 pushnth 1 nbrot -1 * + 4 + pushnth = ! streq_false :if
+  2 pushnth 2 pushnth 2 pushnth 1 nbrot -1 * + 4 + pushnth = ! veceq_false :if
   2 dropnth
   0 pushnth 2 pushnth -1 * + 2 + dropnth
-  1 pushnth 1 pushnth < streqr_loop :if
-  streq_true :
+  1 pushnth 1 pushnth < veceqr_loop :if
+  veceq_true :
 
-fn streq_loop2
+fn veceq_loop2
   1 nbrot
     1 +
   1 nbrot
-  1 pushnth 1 pushnth < ! streq_end :if
+  1 pushnth 1 pushnth < ! veceq_end :if
   2 dropnth
   0 pushnth 2 pushnth -1 * + dropnth
-  streq_loop2 :
-fn streq_end
+  veceq_loop2 :
+fn veceq_end
   0 dropnth 0 dropnth 0 dropnth 0 dropnth
   1 nbrot :
-fn streq_false
+fn veceq_false
   1 nbrot -1 * + 1 + 0 1 nbrot
   0 1 pushnth 2 * 2 + nbrot
-  streq_loop2 :
-fn streq_true
+  veceq_loop2 :
+fn veceq_true
   0 dropnth 0 dropnth 1 1 nbrot :
-fn streq_len_false
-  call strrem :
-  call strrem :
+fn veceq_len_false
+  call vecrem :
+  call vecrem :
   0 1 nbrot :
 
 fn main
   argc 2 < err :if
-  "Your subcommand is: " puts 1 argv puts 10 putc
-  1 argv "sim" call streq : sim-mode :if
-  1 argv "s" call streq : sim-mode :if
-  1 argv "version" call streq : version :if
-  1 argv "ver" call streq : version :if
-  1 argv "v" call streq : version :if
-  1 argv "usage" call streq : usage :if
-  1 argv "u" call streq : usage :if
-  1 argv "help" call streq : usage :if
-  1 argv "h" call streq : usage :if
-  "Unknown subcommand: " puts 1 argv puts 10 putc
+  1 argv "sim" call veceq : sim-mode :if
+  1 argv "s" call veceq : sim-mode :if
+  1 argv "version" call veceq : version :if
+  1 argv "ver" call veceq : version :if
+  1 argv "v" call veceq : version :if
+  1 argv "usage" call veceq : usage :if
+  1 argv "u" call veceq : usage :if
+  1 argv "help" call veceq : usage :if
+  1 argv "h" call veceq : usage :if
+  "Unknown subcommand: `" puts 1 argv puts '` putc 10 putc
   usage :
   1 exit
 fn err
@@ -92,8 +113,9 @@ fn usage
   "NI = not implemented" puts 10 putc
   1 exit
 fn version
-  "F+, a stack-based programming language written on itself on Rust" puts 10 putc
-  "version: 0.1.0 build 00(weekly).03" puts 10 putc
+  "F+, a stack-based programming language" puts 10 putc
+  "written on itself on Rust" puts 10 putc
+  "version: 0.1.0 alpha05" puts 10 putc
   "download: https://github.com/TwoSpikes/fplus" puts 10 putc
   "2022-2023 @ TwoSpikes" puts 10 putc
   0 exit
@@ -113,4 +135,64 @@ fn sim-mode-files-loop
   0 pushnth argv puts 10 putc
   /* print file */
   0 pushnth argv read puts
+    0 pushnth argv read
+    0 pushnth 1 + pushnth argv
+  call lex :
+  ???
   sim-mode-files-loop :
+*/
+
+/* return elements count in matrix */
+fn vec-of-vec-len-sum
+  1 4 pushnth
+  vec-of-vec-len-sum-loop :
+fn vec-of-vec-len-sum-loop
+  1 pushnth 4 pushnth < ! vec-of-vec-len-sum-end :if
+  1 nbrot
+    1 +
+  1 nbrot
+  0 pushnth 5 + 2 pushnth -1 + + pushnth +
+  vec-of-vec-len-sum-loop :
+fn vec-of-vec-len-sum-end
+  3 dropnth 1 dropnth 1 nbrot :
+
+/* copy the matrix */
+fn vec-of-vec-cpy /* bar3baz33*11<3 */
+  0
+  vec-of-vec-cpy-loop :
+fn vec-of-vec-cpy-loop
+  1 +
+  "vec-of-vec-cpy-loop is not implemented yet" puts 10 putc
+  ???
+  0 pushnth 3 pushnth < ! vec-of-vec-cpy-end :if
+  vec-of-vec-cpy-loop :
+fn vec-of-vec-cpy-end
+  "vec-of-vec-cpy-end" puts 10 putc
+  ???
+  
+fn main
+    "foo" "bar" "baz" 3 ??#
+  call vec-of-vec-cpy :
+  "main" puts 10 putc
+  ???
+
+/*
+fn vecpushnth ???
+
+fn main
+  "ab" "cd" "ee" "zy"
+  call 2 vecpushnth :
+  puts puts puts puts puts 10 putc
+  0 exit
+*/
+
+/*
+fn lex
+  1 pushnth 1 + nbrot
+  "[lexing " puts call veccpy : puts '] putc 10 putc
+  /* 0 pushnth 1 + pushnth
+  1 pushnth 2 + dropnth
+  1 pushnth 0 pushnth 3 + pushnth + 2 + nbrot */
+  ??# call 0 vecpushnth : ???
+  :
+*/
