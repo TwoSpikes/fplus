@@ -1,4 +1,3 @@
-/*
 fn vecrev
   0
   1 nbrot
@@ -64,7 +63,6 @@ fn veceqr_loop
   0 pushnth 2 pushnth -1 * + 2 + dropnth
   1 pushnth 1 pushnth < veceqr_loop :if
   veceq_true :
-
 fn veceq_loop2
   1 nbrot
     1 +
@@ -87,7 +85,7 @@ fn veceq_len_false
   call vecrem :
   0 1 nbrot :
 
-fn main
+fn compiler
   argc 2 < err :if
   1 argv "sim" call veceq : sim-mode :if
   1 argv "s" call veceq : sim-mode :if
@@ -108,14 +106,14 @@ fn usage
   "usage: subcommand option... source..." puts 10 putc
   "subcommand:" puts 10 putc
   "  sim, s                simulate (interpret) program" puts 10 putc
-  "  version, ver, v       print version information and exit" puts 10 putc
+  "  version, ver, v       print version inforvec2ion and exit" puts 10 putc
   "  usage, u, help, h     print this message and exit" puts 10 putc
   "NI = not implemented" puts 10 putc
   1 exit
 fn version
   "F+, a stack-based programming language" puts 10 putc
   "written on itself on Rust" puts 10 putc
-  "version: 0.1.0 alpha05" puts 10 putc
+  "version: 0.1.0 alpha07" puts 10 putc
   "download: https://github.com/TwoSpikes/fplus" puts 10 putc
   "2022-2023 @ TwoSpikes" puts 10 putc
   0 exit
@@ -137,42 +135,50 @@ fn sim-mode-files-loop
   0 pushnth argv read puts
     0 pushnth argv read
     0 pushnth 1 + pushnth argv
-  call lex :
+  /* call lex : */
   ???
   sim-mode-files-loop :
+
+/*
+*  2dvector is not the same as matrix
 */
 
-/* return elements count in matrix */
-fn vec-of-vec-len-sum
+/* return elements count in 2dvector */
+fn vec2len-sum
   1 4 pushnth
-  vec-of-vec-len-sum-loop :
-fn vec-of-vec-len-sum-loop
-  1 pushnth 4 pushnth < ! vec-of-vec-len-sum-end :if
+  vec2len-sum-loop :
+fn vec2len-sum-loop
+  1 pushnth 4 pushnth < ! vec2len-sum-end :if
   1 nbrot
     1 +
   1 nbrot
   0 pushnth 5 + 2 pushnth -1 + + pushnth +
-  vec-of-vec-len-sum-loop :
-fn vec-of-vec-len-sum-end
+  vec2len-sum-loop :
+fn vec2len-sum-end
   3 dropnth 1 dropnth 1 nbrot :
 
-/* copy the matrix */
-fn vec-of-vec-cpy /* bar3baz33*11<3 */
+/* remove the 2dvector */
+fn vec2rem
+  "vec2rem is not implemented yet cuz shvecrem is not implemented yet" puts 10 putc
+  1 exit
+
+/* copy the 2dvector */
+fn vec2cpy /* bar3baz33*11<3 */
   0
-  vec-of-vec-cpy-loop :
-fn vec-of-vec-cpy-loop
+  vec2cpy-loop :
+fn vec2cpy-loop
   1 +
-  "vec-of-vec-cpy-loop is not implemented yet" puts 10 putc
+  "vec2cpy-loop is not implemented yet" puts 10 putc
   ???
-  0 pushnth 3 pushnth < ! vec-of-vec-cpy-end :if
-  vec-of-vec-cpy-loop :
-fn vec-of-vec-cpy-end
-  "vec-of-vec-cpy-end" puts 10 putc
+  0 pushnth 3 pushnth < ! vec2cpy-end :if
+  vec2cpy-loop :
+fn vec2cpy-end
+  "vec2cpy-end" puts 10 putc
   ???
   
 fn main
     "foo" "bar" "baz" 3 ??#
-  call vec-of-vec-cpy :
+  call vec2cpy :
   "main" puts 10 putc
   ???
 
@@ -196,3 +202,14 @@ fn lex
   ??# call 0 vecpushnth : ???
   :
 */
+
+
+/* remove a vector with stack shift (from right). Needed for ve2rem. */
+fn shvecrem
+  "shvecrem is not implemented yet" puts 10 putc
+  1 exit
+
+/* copy a vector with stack shift to the top of the stack with shift from right. Needed for vec2cpy. */
+fn shveccpy
+  "shveccpy is not implemented yet" puts 10 putc
+  1 exit
