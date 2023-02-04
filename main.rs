@@ -265,14 +265,17 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
         let loc: &Loc = &i.0;
         let lin: &i64 = &loc.0;
         let index: &i64 = &loc.1;
+        let parseerr = |msg: &str| {
+            println!("{}:{}:{}: {}", filename, lin, index, msg);
+            None
+        };
         match val.as_str() {
             "/*" => {
                 mlc += 1;
             },
             "*/" => {
                 if mlc <= 0 {
-                    println!("comment underflow!");
-                    return None;
+                    return parseerr("comment underflow!");
                 }
                 mlc -= 1;
                 continue;
@@ -491,6 +494,7 @@ fn sim(pr: &mut Vec<Op>,
     let main: i64 = match pr.pop() {
         Some(x) => match x {
             Op::Push(y) => {
+                //println!("sim: debug: main is {}", y);
                 y
             },
             _ => {
@@ -504,7 +508,7 @@ fn sim(pr: &mut Vec<Op>,
     while ind != pr.len().try_into().unwrap() {
         ind += 1;
         let i: &Op = &pr[{let tmp: usize = <i64 as TryInto<usize>>::try_into(ind).unwrap(); if tmp >= pr.len() {break;} else {tmp}}];
-        //println!("{}: sim={:?} stk={:?}", ind, i, stack);
+        //println!("{}: {:?}\n  {:?}", ind, i, stack);
         match i {
             Op::Push(x) => {
                 stack.push(*x);

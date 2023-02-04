@@ -36,7 +36,8 @@ fn veccpy_end
   1 pushnth 1 + 2 * 1 + dropnth
   :
 
-fn vecrem 1 pushnth 1 + nbrot
+fn vecrem
+  1 pushnth 1 + nbrot
   0 1 nbrot
 fn vecrem_loop
   1 nbrot
@@ -85,6 +86,23 @@ fn veceq_len_false
   call vecrem :
   0 1 nbrot :
 
+/* copy a vector with stack shift to the top of the stack with shift from right. Needed for vec2cpy. */
+fn shveccpy /* foo3xxxx4*1 */
+  0
+  shveccpy-loop :
+fn shveccpy-loop
+  1 +
+  0 pushnth 2 * 3 pushnth + 2 + pushnth
+  3 pushnth 2 pushnth + 2 + nbrot
+  0 pushnth 0 pushnth 4 pushnth + 4 + pushnth < ! shveccpy-end :if
+  shveccpy-loop :
+fn shveccpy-end
+  2 pushnth
+  3 dropnth
+  1 + nbrot
+  ???
+  :
+
 fn compiler
   argc 2 < err :if
   1 argv "sim" call veceq : sim-mode :if
@@ -106,14 +124,14 @@ fn usage
   "usage: subcommand option... source..." puts 10 putc
   "subcommand:" puts 10 putc
   "  sim, s                simulate (interpret) program" puts 10 putc
-  "  version, ver, v       print version inforvec2ion and exit" puts 10 putc
+  "  version, ver, v       print version information and exit" puts 10 putc
   "  usage, u, help, h     print this message and exit" puts 10 putc
   "NI = not implemented" puts 10 putc
   1 exit
 fn version
   "F+, a stack-based programming language" puts 10 putc
   "written on itself on Rust" puts 10 putc
-  "version: 0.1.0 alpha07" puts 10 putc
+  "version: 0.1.0 alpha08" puts 10 putc
   "download: https://github.com/TwoSpikes/fplus" puts 10 putc
   "2022-2023 @ TwoSpikes" puts 10 putc
   0 exit
@@ -162,25 +180,64 @@ fn vec2rem
   "vec2rem is not implemented yet cuz shvecrem is not implemented yet" puts 10 putc
   1 exit
 
-/* copy the 2dvector */
-fn vec2cpy /* bar3baz33*11<3 */
-  0
+/*
+* push the 2dvector
+*
+* Example:
+*  stack before:
+*   "foo" "bar" "baz" 3
+*  stack after:
+*   "foo" "bar" "baz" 3 "foo" "bar" "baz" 3
+*/
+fn vec2cpy
+"vec2cpy" puts 10 putc
+  0 3 pushnth
   vec2cpy-loop :
 fn vec2cpy-loop
-  1 +
-  "vec2cpy-loop is not implemented yet" puts 10 putc
+  1 nbrot
+    1 +
+  1 nbrot
+  ??#
+  0 pushnth 1 +
+  call shvecdup : ??#
+  3
+  call vec1nbrot :
   ???
-  0 pushnth 3 pushnth < ! vec2cpy-end :if
+  1 pushnth 4 pushnth < ! vec2cpy-end :if
+  0 pushnth 2 pushnth + pushnth 1 + 0 + pushnth +
+  ??#
   vec2cpy-loop :
 fn vec2cpy-end
   "vec2cpy-end" puts 10 putc
   ???
-  
+
 fn main
     "foo" "bar" "baz" 3 ??#
   call vec2cpy :
   "main" puts 10 putc
   ???
+
+/*
+* push a vec beginning from the nth stack element
+*
+* Example:
+*  stack before:
+*   "foo" 'x 'y 'z 3
+*  stack after:
+*   "foo" 'x 'y 'z "foo"
+*/
+fn shvecdup
+  1 nbrot
+  0
+  shvecdup-loop :
+fn shvecdup-loop
+  1 +
+  /* copy element */
+  1 pushnth 1 pushnth 2 * + 2 + pushnth 2 2 pushnth + nbrot
+  1 pushnth 1 pushnth + 3 + pushnth 1 pushnth 1 nbrot < ! shvecdup-end :if
+  shvecdup-loop :
+fn shvecdup-end
+  1 dropnth 1 nbrot :
 
 /*
 fn vecpushnth ???
@@ -191,7 +248,6 @@ fn main
   puts puts puts puts puts 10 putc
   0 exit
 */
-
 /*
 fn lex
   1 pushnth 1 + nbrot
@@ -204,12 +260,29 @@ fn lex
 */
 
 
-/* remove a vector with stack shift (from right). Needed for ve2rem. */
+/* remove a vector with stack shift (from right). Needed for vec2rem. */
 fn shvecrem
   "shvecrem is not implemented yet" puts 10 putc
   1 exit
 
-/* copy a vector with stack shift to the top of the stack with shift from right. Needed for vec2cpy. */
-fn shveccpy
-  "shveccpy is not implemented yet" puts 10 putc
-  1 exit
+/*
+* shift to left vec
+*
+* Example:
+*  stack before:
+*   'x 'y 'z "foo" 2
+*  stack after:
+*   'x "foo" 'y 'z
+*/
+fn vec1nbrot /* xyzfoo*31 */
+  1 nbrot 0
+  vec1nbrot-loop :
+fn vec1nbrot-loop
+  1 +
+  4 pushnth 5 dropnth
+  4 pushnth 3 pushnth + 3 + nbrot
+  0 pushnth 4 pushnth < ! vec1nbrot-end :if
+  vec1nbrot-loop :
+fn vec1nbrot-end
+  3 pushnth 4 dropnth 1 dropnth 1 nbrot 1 + nbrot
+  :
