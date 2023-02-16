@@ -209,7 +209,7 @@ fn strtoi64(x: &String) -> Option<i64> {
     } * res);
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum Op {
     Push(i64),
     PRINT,
@@ -230,19 +230,20 @@ enum Op {
     EXIT,
     PSTK,  //print stack
     PSTKE, //print stack & exit
+    DBGMSG(Box<str>),
     DUMP,
     ARGC,
     ARGV,
     READ,  //read file to string
 }
 //////////////////////////////////////////////////
-fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
+fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
     if false {
         println!("parsing: loc={:?} val={:?}", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
     } else {
         println!("parsing...");
     }
-    let mut res: Vec<Result<Op, &str>> = vec![];
+    let mut res: Vec<(Result<Op, &str>, Loc)> = vec![];
     #[derive(Debug)]
     enum State {
         NONE,
@@ -250,7 +251,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
         LBL,
         //label with definition
         FN,
-        OPER,
+        DBGMSG,
     }
     let mut state: State = State::NONE;
     let mut labels: Vec<(&str, Option<i64>)> = Vec::new();
@@ -290,10 +291,10 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
 
         res.append(&mut if val.as_str().chars().nth(0) == Some('\'') {
             vec![
-                Ok(Op::Push(match val.as_str().chars().nth(1) {
+                (Ok(Op::Push(match val.as_str().chars().nth(1) {
                     Some(x) => x,
                     None => ' ',
-                } as i64)),
+                } as i64)), *loc),
             ]
         } else if val.chars().nth(0) == Some('\"') {
             let mut postfix: Option<usize> = None;
@@ -318,12 +319,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
             };
             let tmpStr: String = tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>();
             let tmpstr: &str = tmpStr.as_str();
-            let mut tmpres: Vec<Result<Op, &str>> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| Ok(Op::Push(x as i64))).collect();
+            let mut tmpres: Vec<(Result<Op, &str>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
             //println!("postfix is {} tmp is {:?}", postfix.unwrap(), tmp);
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
-                "" => tmpres.push(Ok(Op::Push((val.len()-2).try_into().unwrap()))),
+                "" => tmpres.push((Ok(Op::Push((val.len()-2).try_into().unwrap())), Loc(-1,-1))),
                 "r" => {},
-                "c" => tmpres.push(Ok(Op::Push(0))),
+                "c" => tmpres.push((Ok(Op::Push(0)), Loc(-1,-1))),
                 _ => {
                     println!("custom string postfixes are not implemented yet: {}", tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
                     return None;
@@ -333,14 +334,14 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
         } else {match strtoi64(val) {
             Some(x) => {
                 vec![
-                    Ok(Op::Push(x)),
+                    (Ok(Op::Push(x)), *loc),
                 ]
             },
             None => {
                 
                 match state {
                     State::NONE =>
-                vec![match val.as_str() {
+                vec![(match val.as_str() {
                     "" => continue,
                     "+" => Ok(Op::PLUS),
                     "*" => Ok(Op::MUL),
@@ -358,10 +359,10 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     },
                     ":if" => Ok(Op::GIF),
                     ":" => {
-                        res.push(Ok(Op::G));
+                        res.push((Ok(Op::G), *loc));
                         if callstk.len() > 0 {
                             let callstktmp: i64 = callstk.pop().unwrap().unwrap().try_into().unwrap();
-                            res.insert(callstktmp as usize, Ok(Op::Push(callstktmp + (res.len() as i64 - callstktmp) + 1)));
+                            res.insert(callstktmp as usize, (Ok(Op::Push(callstktmp + (res.len() as i64 - callstktmp) + 1)), *loc));
                         }
                         continue;
                     },
@@ -373,8 +374,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "!" => Ok(Op::NOT),
                     "|" => Ok(Op::OR),
                     "exit" => Ok(Op::EXIT),
-                    "???" => Ok(Op::PSTKE),
                     "??#" => Ok(Op::PSTK),
+                    "???" => Ok(Op::PSTKE),
+                    "dbgmsg" => {
+                        state = State::DBGMSG;
+                        continue;
+                    },
                     "addr" => Ok(Op::Push(res.len().try_into().unwrap())),
                     "paddr" => {
                         println!("paddr: {}", res.len());
@@ -394,7 +399,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                     "argv" => Ok(Op::ARGV),
                     "read" => Ok(Op::READ),
                     _ => Err(val.as_str()),
-                }],
+                }, *loc)],
                     State::LBL => {
                         if let "main" = &*val.as_str() {
                             main = Some(res.len().try_into().unwrap());
@@ -418,7 +423,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
                         labels[pos].1 = Some(res.len().try_into().unwrap());
                         state = State::NONE;
                         continue;
-                    }
+                    },
+                    State::DBGMSG => {
+                        res.push((Ok(Op::DBGMSG(val.as_str().into())), *loc));
+                        state = State::NONE;
+                        continue;
+                    },
                     _ => {
                         println!("Unknown state of parser (debug): `{:?}`", state);
                         return None;
@@ -441,15 +451,16 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<Op>> {
         },
     }
 }
-fn link(res: &Vec<Result<Op, &str>>, labels: &Vec<(&str, Option<i64>)>, main: &Option<usize>) -> Option<Vec<Op>> {
+fn link(res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&str, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
     println!("  linking...");
-    let mut linkres: Vec<Op> = Vec::new();
+    let mut linkres: Vec<(Op, Loc)> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {
         ind += 1;
-        match i {
+        let loc: Loc = i.1;
+        match &i.0 {
             //simple operation
-            Ok(x) => linkres.push(*x),
+            Ok(x) => linkres.push((x.clone(), i.1)),
             //found label call
             Err(x) => {
                 let mut ret: i64 = -1;
@@ -458,9 +469,9 @@ fn link(res: &Vec<Result<Op, &str>>, labels: &Vec<(&str, Option<i64>)>, main: &O
                     //if found by name
                     if String::from(j.0).eq(&String::from(*x)) {
                         match j.1 {
-                            //found defenition
+                            //found definition
                             Some(def) => {
-                                linkres.push(Op::Push(def));
+                                linkres.push((Op::Push(def), loc));
                             },
                             //not found definition
                             None => {
@@ -479,20 +490,22 @@ fn link(res: &Vec<Result<Op, &str>>, labels: &Vec<(&str, Option<i64>)>, main: &O
             },
         };
     }
-    linkres.push(Op::Push(match main {
+    linkres.push((Op::Push(match main {
         Some(x) => *x as i64,
         None => 0,
-    }));
+    }), Loc(-2,-2)));
     return Some(linkres);
 }
 
-fn sim(pr: &mut Vec<Op>,
+const SIM_DEBUG: bool = true;
+
+fn sim(pr: &mut Vec<(Op, Loc)>,
        filename: &String,
        argv: Vec<String>) -> Option<i32> {
     println!("[simulation...]");
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
-        Some(x) => match x {
+        Some(x) => match x.0 {
             Op::Push(y) => {
                 //println!("sim: debug: main is {}", y);
                 y
@@ -507,8 +520,14 @@ fn sim(pr: &mut Vec<Op>,
     let mut ind: i64 = main - 1;
     while ind != pr.len().try_into().unwrap() {
         ind += 1;
-        let i: &Op = &pr[{let tmp: usize = <i64 as TryInto<usize>>::try_into(ind).unwrap(); if tmp >= pr.len() {break;} else {tmp}}];
+        let i: &Op = &pr[{let tmp: usize = ind as usize; if tmp >= pr.len() {break;} else {tmp}}].0;
         //println!("{}: {:?}\n  {:?}", ind, i, stack);
+        let loc: &Loc = &pr[ind as usize].1;
+        let lin: i64 = loc.0;
+        let index: i64 = loc.1;
+        if SIM_DEBUG {
+            println!("---- {},{}:{:?} ----\n{:?}", lin, index, i, stack);
+        }
         match i {
             Op::Push(x) => {
                 stack.push(*x);
@@ -562,6 +581,10 @@ fn sim(pr: &mut Vec<Op>,
             },
             Op::PUSHNTH => {
                 let a: i64 = stack.pop().unwrap();
+                if a >= stack.len().try_into().unwrap() {
+                    println!("{}:{}: pushnth overflow: {} (stack length is {})", lin, index, a, stack.len());
+                    return None;
+                }
                 let b: i64 = stack[stack.len()-1-a as usize];
                 stack.push(b);
             },
@@ -598,10 +621,14 @@ fn sim(pr: &mut Vec<Op>,
                 return Some(a.try_into().unwrap());
             },
             Op::PSTK => {
-                println!("pstk  {:?}", stack);
+                if !SIM_DEBUG {
+                    println!("{}:{}: pstk  {:?}", lin, index, stack);
+                }
             },
             Op::PSTKE => {
-                println!("pstke {:?}", stack);
+                if !SIM_DEBUG {
+                    println!("{}:{}: pstke {:?}", lin, index, stack);
+                }
                 return None;
             },
             Op::DUMP => {
