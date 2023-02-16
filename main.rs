@@ -1,6 +1,49 @@
 use std::io::Write;
 use std::convert::TryInto;
 
+fn repr(string: &str) -> String {
+    let mut res: String = "\"".to_owned();
+    for i in string.chars() {
+        res += &match i {
+            '\n' => vec!['\\', 'n'],
+            '\t' => vec!['\\', 't'],
+            '\\' => vec!['\\', '\\'],
+            _ => vec![i],
+        }.iter().collect::<String>();
+    }
+    res.push('\"');
+    return res;
+}
+fn urepr(string: &str) -> String {
+    let mut res: String = "".to_owned();
+    let mut ind: isize = -1;
+    while {ind+=1;ind} < string.len() as isize {
+        let i: char = match string.chars().nth(ind as usize) {
+            Some(x) => x,
+            None => break,
+        };
+        res += &match i {
+            '\\' => {
+                res += &vec![match match string.chars().nth((ind+1) as usize) {
+                    Some(x) => x,
+                    _ => panic!("Escape character not found"),
+                }{
+                'n' => '\n',
+                't' => '\t',
+                '\\' => '\\',
+                _ => {
+                    panic!("Unknown escaping character: {}", vec![i, string.chars().nth((ind+1) as usize).unwrap()].iter().collect::<String>());
+                },
+            }].iter().collect::<String>();
+                ind += 1;
+                continue;
+            },
+            _ => vec![i],
+        }.iter().collect::<String>();
+    }
+    return res;
+}
+
 fn from(u: &String) -> Vec<i64> {
     let len: usize = u.len();
     let mut res: Vec<i64> = Vec::with_capacity(len);
@@ -142,7 +185,7 @@ fn lex(file: &String) -> Retlex {
                 return E;
             },
         }
-        //if '\n' then just push it
+        //'\n' then push '\n'
         if i == '\n' {
             loc.0 += 1;
             loc.1  = 1;
@@ -151,7 +194,7 @@ fn lex(file: &String) -> Retlex {
             ploc = loc.clone();
             continue;
         }
-        //if ' ' or '\t' then push tmp
+        //' ' or '\t' then push tmp
         if i == ' ' || i == '\t' {
             if tmp.len() > 0 {
                 res.push(Tok(ploc, tmp.to_owned()));
@@ -239,9 +282,9 @@ enum Op {
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
     if false {
-        println!("parsing: loc={:?} val={:?}", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
+        println!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
     } else {
-        println!("parsing...");
+        println!("[parsing...]");
     }
     let mut res: Vec<(Result<Op, &str>, Loc)> = vec![];
     #[derive(Debug)]
@@ -317,12 +360,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                 }
                 res
             };
-            let tmpStr: String = tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>();
+            let tmpStr: String = urepr(tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>().as_str());
             let tmpstr: &str = tmpStr.as_str();
             let mut tmpres: Vec<(Result<Op, &str>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
             //println!("postfix is {} tmp is {:?}", postfix.unwrap(), tmp);
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
-                "" => tmpres.push((Ok(Op::Push((val.len()-2).try_into().unwrap())), Loc(-1,-1))),
+                "" => tmpres.push((Ok(Op::Push((tmpStr.len()).try_into().unwrap())), Loc(-1,-1))),
                 "r" => {},
                 "c" => tmpres.push((Ok(Op::Push(0)), Loc(-1,-1))),
                 _ => {
@@ -440,7 +483,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
     //to avoid not founding labels
     labels.push(("", None));
 
-    match link(&res, &labels, &main) {
+    match link(&filename, &res, &labels, &main) {
         Some(x) => {
             println!("  [Linking succed]");
             Some(x)
@@ -451,13 +494,15 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
         },
     }
 }
-fn link(res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&str, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
-    println!("  linking...");
+fn link(filename: &String, res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&str, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
+    println!("[linking...]");
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {
         ind += 1;
         let loc: Loc = i.1;
+        let lin: i64 = loc.0;
+        let index: i64 = loc.1;
         match &i.0 {
             //simple operation
             Ok(x) => linkres.push((x.clone(), i.1)),
@@ -475,7 +520,7 @@ fn link(res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&str, Option<i64>)>, m
                             },
                             //not found definition
                             None => {
-                                println!("label is declared, but has no definition");
+                                println!("{}:{}:{}: label is declared, but has no definition", filename, lin, index);
                                 return None;
                             }
                         }
@@ -484,7 +529,7 @@ fn link(res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&str, Option<i64>)>, m
                     }
                 }
                 if ret >= <usize as TryInto<i64>>::try_into(labels.len()).unwrap() - 1 {
-                    println!("label not found: {x}");
+                    println!("{}:{}:{}: label not found: {}", filename, lin, index, repr(x));
                     return None;
                 }
             },
@@ -497,7 +542,7 @@ fn link(res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&str, Option<i64>)>, m
     return Some(linkres);
 }
 
-const SIM_DEBUG: bool = true;
+const SIM_DEBUG: bool = false;
 
 fn sim(pr: &mut Vec<(Op, Loc)>,
        filename: &String,
@@ -773,6 +818,10 @@ fn clah(args: &Vec<String>) {
             println!("]");
         }
     }
+}
+
+fn _test() {
+    println!("{}", urepr("Hello, world\\"));
 }
 
 fn _main() {
