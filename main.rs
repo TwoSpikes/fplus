@@ -19,14 +19,14 @@ fn repr(string: &str) -> String {
 fn urepr(string: &str) -> String {
     let mut res: String = "".to_owned();
     let mut ind: isize = -1;
-    while {ind+=1;ind} < string.len() as isize {
+    while {ind+=1;ind} < string.len()as isize {
         let i: char = match string.chars().nth(ind as usize) {
             Some(x) => x,
             None => break,
         };
         res += &match i {
             '\\' => {
-                res += &vec![match match string.chars().nth((ind+1) as usize) {
+                res += &vec![match match string.chars().nth((ind+1)as usize) {
                     Some(x) => x,
                     _ => panic!("Escape character not found"),
                 }{
@@ -36,7 +36,7 @@ fn urepr(string: &str) -> String {
                 '\'' => '\'',
                 '\"' => '\"',
                 _ => {
-                    panic!("Unknown escaping character: {}", vec![i, string.chars().nth((ind+1) as usize).unwrap()].iter().collect::<String>());
+                    panic!("Unknown escaping character: {}", vec![i, string.chars().nth((ind+1)as usize).unwrap()].iter().collect::<String>());
                 },
             }].iter().collect::<String>();
                 ind += 1;
@@ -307,7 +307,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
     let mut mlc: u32 = 0;
     let mut callstk: Vec<Option<usize>> = Vec::new();
     let mut ind: isize = -1;
-    while {ind+=1;ind} < pr.len().try_into().unwrap() {
+    while {ind+=1;ind} < pr.len()as isize{
         let i: &Tok = &pr[ind as usize];
         let val: &String = &i.1;
         let loc: &Loc = &i.0;
@@ -378,7 +378,6 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
             let tmpStr: String = urepr(tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>().as_str());
             let tmpstr: &str = tmpStr.as_str();
             let mut tmpres: Vec<(Result<Op, &str>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
-            //println!("postfix is {} tmp is {:?}", postfix.unwrap(), tmp);
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
                 "" => tmpres.push((Ok(Op::Push((tmpStr.len()).try_into().unwrap())), Loc(-1,-1))),
                 "r" => {},
@@ -395,9 +394,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                     (Ok(Op::Push(x)), *loc),
                 ]
             },
-            None => {
-                
-                match state {
+            None => { match state {
                     State::NONE =>
                 vec![(match val.as_str() {
                     "" => continue,
@@ -419,8 +416,8 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                     ":" => {
                         res.push((Ok(Op::G), *loc));
                         if callstk.len() > 0 {
-                            let callstktmp: i64 = callstk.pop().unwrap().unwrap().try_into().unwrap();
-                            res.insert(callstktmp as usize, (Ok(Op::Push(callstktmp + (res.len() as i64 - callstktmp) + 1)), *loc));
+                            let callstktmp: i64 = callstk.pop().unwrap().unwrap()as i64;
+                            res.insert(callstktmp as usize, (Ok(Op::Push(callstktmp + (res.len()as i64 - callstktmp) + 1)), *loc));
                         }
                         continue;
                     },
@@ -438,14 +435,14 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                         state = State::DBGMSG;
                         continue;
                     },
-                    "addr" => Ok(Op::Push(res.len().try_into().unwrap())),
+                    "addr" => Ok(Op::Push(res.len()as i64)),
                     "paddr" => {
                         println!("paddr: {}", res.len());
                         continue;
                     },
                     "paddre" => {
                         println!("paddre: {}", res.len());
-                        ind = res.len().try_into().unwrap();
+                        ind = res.len()as isize;
                         continue;
                     },
                     "dump" => Ok(Op::DUMP),
@@ -460,7 +457,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                 }, *loc)],
                     State::LBL => {
                         if let "main" = &*val.as_str() {
-                            main = Some(res.len().try_into().unwrap());
+                            main = Some(res.len()as usize);
                         }
                         labels.push((val.as_str(), None));
                         state = State::NONE;
@@ -471,14 +468,14 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                             Some(pos) => pos,
                             None => {
                         if let "main" = &*val.as_str() {
-                            main = Some(res.len().try_into().unwrap());
+                            main = Some(res.len()as usize);
                         }
-                                labels.push((val.as_str(), Some(res.len().try_into().unwrap())));
+                                labels.push((val.as_str(), Some(res.len()as i64)));
                                 state = State::NONE;
                                 continue;
                             }
                         };
-                        labels[pos].1 = Some(res.len().try_into().unwrap());
+                        labels[pos].1 = Some(res.len()as i64);
                         state = State::NONE;
                         continue;
                     },
@@ -553,7 +550,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&st
                         ret += 1;
                     }
                 }
-                if ret >= <usize as TryInto<i64>>::try_into(labels.len()).unwrap() - 1 {
+                if ret >= labels.len()as i64 - 1 {
                     println!("{}:{}:{}: label not found: {}", filename, lin, index, repr(x));
                     return None;
                 }
@@ -588,10 +585,9 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
         None => return Some(0),
     };
     let mut ind: i64 = main - 1;
-    while ind != pr.len().try_into().unwrap() {
+    while ind != pr.len()as i64 {
         ind += 1;
         let i: &Op = &pr[{let tmp: usize = ind as usize; if tmp >= pr.len() {break;} else {tmp}}].0;
-        //println!("{}: {:?}\n  {:?}", ind, i, stack);
         let loc: &Loc = &pr[ind as usize].1;
         let lin: i64 = loc.0;
         let index: i64 = loc.1;
@@ -603,15 +599,17 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 stack.push(*x);
             },
             Op::PRINT => {
-                print!("{}", char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap());
+                print!("{}", char::from_u32(stack.pop().unwrap()as u32).unwrap());
             },
             Op::PUTS => {
-                //println!("debug: puts: {:?}", stack);
-                let strlen: usize = stack.pop().unwrap().try_into().unwrap();
+                if SIM_DEBUG {
+                    println!("debug: puts: {:?}", stack);
+                }
+                let strlen: usize = stack.pop().unwrap()as usize;
                 let mut i: usize = 0;
                 let mut string: String = "".to_owned();
                 while i < strlen {
-                    let chr = char::from_u32(stack.pop().unwrap().try_into().unwrap()).unwrap();
+                    let chr = char::from_u32(stack.pop().unwrap()as u32).unwrap();
                     string.push(chr);
                     i += 1;
                 }
@@ -625,28 +623,27 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 let stdin = std::io::stdin();
                 stdin.read_line(&mut input);
                 stack.append(&mut from(&input).iter().rev().map(|x| *x).collect::<Vec<i64>>());
-                stack.push(input.len().try_into().unwrap());
+                stack.push(input.len()as i64);
             },
             Op::PLUS => {
-                let a: i64 = stack.pop().unwrap();
-                let b: i64 = stack.pop().unwrap();
+                let a: i64 = stack.pop().expect("Operand `a` for PLUS intrinsic not found");
+                let b: i64 = stack.pop().expect("Operand `b` for PLUS intrinsic not found");
                 stack.push(a + b)
             },
             Op::MUL => {
-                let a: i64 = stack.pop().unwrap();
-                let b: i64 = stack.pop().unwrap();
+                let a: i64 = stack.pop().expect("Operand `a` for MUL intrinsic not found");
+                let b: i64 = stack.pop().expect("Operand `b` for MUL intrinsic not found");
                 stack.push(a * b)
             },
             Op::GIF => {
-                let addr: i64 = stack.pop().unwrap() - 1;
-                let cond: i64 = stack.pop().unwrap();
+                let addr: i64 = stack.pop().expect("Operand `addr` for GIF intrinsic not found")-1;
+                let cond: i64 = stack.pop().expect("Operand `cond` for GIF intrinsic not found");
                 if cond != 0 {
                     ind = addr.try_into().unwrap();
                 }
             },
             Op::G => {
-                let addr: i64 = stack.pop().unwrap() - 1;
-                //println!("debug: g: addr={} stk={:?}", addr, stack);
+                let addr: i64 = stack.pop().expect("Operand `addr` for G intrinsic not found")-1;
                 ind = addr.try_into().unwrap();
             },
             Op::PUSHNTH => {
@@ -702,7 +699,7 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 return None;
             },
             Op::DUMP => {
-                println!("dump: {}", stack.pop().unwrap());
+                println!("dump: {}", stack.pop().expect("Operand for DUMP intrinsic not found"));
             },
             Op::ARGC => {
                 stack.push(argv.len().try_into().unwrap());
@@ -741,7 +738,6 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
             },
         }
     }
-    //println!("ind is {} len is {}", ind, pr.len());
     return Some(0);
 }
 
