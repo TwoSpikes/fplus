@@ -1,2 +1,2 @@
 fn main
-  "fuck\n\n\n" puts
+  dbgmsg "Hello

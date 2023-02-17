@@ -8,6 +8,8 @@ fn repr(string: &str) -> String {
             '\n' => vec!['\\', 'n'],
             '\t' => vec!['\\', 't'],
             '\\' => vec!['\\', '\\'],
+            '\'' => vec!['\\', '\''],
+            '\"' => vec!['\\', '\"'],
             _ => vec![i],
         }.iter().collect::<String>();
     }
@@ -31,6 +33,8 @@ fn urepr(string: &str) -> String {
                 'n' => '\n',
                 't' => '\t',
                 '\\' => '\\',
+                '\'' => '\'',
+                '\"' => '\"',
                 _ => {
                     panic!("Unknown escaping character: {}", vec![i, string.chars().nth((ind+1) as usize).unwrap()].iter().collect::<String>());
                 },
@@ -310,8 +314,11 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
         let lin: &i64 = &loc.0;
         let index: &i64 = &loc.1;
         let parseerr = |msg: &str| {
-            println!("{}:{}:{}: {}", filename, lin, index, msg);
+            println!("{}:{}:{}: Error: {}", filename, lin, index, msg);
             None
+        };
+        let parsewarn = |msg: &str| {
+            println!("{}:{}:{}: Warning: {}", filename, lin, index, msg);
         };
         match val.as_str() {
             "/*" => {
@@ -319,7 +326,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
             },
             "*/" => {
                 if mlc <= 0 {
-                    return parseerr("comment underflow!");
+                    return parseerr("Comment underflow!");
                 }
                 mlc -= 1;
                 continue;
@@ -332,20 +339,28 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
             continue;
         }
 
-        res.append(&mut if val.as_str().chars().nth(0) == Some('\'') {
+        res.append(&mut if val.as_str().chars().nth(0) == Some('\'') && matches!(state, State::NONE) {
             vec![
-                (Ok(Op::Push(match val.as_str().chars().nth(1) {
-                    Some(x) => x,
-                    None => ' ',
+                (Ok(Op::Push(match val.as_str() {
+                    "'" => ' ',
+                    _ => {
+                        let repred_string: String = urepr(&val[1..]);
+                        if repred_string.len() > 1 {
+                            parseerr("Char is more than one symbol");
+                            return None;
+                        }
+                        repred_string.chars().nth(0).unwrap()
+                    },
                 } as i64)), *loc),
             ]
-        } else if val.chars().nth(0) == Some('\"') {
+        } else if val.chars().nth(0) == Some('\"') && matches!(state, State::NONE) {
+            println!("fuckstr: {}", val);
             let mut postfix: Option<usize> = None;
             let mut tmp: Vec<i64> = {
                 let mut res: Vec<i64> = Vec::new();
                 let mut jnd: isize = -1;
                 let mut j: char = ' ';
-                while {jnd+=1;jnd} < val[1..].len().try_into().unwrap() {
+                while {jnd+=1;jnd} < val[1..].len()as isize {
                     j = match val[1..].chars().nth(jnd as usize) {
                         Some(x) => x,
                         None => {
@@ -480,12 +495,22 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
             }
         }});
     }
+    let parseerr = |msg: &str| {
+        println!("{}:EOF: Error: {}", filename, msg);
+        None::<Vec<(Op, Loc)>>
+    };
+    let parsewarn = |msg: &str| {
+        println!("{}:EOF: Warning: {}", filename, msg);
+    };
+    if !matches!(state, State::NONE) {
+        return parseerr("Parsing is ended but state is not none");
+    }
     //to avoid not founding labels
     labels.push(("", None));
 
     match link(&filename, &res, &labels, &main) {
         Some(x) => {
-            println!("  [Linking succed]");
+            println!("[Linking succed]");
             Some(x)
         },
         None => {
@@ -706,6 +731,9 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 };
                 stack.append(&mut file.chars().map(|x| x as i64).collect::<Vec<i64>>());
                 stack.push(file.len().try_into().unwrap());
+            },
+            Op::DBGMSG(x) => {
+                println!("dbgmsg: {}", repr(x));
             },
             _ => {
                 println!("Unknown op: {:?}", i);
