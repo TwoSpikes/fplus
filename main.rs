@@ -921,7 +921,6 @@ fn clah(args: &Vec<String>) {
 }
 
 fn _test() {
-    println!("{}", urepr("Hello, world\\"));
 }
 
 fn _main() {
