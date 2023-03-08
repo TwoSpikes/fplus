@@ -121,7 +121,7 @@ fn get(name: &String) -> Option<String> {
         Ok(x) => Some(x),
         Err(_) => {
             println!("Cannot read file `{}`", name);
-            None
+            return None;
         },
     }
 }
@@ -335,7 +335,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
         let index: &i64 = &loc.1;
         let parseerr = |msg: &str| {
             println!("{}:{}:{}: Error: {}", filename, lin, index, msg);
-            None
+            return None;
         };
         let parsewarn = |msg: &str| {
             println!("{}:{}:{}: Warning: {}", filename, lin, index, msg);
@@ -531,7 +531,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
         },
         None => {
             println!("[Linking failed]");
-            None
+            return None;
         },
     }
 }
@@ -652,8 +652,18 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 stack.push(input.len()as i64);
             },
             Op::PLUS => {
-                let a: i64 = stack.pop().expect({return errs("Operand `a` for PLUS intrinsic not found".to_string());});
-                let b: i64 = stack.pop().expect({return errs("Operand `b` for PLUS intrinsic not found".to_string());});
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for PLUS intrinsic not found".to_string());
+                    },
+                };
+                let b: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `b` for PLUS intrinsic not found".to_string());
+                    },
+                };
                 stack.push(a + b)
             },
             Op::MUL => {
@@ -749,7 +759,12 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 return err;
             },
             Op::DUMP => {
-                println!("dump: {}", stack.pop().expect("Operand for DUMP intrinsic not found"));
+                println!("dump: {}", match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand for DUMP intrinsic not found".to_owned());
+                    },
+                });
             },
             Op::ARGC => {
                 stack.push(argv.len().try_into().unwrap());
@@ -848,6 +863,12 @@ fn clah(args: &Vec<String>) {
                                 println!("[Parsing succed]");
                                 x
                             },
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for PLUS intrinsic not found".to_string());
+                    },
+                };
                             None => {
                                 println!("[Parsing failed]");
                                 continue;
