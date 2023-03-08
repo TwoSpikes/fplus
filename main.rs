@@ -863,12 +863,6 @@ fn clah(args: &Vec<String>) {
                                 println!("[Parsing succed]");
                                 x
                             },
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for PLUS intrinsic not found".to_string());
-                    },
-                };
                             None => {
                                 println!("[Parsing failed]");
                                 continue;
