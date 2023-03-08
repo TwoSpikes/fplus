@@ -1,0 +1,5 @@
+fn main
+  "What's your name? " puts flush
+  input
+    "Your name is: " puts
+  puts

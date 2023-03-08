@@ -1,5 +1,19 @@
-use std::io::Write;
-use std::convert::TryInto;
+use std::{
+    io::Write,
+    convert::TryInto,
+    fmt
+};
+
+fn strcat(a: &str, b: &str) -> String {
+    let mut res: String = "".to_owned();
+    for i in a.chars() {
+        res.push(i);
+    }
+    for i in b.chars() {
+        res.push(i);
+    }
+    return res;
+}
 
 fn repr(string: &str) -> String {
     let mut res: String = "\"".to_owned();
@@ -190,10 +204,11 @@ fn lex(file: &String) -> Retlex {
             },
         }
         //'\n' then push '\n'
-        if i == '\n' {
+        if i == '\n' || i == ':' {
             loc.0 += 1;
             loc.1  = 1;
             res.push(Tok(ploc, tmp.to_owned()));
+            res.push(Tok(loc, String::from(i)));
             tmp = "".to_owned();
             ploc = loc.clone();
             continue;
@@ -283,6 +298,11 @@ enum Op {
     ARGV,
     READ,  //read file to string
 }
+impl fmt::Display for Op {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
     if false {
@@ -354,7 +374,6 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                 } as i64)), *loc),
             ]
         } else if val.chars().nth(0) == Some('\"') && matches!(state, State::NONE) {
-            println!("fuckstr: {}", val);
             let mut postfix: Option<usize> = None;
             let mut tmp: Vec<i64> = {
                 let mut res: Vec<i64> = Vec::new();
@@ -397,7 +416,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
             None => { match state {
                     State::NONE =>
                 vec![(match val.as_str() {
-                    "" => continue,
+                    ""|"\n" => continue,
                     "+" => Ok(Op::PLUS),
                     "*" => Ok(Op::MUL),
                     "putc" => Ok(Op::PRINT),
@@ -412,7 +431,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                         state = State::FN;
                         continue;
                     },
-                    ":if" => Ok(Op::GIF),
+                    "if" => Ok(Op::GIF),
                     ":" => {
                         res.push((Ok(Op::G), *loc));
                         if callstk.len() > 0 {
@@ -566,9 +585,17 @@ fn link(filename: &String, res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&st
 
 const SIM_DEBUG: bool = false;
 
+#[derive(Debug)]
+enum simResult {
+    ok(i32),
+    err,
+    errs(String),
+    stopped,
+}
 fn sim(pr: &mut Vec<(Op, Loc)>,
        filename: &String,
-       argv: Vec<String>) -> Option<i32> {
+       argv: Vec<String>) -> simResult {
+    use simResult::*;
     println!("[simulation...]");
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
@@ -578,11 +605,10 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 y
             },
             _ => {
-                println!("sim: debug: main label not found");
-                return None;
+                return errs("main label not found".to_owned());
             }
         },
-        None => return Some(0),
+        None => return ok(0),
     };
     let mut ind: i64 = main - 1;
     while ind != pr.len()as i64 {
@@ -626,31 +652,55 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 stack.push(input.len()as i64);
             },
             Op::PLUS => {
-                let a: i64 = stack.pop().expect("Operand `a` for PLUS intrinsic not found");
-                let b: i64 = stack.pop().expect("Operand `b` for PLUS intrinsic not found");
+                let a: i64 = stack.pop().expect({return errs("Operand `a` for PLUS intrinsic not found".to_string());});
+                let b: i64 = stack.pop().expect({return errs("Operand `b` for PLUS intrinsic not found".to_string());});
                 stack.push(a + b)
             },
             Op::MUL => {
-                let a: i64 = stack.pop().expect("Operand `a` for MUL intrinsic not found");
-                let b: i64 = stack.pop().expect("Operand `b` for MUL intrinsic not found");
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for MUL intrinsic not found".to_string());
+                    },
+                };
+                let b: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `b` for MUL intrinsic not found".to_string());
+                    },
+                };
                 stack.push(a * b)
             },
             Op::GIF => {
-                let addr: i64 = stack.pop().expect("Operand `addr` for GIF intrinsic not found")-1;
-                let cond: i64 = stack.pop().expect("Operand `cond` for GIF intrinsic not found");
+                let addr: i64 = match stack.pop() {
+                    Some(x) => x-1,
+                    None => {
+                        return errs("Operand `addr` for GIF intrinsic not found".to_string());
+                    },
+                };
+                let cond: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `cond` for GIF intrinsic not found".to_string());
+                    },
+                };
                 if cond != 0 {
                     ind = addr.try_into().unwrap();
                 }
             },
             Op::G => {
-                let addr: i64 = stack.pop().expect("Operand `addr` for G intrinsic not found")-1;
+                let addr: i64 = match stack.pop() {
+                    Some(x) => x-1,
+                    None => {
+                        return errs("Operand `addr` for G intrinsic not found".to_string());
+                    },
+                };
                 ind = addr.try_into().unwrap();
             },
             Op::PUSHNTH => {
                 let a: i64 = stack.pop().unwrap();
                 if a >= stack.len().try_into().unwrap() {
-                    println!("{}:{}: pushnth overflow: {} (stack length is {})", lin, index, a, stack.len());
-                    return None;
+                    return errs("pushnth overflow".to_owned());
                 }
                 let b: i64 = stack[stack.len()-1-a as usize];
                 stack.push(b);
@@ -685,7 +735,7 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
             },
             Op::EXIT => {
                 let a: i64 = stack.pop().unwrap();
-                return Some(a.try_into().unwrap());
+                return ok(a.try_into().unwrap());
             },
             Op::PSTK => {
                 if !SIM_DEBUG {
@@ -696,7 +746,7 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 if !SIM_DEBUG {
                     println!("{}:{}: pstke {:?}", lin, index, stack);
                 }
-                return None;
+                return err;
             },
             Op::DUMP => {
                 println!("dump: {}", stack.pop().expect("Operand for DUMP intrinsic not found"));
@@ -733,12 +783,11 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
                 println!("dbgmsg: {}", repr(x));
             },
             _ => {
-                println!("Unknown op: {:?}", i);
-                return None;
+                return errs(strcat("unknown op: ", &i.to_string()));
             },
         }
     }
-    return Some(0);
+    return ok(0);
 }
 
 fn clah(args: &Vec<String>) {
@@ -773,7 +822,7 @@ fn clah(args: &Vec<String>) {
                     while {ind+=1;ind}<argv.len().try_into().unwrap() {
                         i = argv[ind as usize].clone();
                         fargs.insert(0, args[0].clone());
-                        let err: Option<i32> = sim(&mut match parse(&{
+                        let error: simResult = sim(&mut match parse(&{
     use crate::Retlex::EMPTY;
     use crate::Retlex::N;
     use crate::Retlex::E;
@@ -810,17 +859,29 @@ fn clah(args: &Vec<String>) {
                                 args[0].clone(),
                             ]
                         });
-                        println!("");
-                        match err {
-                            Some(x) => {
-                                if x == 0 {
-                                    println!("[Simulation of `{}` succed]", i);
-                                } else {
-                                    println!("[Simulation of `{}` was finished with exit code {}]", i, x);
-                                }
-                            },
-                            None => {
-                                println!("[Simulation of `{}` failed]", i);
+                        println!();
+                        {
+                            use simResult::*;
+                            match error {
+                                ok(x) => {
+                                    if x == 0 {
+                                        println!("[Simulation of {} succed]", repr(&i));
+                                    } else {
+                                        println!("[Simulation of {} was finished with exit code {}]", repr(&i), x);
+                                    }
+                                },
+                                err => {
+                                    println!("[Simulation of {} failed]", repr(&i));
+                                },
+                                errs(x) => {
+                                    println!("[Simulation of {} failed due to this error: {}]", repr(&i), repr(&x));
+                                },
+                                stopped => {
+
+                                },
+                                _ => {
+                                    println!("[Simulation of {}: Internal error: Unknown  state: {:?}]", repr(&i), err);
+                                },
                             }
                         }
                     }
