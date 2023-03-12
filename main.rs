@@ -79,6 +79,14 @@ fn usage() {
     println!("  usage, u, help, h     print this message and exit");
     println!("NI = not implemented");
 }
+fn version() {
+    println!("F+, a stack-based interpreting programming language\n\
+                     written on Rust to write compiling version of itself on itself");
+    println!("version: 0.1.0");
+    println!("download: https://github.com/TwoSpikes/fplus");
+    println!("2022-2023 @ TwoSpikes");
+}
+
 #[derive(Debug)]
 enum Mode {
     NONE,
@@ -101,11 +109,7 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
             return Ok(Mode::SIM);
         },
         "version" | "ver" | "v" => {
-            println!("F+, a stack-based interpreting programming language\n\
-                     written on Rust to write compiling version of itself on itself");
-            println!("version: 0.1.0");
-            println!("download: https://github.com/TwoSpikes/fplus");
-            println!("2022-2023 @ TwoSpikes");
+            version();
             return Ok(Mode::NONE);
         },
         _ => {
