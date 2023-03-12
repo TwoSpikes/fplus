@@ -1,4 +1,4 @@
-use std::{
+use std:: {
     io::Write,
     convert::TryInto,
     fmt
