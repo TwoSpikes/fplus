@@ -40,11 +40,11 @@ usage, use, u, help, h, ?, info, information
 		  print help information and exit
 ```
 
-EXAMPLES:
+## EXAMPLES:
 ```console
 $ ./target/release/fplus sim main.tspol
 ```
-ALSO KNOWN AS
+also known as
 ```console
 $ ./target/release/fplus sim main.tspol --
 ```
@@ -65,7 +65,7 @@ Options are not in the compiler yet
 
 Stack is a dynamic array of 64-bit integer numbers (from -9223372036854775808 (-2^63) to 9223372036854775807 (2^63-1)).
 
-### Pushing numbers
+#### Pushing numbers
 
 ```fplus
 34 36
@@ -73,7 +73,7 @@ Stack is a dynamic array of 64-bit integer numbers (from -9223372036854775808 (-
 This program will push 34 and 36 on the stack.\
 Stack: [34, 36]
 
-### Copying elements (numbers) — `pushnth`
+#### Copying elements (numbers) — `pushnth`
 
 Pushnth takes one argument.\
 First, provide this argument, and second, write `pushnth`
