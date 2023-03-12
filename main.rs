@@ -76,8 +76,8 @@ fn usage() {
     println!("subcommand:");
     println!("  sim, s                simulate (interpret) program");
     println!("  version, ver, v       print version information and exit");
-    println!("  usage, u, help, h     print this message and exit");
-    println!("NI = not implemented");
+    println!("  usage, use, u, help, h, ?, info, information");
+    println!("                        print this message and exit");
 }
 fn version() {
     println!("F+, a stack-based interpreting programming language\n\
@@ -112,7 +112,7 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
             version();
             return Ok(Mode::NONE);
         },
-        "usage" | "use" | "u" | "help" | "h" | "?" => {
+        "usage" | "use" | "u" | "help" | "h" | "?" | "info" | "information" => {
             usage();
             return Ok(Mode::NONE);
         },
