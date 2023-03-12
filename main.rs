@@ -112,6 +112,10 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
             version();
             return Ok(Mode::NONE);
         },
+        "usage" | "use" | "u" | "help" | "h" | "?" => {
+            usage();
+            return Ok(Mode::NONE);
+        },
         _ => {
             println!("Unknown subcommand: `{}`", args[1]);
             usage();
