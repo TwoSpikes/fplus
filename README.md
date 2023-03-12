@@ -19,6 +19,8 @@ There're my goals for the future:
 Supported compilation modes:
 - Simulation (default)
 
+# Compiler
+
 Installing:
 ```console
 $ cargo init
@@ -52,3 +54,37 @@ F+ will simulate ./main.tspol file with `a b c` command line arguments
 
 OPTIONS:\
 Options are not in the compiler yet
+
+# Programming language
+
+## Stack
+
+Stack is a dynamic array of 64-bit integer numbers (from -9223372036854775808 (-2^63) to 9223372036854775807 (2^63-1)).
+
+### Pushing numbers
+
+```fplus
+34 36
+```
+This program will push 34 and 36 on the stack.
+Stack: [34, 36]
+
+### Copying elements (numbers) — `pushnth`
+
+Pushnth takes one argument.\
+First, provide this argument, and second, write `pushnth`
+
+If stack is [10, 11, 12, 13, 14]
+After providing argument (3), it will be [10, 11, 12, 13, 14, 3]
+It will consume argument and take third element from right counting from 0 (it is 11).\
+---
+|Argument          | 0  | 1  | 2  | 3  | 4  | 5  |
+|Index (from left) | 4  | 3  | 2  | 1  | 0  | NA |
+|Element           | 14 | 13 | 12 | 11 | 10 | NA |
+---
+
+```
+34 36
+0 pushnth
+```
+Stack: [34, 36, 36]
