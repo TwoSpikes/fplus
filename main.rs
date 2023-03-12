@@ -81,7 +81,7 @@ fn usage() {
 }
 fn version() {
     println!("F+, a stack-based interpreting programming language\n\
-                     written on Rust to write compiling version of itself on itself");
+                     written on Rust v.1.67.1");
     println!("version: 0.1.0");
     println!("download: https://github.com/TwoSpikes/fplus");
     println!("2022-2023 @ TwoSpikes");
