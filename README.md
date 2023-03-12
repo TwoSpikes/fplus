@@ -75,7 +75,7 @@ Stack: [34, 36]
 
 #### Copying elements (numbers) — `pushnth`
 
-Pushnth takes one argument.\
+Pushnth takes one argument: `(number) a`\
 First, provide this argument, and second, write `pushnth`
 
 If stack is [10, 11, 12, 13, 14],\
@@ -89,8 +89,138 @@ It will consume argument and take third element from right counting from 0 (it i
 | Element (from left)  | 10 | 11 | 12 | 13 | 14 | NA |
 
 
-```
+```fplus
 34 36
 0 pushnth
 ```
 Stack: [34, 36, 36]
+
+## Arithmetic
+
+#### Plus `+`
+
+Consumes 2 arguments: `(number) a, (number) b`\
+Returns: `(number)(a + b)`
+
+```fplus
+34 35 +
+```
+Stack: [34, 35, 69]
+
+To sum up more than 2 numbers:
+```fplus
+1 1 + 1 +
+```
+Stack: [3]
+
+To substract, use [Negative numbers](#Negative-numbers):
+```fplus
+69 -21 +
+```
+Stack: [48]
+
+#### Multiply `*`
+
+Consumes 2 arguments: `(number) a, (number) b`\
+Returns: `(number)(a * b)`
+
+```fplus
+2 3 *
+```
+Stack: [6]
+
+```fplus
+-49 2 *
+```
+Stack: [-98]
+
+#### Less than `<`
+
+Consumes 2 arguments: `(number) a, (number) b`\
+Returns: `(boolean)(a < b)`
+
+```fplus
+34 35 <
+```
+Stack: [1] because (34 < 35 <=> true)
+
+```fplus
+35 34 <
+```
+Stack: [0] because (35 < 34 <=> false)
+
+```fplus
+34 34 <
+```
+Stack: [0] because (34 < 34 <=> false)
+
+#### Equals `=`
+
+Consumes 2 arguments: `(number) a, (number) b`\
+Returns: `(boolean)(a = b)`
+
+```fplus
+34 34 =
+```
+Stack: [1] because (34 = 34 <=> true)
+
+```fplus
+35 34 =
+```
+Stack: [0] because (35 = 34 <=> false)
+
+## Boolean
+
+#### Not `!`
+
+Consumes one argument: `(boolean) a`\
+Returns: `(boolean) !a`
+
+```fplus
+0 !
+```
+Stack: [1] because (!0 <=> 1)
+
+```fplus
+35 34 <
+!
+```
+Stack: [1] because
+1. 35 < 34 <=> false
+2. !Ans <=> true
+
+```fplus
+1 ! !
+```
+Stack: [1] because
+1. !1 <=> 0
+2. !Ans <=> 1
+
+```fplus
+69 ! !
+```
+Stack: [1] because
+1. !69 <=> 0
+2. !Ans <=> 1
+
+#### Or `|`
+
+Consumes 2 arguments: `(boolean) a, (boolean) b`\
+Returns: `(boolean)(a | b)`
+
+```fplus
+0 1 |
+```
+Stack: [1] because (0 | 1 <=> true)
+
+```fplus
+0 0 |
+```
+Stack: [0] because (0 | 0 <=> false)
+
+```fplus
+1 1 |
+```
+Stack: [1] because (1 | 1 <=> true)
+
+Same will happen if all 1's will change to bigger numbers because `Or` anyways will cast arguments to boolean.
