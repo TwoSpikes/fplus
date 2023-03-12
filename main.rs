@@ -141,9 +141,9 @@ enum Retlex {
     EMPTY,
 }
 fn lex(file: &String) -> Retlex {
-    use crate::Retlex::EMPTY;
-    use crate::Retlex::N;
-    use crate::Retlex::E;
+use crate::Retlex::EMPTY;
+use crate::Retlex::N;
+use crate::Retlex::E;
     if file.len() == 0 {
         return EMPTY;
     }
@@ -595,7 +595,7 @@ enum simResult {
 fn sim(pr: &mut Vec<(Op, Loc)>,
        filename: &String,
        argv: Vec<String>) -> simResult {
-    use simResult::*;
+use simResult::*;
     println!("[simulation...]");
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
@@ -838,9 +838,9 @@ fn clah(args: &Vec<String>) {
                         i = argv[ind as usize].clone();
                         fargs.insert(0, args[0].clone());
                         let error: simResult = sim(&mut match parse(&{
-    use crate::Retlex::EMPTY;
-    use crate::Retlex::N;
-    use crate::Retlex::E;
+use crate::Retlex::EMPTY;
+use crate::Retlex::N;
+use crate::Retlex::E;
                             match lex(&match get(&i) {
                             Some(x) => x,
                             None => continue,
@@ -876,7 +876,7 @@ fn clah(args: &Vec<String>) {
                         });
                         println!();
                         {
-                            use simResult::*;
+use simResult::*;
                             match error {
                                 ok(x) => {
                                     if x == 0 {
