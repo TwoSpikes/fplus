@@ -312,13 +312,13 @@ impl fmt::Display for Op {
     }
 }
 //////////////////////////////////////////////////
-fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
+fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
     if false {
         println!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
     } else {
         println!("[parsing...]");
     }
-    let mut res: Vec<(Result<Op, &str>, Loc)> = vec![];
+    let mut res: Vec<(Result<Op, String>, Loc)> = vec![];
     #[derive(Debug)]
     enum State {
         NONE,
@@ -329,7 +329,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
         DBGMSG,
     }
     let mut state: State = State::NONE;
-    let mut labels: Vec<(&str, Option<i64>)> = Vec::new();
+    let mut labels: Vec<(String, Option<i64>)> = Vec::new();
     let mut main: Option<usize> = None;
     //multi-line comment
     let mut mlc: u32 = 0;
@@ -404,7 +404,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
             };
             let tmpStr: String = urepr(tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>().as_str());
             let tmpstr: &str = tmpStr.as_str();
-            let mut tmpres: Vec<(Result<Op, &str>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
+            let mut tmpres: Vec<(Result<Op, String>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
                 "" => tmpres.push((Ok(Op::Push((tmpStr.len()).try_into().unwrap())), Loc(-1,-1))),
                 "r" => {},
@@ -480,24 +480,24 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                     "argc" => Ok(Op::ARGC),
                     "argv" => Ok(Op::ARGV),
                     "read" => Ok(Op::READ),
-                    _ => Err(val.as_str()),
+                    _ => Err(val.to_string()),
                 }, *loc)],
                     State::LBL => {
                         if let "main" = &*val.as_str() {
                             main = Some(res.len()as usize);
                         }
-                        labels.push((val.as_str(), None));
+                        labels.push((val.to_string(), None));
                         state = State::NONE;
                         continue;
                     },
                     State::FN => {
-                        let pos: usize = match labels.iter().position(|x| String::from(x.0).eq(val)) {
+                        let pos: usize = match labels.iter().position(|x| String::from(x.0.clone()).eq(val)) {
                             Some(pos) => pos,
                             None => {
                                 if let "main" = &*val.as_str() {
                                     main = Some(res.len()as usize);
                                 }
-                                labels.push((val.as_str(), Some(res.len()as i64)));
+                                labels.push((val.to_string(), Some(res.len()as i64)));
                                 state = State::NONE;
                                 continue;
                             }
@@ -521,7 +521,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
     }
     let parseerr = |msg: &str| {
         println!("{}:EOF: Error: {}", filename, msg);
-        None::<Vec<(Op, Loc)>>
+        return None::<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)>;
     };
     let parsewarn = |msg: &str| {
         println!("{}:EOF: Warning: {}", filename, msg);
@@ -530,20 +530,11 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
         return parseerr("Parsing is ended but state is not none");
     }
     //to avoid not founding labels
-    labels.push(("", None));
+    labels.push(("".to_string(), None));
 
-    match link(&filename, &res, &labels, &main) {
-        Some(x) => {
-            println!("[Linking succed]");
-            Some(x)
-        },
-        None => {
-            println!("[Linking failed]");
-            return None;
-        },
-    }
+    return Some((filename.to_string(), res, labels, main));
 }
-fn link(filename: &String, res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&str, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
+fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
     println!("[linking...]");
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     let mut ind: i64 = -1;
@@ -561,7 +552,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, &str>, Loc)>, labels: &Vec<(&st
                 //tring to find declaration
                 for j in &*labels {
                     //if found by name
-                    if String::from(j.0).eq(&String::from(*x)) {
+                    if String::from(j.0.clone()).eq(&String::from(x.clone())) {
                         match j.1 {
                             //found definition
                             Some(def) => {
@@ -869,7 +860,16 @@ use crate::Retlex::E;
                         }}, &i) {
                             Some(x) => {
                                 println!("[Parsing succed]");
-                                x
+                                match link(&x.0, &x.1, &x.2, &x.3) {
+                                    Some(x) => {
+                                        println!("[linking succed]");
+                                        x
+                                    },
+                                    None => {
+                                        println!("[linking failed]");
+                                        continue;
+                                    },
+                                }
                             },
                             None => {
                                 println!("[Parsing failed]");
