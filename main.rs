@@ -486,9 +486,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<Vec<(Op, Loc)>> {
                         let pos: usize = match labels.iter().position(|x| String::from(x.0).eq(val)) {
                             Some(pos) => pos,
                             None => {
-                        if let "main" = &*val.as_str() {
-                            main = Some(res.len()as usize);
-                        }
+                                if let "main" = &*val.as_str() {
+                                    main = Some(res.len()as usize);
+                                }
                                 labels.push((val.as_str(), Some(res.len()as i64)));
                                 state = State::NONE;
                                 continue;
