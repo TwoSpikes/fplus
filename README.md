@@ -79,8 +79,10 @@ After providing argument (3), it will be [10, 11, 12, 13, 14, 3]\
 It will consume argument and take third element from right counting from 0 (it is 11).
 
 | Argument.............. | 0.. | 1.. | 2.. | 3.. | 4.. | 5.. |\
-| Index (from left)... | 4.. | 3.. | 2.. | 1.. | 0.. | NA |\
-| Element................. | 14 | 13 | 12 | 11 | 10 | NA |
+| Index (from right). | 4.. | 3.. | 2.. | 1.. | 0.. | NA |\
+| Element (from right) | 14 | 13 | 12 | 11 | 10 | NA |\
+| Index (from left)... | 0.. | 1.. | 2.. | 3.. | 4.. | 5.. |\
+| Element (from left).. | 10 | 11 | 12 | 13 | 14 | NA |
 
 
 ```
