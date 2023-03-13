@@ -10,7 +10,7 @@ There're my goals for the future:
 - [ ] `include` keyword.
 - [ ] `macro` keyword.
 - [x] Drop-in documentation.
-- [ ] Token dumping.
+- [x] Token dumping.
 - [ ] Tokens to F+ code.
 - [ ] Tokens compilation.
 - [ ] Vim and Emacs syntax highlighting (later).
@@ -21,23 +21,22 @@ Supported compilation modes:
 
 # Compiler
 
-Installing:
+#### Installing:
 ```console
 $ cargo init
 $ cargo build --release
 ```
 
-Usage:
+#### Usage:
 ```console
 $ ./target/release/fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
-```
 
-```
 SUBCOMMAND:
-sim, s            simulate program
-version, ver, v   print version information and exit
-usage, use, u, help, h, ?, info, information
-		  print help information and exit
+sim s                 Simulate program
+version ver v         Print version information and exit
+usage use u help h ? info information
+		      Print help information and exit
+dump d                Dump the tokens of the program.
 ```
 
 ## EXAMPLES:
@@ -56,8 +55,11 @@ $ ./target/release sim main.tspol -- a b c
 ```
 F+ will simulate ./main.tspol file with `a b c` command line arguments
 
-OPTIONS:\
-Options are not in the compiler yet
+## OPTIONS:
+```
+-o --output [FILE]            save output to program (not implemented yet)
+-c --compiler [OPTION]        provide option to compiler (not implemented yet)
+```
 
 # Programming language
 

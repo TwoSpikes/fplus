@@ -51,8 +51,11 @@ use crate::Retlex::E;
 }
 
 fn for_each_arg(args: &Vec<String>,
-                func: fn(error: simResult,
-                         i: &String) -> ()) {
+                func: fn(i: &String,
+                         ind: isize,
+                         argv: &Vec<String>,
+                         fargs: &Vec<String>,
+                         args: &Vec<String>) -> ()) {
     let mut argv: Vec<String> = Vec::new();
     //fucking arguments
     let mut fargs: Vec<String> = Vec::new();
@@ -77,18 +80,7 @@ fn for_each_arg(args: &Vec<String>,
     while {ind+=1;ind}<argv.len().try_into().unwrap() {
         let i: String = argv[ind as usize].clone();
         fargs.insert(0, args[0].clone());
-        let error: simResult = sim(&mut match linkparselexget(&i) {
-            Some(x) => x,
-            None => continue,
-        }, &i, if ind==(argv.len()-1).try_into().unwrap() {
-            fargs.clone()
-        } else {
-            vec![
-                args[0].clone(),
-            ]
-        });
-        println!();
-        func(error, &i);
+        func(&i, ind, &argv, &fargs, &args);
     }
 }
 
@@ -138,7 +130,7 @@ fn urepr(string: &str) -> String {
                 '\'' => '\'',
                 '\"' => '\"',
                 _ => {
-                    panic!("Unknown escaping character: {}", vec![i, string.chars().nth((ind+1)as usize).unwrap()].iter().collect::<String>());
+                    panic!("Unknown escaping character: \'{}\'", vec![i, string.chars().nth((ind+1)as usize).unwrap()].iter().collect::<String>());
                 },
             }].iter().collect::<String>();
                 ind += 1;
@@ -160,12 +152,15 @@ fn from(u: &String) -> Vec<i64> {
 }
 
 fn usage() {
-    println!("usage: subcommand option... source...");
-    println!("subcommand:");
-    println!("  sim, s                simulate (interpret) program");
-    println!("  version, ver, v       print version information and exit");
-    println!("  usage, use, u, help, h, ?, info, information");
-    println!("                        print this message and exit");
+    println!("Usage:
+$ ./target/release/fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
+
+SUBCOMMAND:
+sim s                 Simulate program
+version ver v         Print version information and exit
+usage use u help h ? info information
+		      Print help information and exit
+dump d                Dump the tokens of the program.");
 }
 fn version() {
     println!("F+, a stack-based interpreting programming language\n\
@@ -179,6 +174,7 @@ fn version() {
 enum Mode {
     NONE,
     SIM,
+    DUMP,
 }
 fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     let mut err: i32 = 0;
@@ -188,7 +184,7 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
         return Err({err += 1; err});
     }
     match args[1].as_str() {
-        "sim" | "s" => {
+        "sim"|"s" => {
             if args.len() <= 2 {
                 println!("No source file provided");
                 usage();
@@ -196,16 +192,19 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
             }
             return Ok(Mode::SIM);
         },
-        "version" | "ver" | "v" => {
+        "version"|"ver"|"v" => {
             version();
             return Ok(Mode::NONE);
         },
-        "usage" | "use" | "u" | "help" | "h" | "?" | "info" | "information" => {
+        "usage"|"use"|"u"|"help"|"h"|"?"|"info"|"information" => {
             usage();
             return Ok(Mode::NONE);
         },
+        "dump"|"d" => {
+            return Ok(Mode::DUMP);
+        },
         _ => {
-            println!("Unknown subcommand: `{}`", args[1]);
+            println!("Unknown subcommand: \"{}\"", args[1]);
             usage();
             return Err({err+=1; err});
         },
@@ -216,7 +215,7 @@ fn get(name: &String) -> Option<String> {
     match std::fs::read_to_string(name) {
         Ok(x) => Some(x),
         Err(_) => {
-            println!("Cannot read file `{}`", name);
+            println!("Cannot read file \"{}\"", name);
             return None;
         },
     }
@@ -600,7 +599,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                         continue;
                     },
                     _ => {
-                        println!("Unknown state of parser (debug): `{:?}`", state);
+                        println!("Unknown state of parser (debug): \"{:?}\"", state);
                         return None;
                     },
                 }
@@ -831,6 +830,7 @@ use simResult::*;
                 stack.push(((a != 0) || (b != 0)).try_into().unwrap());
             },
             Op::EXIT => {
+                println!();
                 let a: i64 = stack.pop().unwrap();
                 return ok(a.try_into().unwrap());
             },
@@ -889,6 +889,7 @@ use simResult::*;
             },
         }
     }
+    println!();
     return ok(0);
 }
 
@@ -898,8 +899,22 @@ fn clah(args: &Vec<String>) {
             println!("[command line arguments reading succed]");
             match mode {
                 Mode::SIM => {
-                    for_each_arg(&args, |error: simResult, i: &String| {
-    use simResult::*;
+                    for_each_arg(&args, |i: &String,
+                                        ind: isize,
+                                        argv: &Vec<String>,
+                                        fargs: &Vec<String>,
+                                        args: &Vec<String>| {
+use simResult::*;
+                        let error: simResult = sim(&mut match linkparselexget(&i) {
+                            Some(x) => x,
+                            None => return,
+                        }, &i, if ind==(argv.len()-1).try_into().unwrap() {
+                            fargs.clone()
+                        } else {
+                            vec![
+                                args[0].clone(),
+                            ]
+                        });
                         match error {
                             ok(x) => {
                                 if x == 0 {
@@ -923,11 +938,14 @@ fn clah(args: &Vec<String>) {
                         }
                     });
                 },
+                Mode::DUMP => {
+                    todo!();
+                },
                 Mode::NONE => {
                     return;
                 },
                 _ => {
-                    println!("Unknown mode: {:?}", mode);
+                    println!("Unknown mode: \"{:?}\"", mode);
                 },
             }
         },
