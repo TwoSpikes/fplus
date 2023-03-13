@@ -14,6 +14,7 @@ There're my goals for the future:
 - [ ] Tokens to F+ code.
 - [ ] Tokens compilation.
 - [ ] Vim and Emacs syntax highlighting (later).
+- [ ] Output debug information to stderr instead of stdout.
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever).
 
 Supported compilation modes:
@@ -51,15 +52,35 @@ F+ will simulate ./main.tspol file
 
 
 ```console
-$ ./target/release sim main.tspol -- a b c
+$ ./target/release/fplus sim main.tspol -- a b c
 ```
 F+ will simulate ./main.tspol file with `a b c` command line arguments
 
 ## OPTIONS:
 ```
--o --output [FILE]            save output to program (not implemented yet)
+-o --output [FILE]            save output to program
 -c --compiler [OPTION]        provide option to compiler (not implemented yet)
 ```
+
+#### `-o` examples:
+```console
+$ ./target/release/fplus dump subc-dump.tspl -o subc-dump-file.txt
+```
+It will translate F+ code to tokens and write this to subc-dump-file.txt:
+```
+2:1:PUSHNTH
+2:11:DROPNTH
+2:19:NBROT
+2:25:Push(2)
+2:27:MUL
+2:29:PLUS
+3:1:DUMP
+3:8:PUTS
+3:13:Push(6969)
+3:18:PRINT
+-2:-2:Push(0)
+```
+If you will not provide `-o` option, tokens will dump on the screen instead (with debug information).
 
 # Programming language
 
