@@ -4,6 +4,52 @@ use std:: {
     fmt
 };
 
+
+fn linkparselexget(filename: &String) -> Option<Vec<(Op, Loc)>> {
+    match parse(&{
+use crate::Retlex::EMPTY;
+use crate::Retlex::N;
+use crate::Retlex::E;
+        match lex(&match get(&filename) {
+        Some(x) => x,
+        None => {
+            return None;
+        },
+    }) {
+            EMPTY => {
+                println!("[empty file]");
+                return None;
+            },
+            E => {
+                println!("[lexing failed]");
+                return None;
+            },
+            N(x) => x,
+            _ => {
+                println!("Unknown lexing return state");
+                return None;
+            },
+    }}, &filename) {
+        Some(x) => {
+            println!("[Parsing succed]");
+            match link(&x.0, &x.1, &x.2, &x.3) {
+                Some(x) => {
+                    println!("[linking succed]");
+                    Some(x)
+                },
+                None => {
+                    println!("[linking failed]");
+                    return None;
+                },
+            }
+        },
+        None => {
+            println!("[Parsing failed]");
+            return None;
+        },
+    }
+}
+
 fn strcat(a: &str, b: &str) -> String {
     let mut res: String = "".to_owned();
     for i in a.chars() {
@@ -836,45 +882,9 @@ fn clah(args: &Vec<String>) {
                     while {ind+=1;ind}<argv.len().try_into().unwrap() {
                         i = argv[ind as usize].clone();
                         fargs.insert(0, args[0].clone());
-                        let error: simResult = sim(&mut match parse(&{
-use crate::Retlex::EMPTY;
-use crate::Retlex::N;
-use crate::Retlex::E;
-                            match lex(&match get(&i) {
+                        let error: simResult = sim(&mut match linkparselexget(&i) {
                             Some(x) => x,
                             None => continue,
-                        }) {
-                                EMPTY => {
-                                    println!("[empty file]");
-                                    continue;
-                                },
-                                E => {
-                                    println!("[lexing failed]");
-                                    continue;
-                                },
-                                N(x) => x,
-                                _ => {
-                                    println!("Unknown lexing return state");
-                                    continue;
-                                },
-                        }}, &i) {
-                            Some(x) => {
-                                println!("[Parsing succed]");
-                                match link(&x.0, &x.1, &x.2, &x.3) {
-                                    Some(x) => {
-                                        println!("[linking succed]");
-                                        x
-                                    },
-                                    None => {
-                                        println!("[linking failed]");
-                                        continue;
-                                    },
-                                }
-                            },
-                            None => {
-                                println!("[Parsing failed]");
-                                continue;
-                            },
                         }, &i, if ind==(argv.len()-1).try_into().unwrap() {
                             fargs.clone()
                         } else {
