@@ -1,0 +1,13 @@
+fn loop
+  0 pushnth argc < ! end if
+  0 pushnth argv puts '\n putc
+  1 +
+  loop:
+
+fn end
+  "end of the program\n" puts
+  0 exit
+
+fn main
+  0
+  loop:

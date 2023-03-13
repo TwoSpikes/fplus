@@ -55,22 +55,42 @@ fn for_each_arg(args: &Vec<String>,
                          ind: isize,
                          argv: &Vec<String>,
                          fargs: &Vec<String>,
-                         args: &Vec<String>) -> ()) {
+                         args: &Vec<String>,
+                         output_to_file: Option<String>) -> ()) {
     let mut argv: Vec<String> = Vec::new();
     //fucking arguments
     let mut fargs: Vec<String> = Vec::new();
+    let mut output_to_file: Option<Option<String>> = None;
     {
         let mut i: String = "".to_owned();
         let mut ind: isize = 1;
         let mut isargs: bool = false;
         while {ind+=1;ind} < args.len().try_into().unwrap() {
             i = args[ind as usize].clone();
+
+            match output_to_file.clone() {
+                Some(x) => {
+                    match x {
+                        Some(_) => {},
+                        None => {
+                            output_to_file = Some(Some(i.clone()));
+                            continue;
+                        },
+                    }
+                },
+                None => {},
+            }
+
             if i == "--" {
                 isargs = true;
                 continue;
             }
             if isargs {
                 fargs.push(i);
+                continue;
+            }
+            if (i == "-o") | (i == "--output") {
+                output_to_file = Some(None);
                 continue;
             }
             argv.push(i);
@@ -80,7 +100,19 @@ fn for_each_arg(args: &Vec<String>,
     while {ind+=1;ind}<argv.len().try_into().unwrap() {
         let i: String = argv[ind as usize].clone();
         fargs.insert(0, args[0].clone());
-        func(&i, ind, &argv, &fargs, &args);
+        func(&i, ind, &argv, &fargs, &args, match output_to_file {
+            Some(ref x) => {
+                match x {
+                    Some(y) => Some(y.to_string()),
+                    None => {
+                        println!("No argument for \"-o\" option was provided");
+                        usage();
+                        break;
+                    },
+                }
+            },
+            None => None,
+        });
     }
 }
 
@@ -795,7 +827,7 @@ use simResult::*;
             },
             Op::PUSHNTH => {
                 let a: i64 = stack.pop().unwrap();
-                if a >= stack.len().try_into().unwrap() {
+                if a >= stack.len()as i64 {
                     return errs("pushnth overflow".to_owned());
                 }
                 let b: i64 = stack[stack.len()-1-a as usize];
@@ -858,6 +890,12 @@ use simResult::*;
             },
             Op::ARGV => {
                 let a: i64 = stack.pop().unwrap();
+                if a >= argv.len()as i64 {
+                    return errs("Argv overflow".to_owned());
+                }
+                if a < 0 {
+                    return errs("Argv underflow".to_owned());
+                }
                 for j in argv[a as usize].chars().rev() {
                     stack.push(j as i64);
                 }
@@ -903,7 +941,8 @@ fn clah(args: &Vec<String>) {
                                         ind: isize,
                                         argv: &Vec<String>,
                                         fargs: &Vec<String>,
-                                        args: &Vec<String>| {
+                                        args: &Vec<String>,
+                                        output_to_file: Option<String>| {
 use simResult::*;
                         let error: simResult = sim(&mut match linkparselexget(&i) {
                             Some(x) => x,
@@ -939,7 +978,53 @@ use simResult::*;
                     });
                 },
                 Mode::DUMP => {
-                    todo!();
+                    for_each_arg(&args, |i: &String,
+                                        ind: isize,
+                                        argv: &Vec<String>,
+                                        fargs: &Vec<String>,
+                                        args: &Vec<String>,
+                                        output_to_file: Option<String>| {
+                        let tokens: Vec<(Op, Loc)> = match linkparselexget(&i) {
+                            Some(x) => x,
+                            None => return,
+                        };
+                        match output_to_file {
+                            Some(ref x) => {
+use std::fs::{File, OpenOptions};
+                                match File::create(x) {
+                                    Ok(_)|Err(_) => {},
+                                };
+                                {
+                                    let mut f = match OpenOptions::new().write(true).open(x) {
+                                        Ok(y) => y,
+                                        Err(e) => {
+                                            todo!();
+                                        },
+                                    };
+                                    f.write(b"");
+                                }
+    	                        let mut f = match OpenOptions::new().append(true).open(x) {
+                                    Ok(y) => y,
+                                    Err(e) => {
+                                        todo!();
+                                    },
+                                };
+                                for i in &tokens {
+                                    f.write(i.1.0.to_string().as_bytes()).unwrap();
+                                    f.write(b":").unwrap();
+                                    f.write(i.1.1.to_string().as_bytes()).unwrap();
+                                    f.write(b":").unwrap();
+                                    f.write(i.0.to_string().as_bytes()).unwrap();
+                                    f.write(b"\n").unwrap();
+                                }
+                            },
+                            None => {
+                                for i in &tokens {
+                                    println!("{}:{}:{:?}", i.1.0, i.1.1, i.0);
+                                }
+                            },
+                        }
+                    });
                 },
                 Mode::NONE => {
                     return;
