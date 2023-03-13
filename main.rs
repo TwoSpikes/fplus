@@ -50,6 +50,30 @@ use crate::Retlex::E;
     }
 }
 
+fn for_each_arg(args: &Vec<String>,
+                argv: &Vec<String>,
+                fargs: &mut Vec<String>,
+                func: fn(error: simResult,
+                         i: &String) -> ()) {
+    let mut ind: isize = -1;
+    while {ind+=1;ind}<argv.len().try_into().unwrap() {
+        let i: String = argv[ind as usize].clone();
+        fargs.insert(0, args[0].clone());
+        let error: simResult = sim(&mut match linkparselexget(&i) {
+            Some(x) => x,
+            None => continue,
+        }, &i, if ind==(argv.len()-1).try_into().unwrap() {
+            fargs.clone()
+        } else {
+            vec![
+                args[0].clone(),
+            ]
+        });
+        println!();
+        func(error, &i);
+    }
+}
+
 fn strcat(a: &str, b: &str) -> String {
     let mut res: String = "".to_owned();
     for i in a.chars() {
@@ -877,47 +901,31 @@ fn clah(args: &Vec<String>) {
                     }
                 }
                 {
-                    let mut ind: isize = -1;
-                    let mut i: String = "".to_owned();
-                    while {ind+=1;ind}<argv.len().try_into().unwrap() {
-                        i = argv[ind as usize].clone();
-                        fargs.insert(0, args[0].clone());
-                        let error: simResult = sim(&mut match linkparselexget(&i) {
-                            Some(x) => x,
-                            None => continue,
-                        }, &i, if ind==(argv.len()-1).try_into().unwrap() {
-                            fargs.clone()
-                        } else {
-                            vec![
-                                args[0].clone(),
-                            ]
-                        });
-                        println!();
-                        {
+                    for_each_arg(&args, &argv, &mut fargs,
+                                 |error: simResult, i: &String| {
 use simResult::*;
-                            match error {
-                                ok(x) => {
-                                    if x == 0 {
-                                        println!("[Simulation of {} succed]", repr(&i));
-                                    } else {
-                                        println!("[Simulation of {} was finished with exit code {}]", repr(&i), x);
-                                    }
-                                },
-                                err => {
-                                    println!("[Simulation of {} failed]", repr(&i));
-                                },
-                                errs(x) => {
-                                    println!("[Simulation of {} failed due to this error: {}]", repr(&i), repr(&x));
-                                },
-                                stopped => {
+                        match error {
+                            ok(x) => {
+                                if x == 0 {
+                                    println!("[Simulation of {} succed]", repr(&i));
+                                } else {
+                                    println!("[Simulation of {} was finished with exit code {}]", repr(&i), x);
+                                }
+                            },
+                            err => {
+                                println!("[Simulation of {} failed]", repr(&i));
+                            },
+                            errs(x) => {
+                                println!("[Simulation of {} failed due to this error: {}]", repr(&i), repr(&x));
+                            },
+                            stopped => {
 
-                                },
-                                _ => {
-                                    println!("[Simulation of {}: Internal error: Unknown  state: {:?}]", repr(&i), err);
-                                },
-                            }
+                            },
+                            _ => {
+                                println!("[Simulation of {}: Internal error: Unknown  state: {:?}]", repr(&i), err);
+                            },
                         }
-                    }
+                    });
                 }
                 },
                 Mode::NONE => {
