@@ -82,6 +82,15 @@ It will translate F+ code to tokens and write this to subc-dump-file.txt:
 ```
 If you will not provide `-o` option, tokens will dump on the screen instead (with debug information).
 
+## VERSION:
+```
+F+, a stack-based interpreting programming language
+written on Rust v.1.68.0
+version: 0.1.0
+download: https://github.com/TwoSpikes/fplus
+2022-2023 @ TwoSpikes
+```
+
 # Programming language
 
 ## Stack

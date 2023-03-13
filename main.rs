@@ -195,11 +195,11 @@ usage use u help h ? info information
 dump d                Dump the tokens of the program.");
 }
 fn version() {
-    println!("F+, a stack-based interpreting programming language\n\
-                     written on Rust v.1.67.1");
-    println!("version: 0.1.0");
-    println!("download: https://github.com/TwoSpikes/fplus");
-    println!("2022-2023 @ TwoSpikes");
+    println!("F+, a stack-based interpreting programming language
+written on Rust v.1.68.0
+version: 0.1.0
+download: https://github.com/TwoSpikes/fplus
+2022-2023 @ TwoSpikes");
 }
 
 #[derive(Debug)]
