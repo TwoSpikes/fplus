@@ -51,10 +51,28 @@ use crate::Retlex::E;
 }
 
 fn for_each_arg(args: &Vec<String>,
-                argv: &Vec<String>,
-                fargs: &mut Vec<String>,
                 func: fn(error: simResult,
                          i: &String) -> ()) {
+    let mut argv: Vec<String> = Vec::new();
+    //fucking arguments
+    let mut fargs: Vec<String> = Vec::new();
+    {
+        let mut i: String = "".to_owned();
+        let mut ind: isize = 1;
+        let mut isargs: bool = false;
+        while {ind+=1;ind} < args.len().try_into().unwrap() {
+            i = args[ind as usize].clone();
+            if i == "--" {
+                isargs = true;
+                continue;
+            }
+            if isargs {
+                fargs.push(i);
+                continue;
+            }
+            argv.push(i);
+        }
+    }
     let mut ind: isize = -1;
     while {ind+=1;ind}<argv.len().try_into().unwrap() {
         let i: String = argv[ind as usize].clone();
@@ -880,30 +898,8 @@ fn clah(args: &Vec<String>) {
             println!("[command line arguments reading succed]");
             match mode {
                 Mode::SIM => {
-                let mut argv: Vec<String> = Vec::new();
-                //fucking arguments
-                let mut fargs: Vec<String> = Vec::new();
-                {
-                    let mut i: String = "".to_owned();
-                    let mut ind: isize = 1;
-                    let mut isargs: bool = false;
-                    while {ind+=1;ind} < args.len().try_into().unwrap() {
-                        i = args[ind as usize].clone();
-                        if i == "--" {
-                            isargs = true;
-                            continue;
-                        }
-                        if isargs {
-                            fargs.push(i);
-                            continue;
-                        }
-                        argv.push(i);
-                    }
-                }
-                {
-                    for_each_arg(&args, &argv, &mut fargs,
-                                 |error: simResult, i: &String| {
-use simResult::*;
+                    for_each_arg(&args, |error: simResult, i: &String| {
+    use simResult::*;
                         match error {
                             ok(x) => {
                                 if x == 0 {
@@ -926,7 +922,6 @@ use simResult::*;
                             },
                         }
                     });
-                }
                 },
                 Mode::NONE => {
                     return;
