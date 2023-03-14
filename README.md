@@ -41,12 +41,19 @@ dump d                Dump the tokens of the program.
 error e               Print error code and information about them
 ```
 
+#### Error codes:
+This message will be shown with `error` (or `e`) subcommand:
+```console
+errorcodes:
+E0                    Cannot open file
+```
+
 ## EXAMPLES:
 ```console
 $ ./target/release/fplus sim main.tspol
-```
-also known as
-```console
+
+ALSO KNOWN AS
+
 $ ./target/release/fplus sim main.tspol --
 ```
 F+ will simulate ./main.tspol file
