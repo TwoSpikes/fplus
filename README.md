@@ -112,7 +112,7 @@ If you will not provide `-o` option, Hello, World! will be printed to the screen
 ```
 F+, a stack-based interpreting programming language
 written on Rust v.1.68.0
-version: 0.1.0
+version: 0.1.0-1
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes
 ```

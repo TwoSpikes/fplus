@@ -198,7 +198,7 @@ error e               Print error code and information about them");
 fn version() {
     println!("F+, a stack-based interpreting programming language
 written on Rust v.1.68.0
-version: 0.1.0
+version: 0.1.0-1
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes");
 }
@@ -735,7 +735,7 @@ use std::fs::{File, OpenOptions};
         },
         None => return ok(0),
     };
-    let mut f: File = match output_to_file {
+    let mut f: Option<File> = match output_to_file {
         Some(ref x) => {
             //clear file
             {
@@ -750,17 +750,16 @@ use std::fs::{File, OpenOptions};
                 clear_f.write(b"");
             }
             //open file to append mode
-            match OpenOptions::new().append(true).write(true).open(x) {
+            Some(match OpenOptions::new().append(true).write(true).open(x) {
                 Ok(y) => y,
                 Err(e) => {
                     println!("cannot open file \"{}\" to append in: {}", repr(x), e);
                     return errs("E0".to_string());
                 },
-            }
+            })
         },
         None => {
-            //open empty file
-            OpenOptions::new().open("").unwrap()
+            None
         },
     };
     let mut ind: i64 = main - 1;
@@ -780,7 +779,7 @@ use std::fs::{File, OpenOptions};
             Op::PRINT => {
                 match output_to_file {
                     Some(_) => {
-                        f.write(&[stack.pop().unwrap()as u8]);
+                        f.as_ref().unwrap().write(&[stack.pop().unwrap()as u8]);
                     },
                     None => {
                         print!("{}", char::from_u32(stack.pop().unwrap()as u32).unwrap());
@@ -801,7 +800,7 @@ use std::fs::{File, OpenOptions};
                 }
                 match output_to_file {
                     Some(_) => {
-                        f.write(string.as_bytes());
+                        f.as_ref().unwrap().write(string.as_bytes());
                     },
                     None => {
                         print!("{}", string);
