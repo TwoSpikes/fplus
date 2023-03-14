@@ -48,13 +48,6 @@ errorcodes:
 E0                    Cannot open file
 ```
 
-
-
-```console
-$ ./target/release/fplus sim main.tspol -- a b c
-```
-F+ will simulate ./main.tspol file with `a b c` command line arguments
-
 ## OPTIONS:
 ```
 -o --output [FILE]            save output to program
@@ -73,6 +66,10 @@ $ ./target/release/fplus sim main.tspol --
 ```
 F+ will simulate ./main.tspol file
 
+```console
+$ ./target/release/fplus sim main.tspol -- a b c
+```
+F+ will simulate ./main.tspol file with `a b c` command line arguments
 #### `dump` subcommand examples:
 
 ```console
