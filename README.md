@@ -7,12 +7,15 @@ There're my goals for the future:
 - [x] Chars (`''`), strings (`""`) and string postfixes (`""b` and `""c`)
 - [x] repr(&str) and urepr(&str) functions (proper escaping like in C)
 - [x] Function predeclaration (linking)
+- [x] Negative numbers (`-1`, `---50`)
+- [ ] Float numbers (same type with "normal" numbers)
 - [ ] `include` keyword
 - [ ] `macro` keyword
 - [x] Drop-in documentation
 - [x] `dump` subcommand (dump tokens)
 - [ ] `undump` subcommand
 - [ ] `com` and `token-com` subcommand
+- [ ] `insert-code` keyword
 - [ ] Vim and Emacs syntax highlighting (later)
 - [ ] Output debug information to stderr instead of stdout
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
