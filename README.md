@@ -22,9 +22,8 @@ Supported compilation modes:
 
 # Compiler
 
-#### Installing:
+#### Installing (Building):
 ```console
-$ cargo init
 $ cargo build --release
 ```
 
