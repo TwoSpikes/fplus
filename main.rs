@@ -192,7 +192,8 @@ sim s                 Simulate program
 version ver v         Print version information and exit
 usage use u help h ? info information
 		      Print help information and exit
-dump d                Dump the tokens of the program.");
+dump d                Dump the tokens of the program.
+error e               Print error code and information about them");
 }
 fn version() {
     println!("F+, a stack-based interpreting programming language
@@ -200,6 +201,10 @@ written on Rust v.1.68.0
 version: 0.1.0
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes");
+}
+fn errorcodes() {
+    println!("errorcodes:
+E0                    Cannot open file");
 }
 
 #[derive(Debug)]
@@ -712,8 +717,10 @@ enum simResult {
 }
 fn sim(pr: &mut Vec<(Op, Loc)>,
        filename: &String,
-       argv: Vec<String>) -> simResult {
+       argv: Vec<String>,
+       output_to_file: Option<String>) -> simResult {
 use simResult::*;
+use std::fs::{File, OpenOptions};
     println!("[simulation...]");
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
@@ -727,6 +734,34 @@ use simResult::*;
             }
         },
         None => return ok(0),
+    };
+    let mut f: File = match output_to_file {
+        Some(ref x) => {
+            //clear file
+            {
+                let mut clear_f = match OpenOptions::new().write(true).append(false).create(true).open(x) {
+                    Ok(y) => y,
+                    Err(e) => {
+                        println!("cannot open file \"{}\" to write in: {}", repr(x), e);
+                        return errs("E0".to_string());
+                    },
+                };
+                File::create(x);
+                clear_f.write(b"");
+            }
+            //open file to append mode
+            match OpenOptions::new().append(true).write(true).open(x) {
+                Ok(y) => y,
+                Err(e) => {
+                    println!("cannot open file \"{}\" to append in: {}", repr(x), e);
+                    return errs("E0".to_string());
+                },
+            }
+        },
+        None => {
+            //open empty file
+            OpenOptions::new().open("").unwrap()
+        },
     };
     let mut ind: i64 = main - 1;
     while ind != pr.len()as i64 {
@@ -743,7 +778,14 @@ use simResult::*;
                 stack.push(*x);
             },
             Op::PRINT => {
-                print!("{}", char::from_u32(stack.pop().unwrap()as u32).unwrap());
+                match output_to_file {
+                    Some(_) => {
+                        f.write(&[stack.pop().unwrap()as u8]);
+                    },
+                    None => {
+                        print!("{}", char::from_u32(stack.pop().unwrap()as u32).unwrap());
+                    },
+                }
             },
             Op::PUTS => {
                 if SIM_DEBUG {
@@ -757,15 +799,22 @@ use simResult::*;
                     string.push(chr);
                     i += 1;
                 }
-                print!("{}", string);
+                match output_to_file {
+                    Some(_) => {
+                        f.write(string.as_bytes());
+                    },
+                    None => {
+                        print!("{}", string);
+                    },
+                }
             },
             Op::FLUSH => {
-                std::io::stdout().flush();
+                _ = std::io::stdout().flush();
             },
             Op::INP => {
                 let mut input: String = String::new();
                 let stdin = std::io::stdin();
-                stdin.read_line(&mut input);
+                _ = stdin.read_line(&mut input);
                 stack.append(&mut from(&input).iter().rev().map(|x| *x).collect::<Vec<i64>>());
                 stack.push(input.len()as i64);
             },
@@ -953,7 +1002,7 @@ use simResult::*;
                             vec![
                                 args[0].clone(),
                             ]
-                        });
+                        }, output_to_file);
                         match error {
                             ok(x) => {
                                 if x == 0 {
@@ -1001,7 +1050,7 @@ use std::fs::{File, OpenOptions};
                                             todo!();
                                         },
                                     };
-                                    f.write(b"");
+                                    _ = f.write(b"");
                                 }
     	                        let mut f = match OpenOptions::new().append(true).open(x) {
                                     Ok(y) => y,

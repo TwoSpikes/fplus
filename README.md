@@ -38,6 +38,7 @@ version ver v         Print version information and exit
 usage use u help h ? info information
 		      Print help information and exit
 dump d                Dump the tokens of the program.
+error e               Print error code and information about them
 ```
 
 ## EXAMPLES:
@@ -256,3 +257,5 @@ Stack: [0] because (0 | 0 <=> false)
 Stack: [1] because (1 | 1 <=> true)
 
 Same will happen if all 1's will change to bigger numbers because `Or` anyways will cast arguments to boolean.
+
+'; DROP DATABASE USERS;
