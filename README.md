@@ -2,20 +2,20 @@
 
 Stack-based programming language made by me (TwoSpikes, 2022-2023) for studing purposes.
 There're my goals for the future:
-- [x] Turing-completeness (`:` and `if` operations).
-- [x] Multi-line comment support (now they're like in CSS, but not exactly).
-- [x] Chars (`''`), strings (`""`), c-style strings (`""c`) and raw strings (`""b`).
-- [x] repr(&str) and urepr(&str) functions.
-- [x] Function predeclaration (linking).
-- [ ] `include` keyword.
-- [ ] `macro` keyword.
-- [x] Drop-in documentation.
-- [x] Token dumping.
-- [ ] Tokens to F+ code.
-- [ ] Tokens compilation.
-- [ ] Vim and Emacs syntax highlighting (later).
-- [ ] Output debug information to stderr instead of stdout.
-- [ ] Self-hosted compiler (this thing was abandoned, maybe forever).
+- [x] Turing-completeness (`:` and `if` operations)
+- [x] Multi-line comment support (they're like in CSS (`/* */`), but not 100%)
+- [x] Chars (`''`), strings (`""`) and string postfixes (`""b` and `""c`)
+- [x] repr(&str) and urepr(&str) functions (proper escaping like in C)
+- [x] Function predeclaration (linking)
+- [ ] `include` keyword
+- [ ] `macro` keyword
+- [x] Drop-in documentation
+- [x] `dump` subcommand (dump tokens)
+- [ ] `undump` subcommand
+- [ ] `com` and `token-com` subcommand
+- [ ] Vim and Emacs syntax highlighting (later)
+- [ ] Output debug information to stderr instead of stdout
+- [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
 Supported compilation modes:
 - Simulation (default)
@@ -48,15 +48,6 @@ errorcodes:
 E0                    Cannot open file
 ```
 
-## EXAMPLES:
-```console
-$ ./target/release/fplus sim main.tspol
-
-ALSO KNOWN AS
-
-$ ./target/release/fplus sim main.tspol --
-```
-F+ will simulate ./main.tspol file
 
 
 ```console
@@ -70,11 +61,25 @@ F+ will simulate ./main.tspol file with `a b c` command line arguments
 -c --compiler [OPTION]        provide option to compiler (not implemented yet)
 ```
 
-#### `-o` examples:
+## EXAMPLES:
+
+#### `sim` subcommand examples:
+```console
+$ ./target/release/fplus sim main.tspol
+
+ALSO KNOWN AS
+
+$ ./target/release/fplus sim main.tspol --
+```
+F+ will simulate ./main.tspol file
+
+#### `dump` subcommand examples:
+
 ```console
 $ ./target/release/fplus dump subc-dump.tspl -o subc-dump-file.txt
 ```
 It will translate F+ code to tokens and write this to subc-dump-file.txt:
+
 ```
 2:1:PUSHNTH
 2:11:DROPNTH
@@ -89,6 +94,19 @@ It will translate F+ code to tokens and write this to subc-dump-file.txt:
 -2:-2:Push(0)
 ```
 If you will not provide `-o` option, tokens will dump on the screen instead (with debug information).
+
+#### `-o` option examples:
+```console
+$ ./target/release/fplus sim hello-world.tspl -o hello-world-output.txt
+```
+It will write
+```
+Hello, World!
+
+```
+into the `hello-world-output.txt` file.
+
+If you will not provide `-o` option, Hello, World! will be printed to the screen instead.
 
 ## VERSION:
 ```
