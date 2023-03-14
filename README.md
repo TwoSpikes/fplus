@@ -37,7 +37,7 @@ version ver v         Print version information and exit
 usage use u help h ? info information
 		      Print help information and exit
 dump d                Dump the tokens of the program.
-error e               Print error code and information about them
+error e               Print error codes and information about them
 ```
 
 #### Error codes:
