@@ -145,7 +145,7 @@ Returns: `(number)(a + b)`
 ```fplus
 34 35 +
 ```
-Stack: [34, 35, 69]
+Stack: [69]
 
 To sum up more than 2 numbers:
 ```fplus
