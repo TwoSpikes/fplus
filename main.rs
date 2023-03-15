@@ -17,34 +17,34 @@ use crate::Retlex::E;
         },
     }) {
             EMPTY => {
-                println!("[empty file]");
+                eprintln!("[empty file]");
                 return None;
             },
             E => {
-                println!("[lexing failed]");
+                eprintln!("[lexing failed]");
                 return None;
             },
             N(x) => x,
             _ => {
-                println!("Unknown lexing return state");
+                eprintln!("Unknown lexing return state");
                 return None;
             },
     }}, &filename) {
         Some(x) => {
-            println!("[Parsing succed]");
+            eprintln!("[Parsing succed]");
             match link(&x.0, &x.1, &x.2, &x.3) {
                 Some(x) => {
-                    println!("[linking succed]");
+                    eprintln!("[linking succed]");
                     Some(x)
                 },
                 None => {
-                    println!("[linking failed]");
+                    eprintln!("[linking failed]");
                     return None;
                 },
             }
         },
         None => {
-            println!("[Parsing failed]");
+            eprintln!("[Parsing failed]");
             return None;
         },
     }
@@ -105,7 +105,7 @@ fn for_each_arg(args: &Vec<String>,
                 match x {
                     Some(y) => Some(y.to_string()),
                     None => {
-                        println!("No argument for \"-o\" option was provided");
+                        eprintln!("No argument for \"-o\" option was provided");
                         usage();
                         break;
                     },
@@ -216,14 +216,14 @@ enum Mode {
 fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     let mut err: i32 = 0;
     if args.len() <= 1 {
-        println!("No subcommand provided");
+        eprintln!("No subcommand provided");
         usage();
         return Err({err += 1; err});
     }
     match args[1].as_str() {
         "sim"|"s" => {
             if args.len() <= 2 {
-                println!("No source file provided");
+                eprintln!("No source file provided");
                 usage();
                 return Err({err+=1; err});
             }
@@ -241,7 +241,7 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
             return Ok(Mode::DUMP);
         },
         _ => {
-            println!("Unknown subcommand: \"{}\"", args[1]);
+            eprintln!("Unknown subcommand: \"{}\"", args[1]);
             usage();
             return Err({err+=1; err});
         },
@@ -252,7 +252,7 @@ fn get(name: &String) -> Option<String> {
     match std::fs::read_to_string(name) {
         Ok(x) => Some(x),
         Err(_) => {
-            println!("Cannot read file \"{}\"", name);
+            eprintln!("Cannot read file \"{}\"", name);
             return None;
         },
     }
@@ -305,7 +305,7 @@ use crate::Retlex::E;
                     Quotes::NO
                 },
                 _ => {
-                    println!("lex: unknown quotes: {:?}", quotes);
+                    eprintln!("lex: unknown quotes: {:?}", quotes);
                     return E;
                 },
             };
@@ -331,7 +331,7 @@ use crate::Retlex::E;
                 continue;
             },
             _ => {
-                println!("lex: unknown quotes: {:?}", quotes);
+                eprintln!("lex: unknown quotes: {:?}", quotes);
                 return E;
             },
         }
@@ -438,9 +438,9 @@ impl fmt::Display for Op {
 //////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
     if false {
-        println!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
+        eprintln!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
     } else {
-        println!("[parsing...]");
+        eprintln!("[parsing...]");
     }
     let mut res: Vec<(Result<Op, String>, Loc)> = vec![];
     #[derive(Debug)]
@@ -466,11 +466,11 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
         let lin: &i64 = &loc.0;
         let index: &i64 = &loc.1;
         let parseerr = |msg: &str| {
-            println!("{}:{}:{}: Error: {}", filename, lin, index, msg);
+            eprintln!("{}:{}:{}: Error: {}", filename, lin, index, msg);
             return None;
         };
         let parsewarn = |msg: &str| {
-            println!("{}:{}:{}: Warning: {}", filename, lin, index, msg);
+            eprintln!("{}:{}:{}: Warning: {}", filename, lin, index, msg);
         };
         match val.as_str() {
             "/*" => {
@@ -534,7 +534,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                 "r" => {},
                 "c" => tmpres.push((Ok(Op::Push(0)), Loc(-1,-1))),
                 _ => {
-                    println!("custom string postfixes are not implemented yet: {}", tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
+                    eprintln!("custom string postfixes are not implemented yet: {}", tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
                     return None;
                 },
             }
@@ -636,7 +636,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                         continue;
                     },
                     _ => {
-                        println!("Unknown state of parser (debug): \"{:?}\"", state);
+                        eprintln!("Unknown state of parser (debug): \"{:?}\"", state);
                         return None;
                     },
                 }
@@ -644,11 +644,11 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
         }});
     }
     let parseerr = |msg: &str| {
-        println!("{}:EOF: Error: {}", filename, msg);
+        eprintln!("{}:EOF: Error: {}", filename, msg);
         return None::<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)>;
     };
     let parsewarn = |msg: &str| {
-        println!("{}:EOF: Warning: {}", filename, msg);
+        eprintln!("{}:EOF: Warning: {}", filename, msg);
     };
     if !matches!(state, State::NONE) {
         return parseerr("Parsing is ended but state is not none");
@@ -659,7 +659,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
     return Some((filename.to_string(), res, labels, main));
 }
 fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
-    println!("[linking...]");
+    eprintln!("[linking...]");
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {
@@ -684,7 +684,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(S
                             },
                             //not found definition
                             None => {
-                                println!("{}:{}:{}: label is declared, but has no definition", filename, lin, index);
+                                eprintln!("{}:{}:{}: label is declared, but has no definition", filename, lin, index);
                                 return None;
                             }
                         }
@@ -693,7 +693,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(S
                     }
                 }
                 if ret >= labels.len()as i64 - 1 {
-                    println!("{}:{}:{}: label not found: {}", filename, lin, index, repr(x));
+                    eprintln!("{}:{}:{}: label not found: {}", filename, lin, index, repr(x));
                     return None;
                 }
             },
@@ -721,7 +721,7 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
        output_to_file: Option<String>) -> simResult {
 use simResult::*;
 use std::fs::{File, OpenOptions};
-    println!("[simulation...]");
+    eprintln!("[simulation...]");
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
         Some(x) => match x.0 {
@@ -742,18 +742,18 @@ use std::fs::{File, OpenOptions};
                 let mut clear_f = match OpenOptions::new().write(true).append(false).create(true).open(x) {
                     Ok(y) => y,
                     Err(e) => {
-                        println!("cannot open file \"{}\" to write in: {}", repr(x), e);
+                        eprintln!("cannot open file \"{}\" to write in: {}", repr(x), e);
                         return errs("E0".to_string());
                     },
                 };
-                File::create(x);
-                clear_f.write(b"");
+                _ = File::create(x);
+                _ = clear_f.write(b"");
             }
             //open file to append mode
             Some(match OpenOptions::new().append(true).write(true).open(x) {
                 Ok(y) => y,
                 Err(e) => {
-                    println!("cannot open file \"{}\" to append in: {}", repr(x), e);
+                    eprintln!("cannot open file \"{}\" to append in: {}", repr(x), e);
                     return errs("E0".to_string());
                 },
             })
@@ -770,7 +770,7 @@ use std::fs::{File, OpenOptions};
         let lin: i64 = loc.0;
         let index: i64 = loc.1;
         if SIM_DEBUG {
-            println!("---- {},{}:{:?} ----\n{:?}", lin, index, i, stack);
+            eprintln!("---- {},{}:{:?} ----\n{:?}", lin, index, i, stack);
         }
         match i {
             Op::Push(x) => {
@@ -779,7 +779,7 @@ use std::fs::{File, OpenOptions};
             Op::PRINT => {
                 match output_to_file {
                     Some(_) => {
-                        f.as_ref().unwrap().write(&[stack.pop().unwrap()as u8]);
+                        _ = f.as_ref().unwrap().write(&[stack.pop().unwrap()as u8]);
                     },
                     None => {
                         print!("{}", char::from_u32(stack.pop().unwrap()as u32).unwrap());
@@ -788,7 +788,7 @@ use std::fs::{File, OpenOptions};
             },
             Op::PUTS => {
                 if SIM_DEBUG {
-                    println!("debug: puts: {:?}", stack);
+                    eprintln!("debug: puts: {:?}", stack);
                 }
                 let strlen: usize = stack.pop().unwrap()as usize;
                 let mut i: usize = 0;
@@ -982,7 +982,7 @@ use std::fs::{File, OpenOptions};
 fn clah(args: &Vec<String>) {
     match cla(args) {
         Ok(mode) => {
-            println!("[command line arguments reading succed]");
+            eprintln!("[command line arguments reading succed]");
             match mode {
                 Mode::SIM => {
                     for_each_arg(&args, |i: &String,
@@ -1005,22 +1005,22 @@ use simResult::*;
                         match error {
                             ok(x) => {
                                 if x == 0 {
-                                    println!("[Simulation of {} succed]", repr(&i));
+                                    eprintln!("[Simulation of {} succed]", repr(&i));
                                 } else {
-                                    println!("[Simulation of {} was finished with exit code {}]", repr(&i), x);
+                                    eprintln!("[Simulation of {} was finished with exit code {}]", repr(&i), x);
                                 }
                             },
                             err => {
-                                println!("[Simulation of {} failed]", repr(&i));
+                                eprintln!("[Simulation of {} failed]", repr(&i));
                             },
                             errs(x) => {
-                                println!("[Simulation of {} failed due to this error: {}]", repr(&i), repr(&x));
+                                eprintln!("[Simulation of {} failed due to this error: {}]", repr(&i), repr(&x));
                             },
                             stopped => {
 
                             },
                             _ => {
-                                println!("[Simulation of {}: Internal error: Unknown  state: {:?}]", repr(&i), err);
+                                eprintln!("[Simulation of {}: Internal error: Unknown  state: {:?}]", repr(&i), err);
                             },
                         }
                     });
@@ -1078,16 +1078,16 @@ use std::fs::{File, OpenOptions};
                     return;
                 },
                 _ => {
-                    println!("Unknown mode: \"{:?}\"", mode);
+                    eprintln!("Unknown mode: \"{:?}\"", mode);
                 },
             }
         },
         Err(x) => {
-            print!("[command line arguments reading failed due to {} previous error", x);
+            eprint!("[command line arguments reading failed due to {} previous error", x);
             if x >= 2 {
-                print!("s");
+                eprint!("s");
             }
-            println!("]");
+            eprintln!("]");
         }
     }
 }

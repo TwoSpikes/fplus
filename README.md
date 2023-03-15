@@ -15,9 +15,9 @@ There're my goals for the future:
 - [x] `dump` subcommand (dump tokens)
 - [ ] `undump` subcommand
 - [ ] `com` and `token-com` subcommand
-- [ ] `insert-code` keyword
+- [ ] `native` keyword
 - [ ] Vim and Emacs syntax highlighting (later)
-- [ ] Output debug information to stderr instead of stdout
+- [x] Output debug information to stderr instead of stdout
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
 Supported compilation modes:
