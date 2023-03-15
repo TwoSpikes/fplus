@@ -92,7 +92,7 @@ It will translate F+ code to tokens and write this to subc-dump-file.txt:
 3:18:PRINT
 -2:-2:Push(0)
 ```
-If you will not provide `-o` option, tokens will dump on the screen instead (with debug information).
+If you will not provide `-o` option, tokens will dump on the stdout instead (with debug information).
 
 #### `-o` option examples:
 ```console
@@ -105,7 +105,7 @@ Hello, World!
 ```
 into the `hello-world-output.txt` file.
 
-If you will not provide `-o` option, Hello, World! will be printed to the screen instead.
+If you will not provide `-o` option, Hello, World! will be printed to the stdout instead.
 
 ## VERSION:
 ```
