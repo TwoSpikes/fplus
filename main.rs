@@ -4,6 +4,7 @@ use std:: {
     fmt
 };
 
+const SIM_DEBUG: bool = true;
 
 fn linkparselexget(filename: &String) -> Option<Vec<(Op, Loc)>> {
     match parse(&{
@@ -198,7 +199,7 @@ error e               Print error code and information about them");
 fn version() {
     println!("F+, a stack-based interpreting programming language
 written on Rust v.1.68.0
-version: 0.1.0-2
+version: 0.1.0-3
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes");
 }
@@ -336,7 +337,7 @@ use crate::Retlex::E;
             },
         }
         //'\n' then push '\n'
-        if i == '\n' || i == ':' {
+        if i == '\n' || i == ':' || i == '(' || i == ')' {
             loc.0 += 1;
             loc.1  = 1;
             res.push(Tok(ploc, tmp.to_owned()));
@@ -451,13 +452,15 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
         //label with definition
         FN,
         DBGMSG,
+        //function address
+        FNADDR,
     }
     let mut state: State = State::NONE;
     let mut labels: Vec<(String, Option<i64>)> = Vec::new();
     let mut main: Option<usize> = None;
     //multi-line comment
     let mut mlc: u32 = 0;
-    let mut callstk: Vec<Option<usize>> = Vec::new();
+    let mut callstk: Vec<usize> = Vec::new();
     let mut ind: isize = -1;
     while {ind+=1;ind} < pr.len()as isize{
         let i: &Tok = &pr[ind as usize];
@@ -490,6 +493,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
         if mlc > 0 {
             continue;
         }
+        eprintln!("parse: callstk={:?} val={}", callstk, repr(val.as_str()));
 
         res.append(&mut if val.as_str().chars().nth(0) == Some('\'') && matches!(state, State::NONE) {
             vec![
@@ -540,11 +544,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
             }
             tmpres
         } else {match strtoi64(val) {
-            Some(x) => {
-                vec![
-                    (Ok(Op::Push(x)), *loc),
-                ]
-            },
+            Some(x) => {vec![
+                (Ok(Op::Push(x)), *loc),
+            ]},
             None => { match state {
                     State::NONE =>
                 vec![(match val.as_str() {
@@ -565,11 +567,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                     },
                     "if" => Ok(Op::GIF),
                     ":" => {
-                        res.push((Ok(Op::G), *loc));
-                        if callstk.len() > 0 {
-                            let callstktmp: i64 = callstk.pop().unwrap().unwrap()as i64;
-                            res.insert(callstktmp as usize, (Ok(Op::Push(callstktmp + (res.len()as i64 - callstktmp) + 1)), *loc));
-                        }
+                        state = State::FNADDR;
                         continue;
                     },
                     "pushnth" => Ok(Op::PUSHNTH),
@@ -597,14 +595,44 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                         continue;
                     },
                     "dump" => Ok(Op::DUMP),
-                    "call" => {
-                        callstk.push(Some(res.len()+0));
+                    "(" => {
+                        callstk.push(res.len());
+                        continue;
+                    },
+                    ")" => {
+                        let insertion_index: usize = match callstk.pop() {
+                            Some(x) => x,
+                            None => {
+                                return parseerr("call underflow!");
+                            },
+                        };
+                        let address: Result<usize, String> = match res[insertion_index-1].0.clone() {
+                            Ok(x) => match x {
+                                Op::Push(y) => Ok(y as usize),
+                                _ => {
+                                    return parseerr("wrong call token");
+                                },
+                            },
+                            Err(x) => Err(x),
+                        };
+                        res.remove(insertion_index-1);
+                        res.push((match address {
+                            Ok(address) => Ok(Op::Push(address as i64)),
+                            Err(address) => Err(address),
+                        }, *loc));
+                        res.push((Ok(Op::G), *loc));
                         continue;
                     },
                     "argc" => Ok(Op::ARGC),
                     "argv" => Ok(Op::ARGV),
                     "read" => Ok(Op::READ),
-                    _ => Err(val.to_string()),
+                    _ => {
+                        res.append(&mut vec![
+                            (Err(val.to_string()), *loc),
+                            (Ok(Op::G), *loc),
+                        ]);
+                        continue;
+                    },
                 }, *loc)],
                     State::LBL => {
                         if let "main" = &*val.as_str() {
@@ -630,6 +658,13 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                         state = State::NONE;
                         continue;
                     },
+                    State::FNADDR => {
+                        res.append(&mut vec![
+                            (Err(val.to_string()), *loc),
+                        ]);
+                        state = State::NONE;
+                        continue;
+                    },
                     State::DBGMSG => {
                         res.push((Ok(Op::DBGMSG(val.as_str().into())), *loc));
                         state = State::NONE;
@@ -652,6 +687,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
     };
     if !matches!(state, State::NONE) {
         return parseerr("Parsing is ended but state is not none");
+    }
+    if callstk.len() > 0 {
+        return parseerr("Callstk is not empty");
     }
     //to avoid not founding labels
     labels.push(("".to_string(), None));
@@ -705,8 +743,6 @@ fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(S
     }), Loc(-2,-2)));
     return Some(linkres);
 }
-
-const SIM_DEBUG: bool = false;
 
 #[derive(Debug)]
 enum simResult {

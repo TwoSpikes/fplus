@@ -1,1 +1,6 @@
-666 dump
+fn a
+  "fn: a" puts
+  dump dump dump
+  0 exit
+fn main
+  :a(3 2 1)
