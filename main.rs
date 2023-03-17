@@ -5,6 +5,7 @@ use std:: {
 };
 
 const SIM_DEBUG: bool = true;
+const LINK_DEBUG: bool = false;
 
 fn linkparselexget(filename: &String) -> Option<Vec<(Op, Loc)>> {
     match parse(&{
@@ -406,37 +407,38 @@ fn strtoi64(x: &String) -> Option<i64> {
 
 #[derive(Debug, Clone)]
 enum Op {
-    Push(i64),
-    PRINT,
-    PUTS,
-    FLUSH,
-    INP,
-    PLUS,
-    MUL,
+    Push(i64), //push number to the stack
+    PRINT,  //print char (same as number)
+    PUTS,   //print string
+    FLUSH,  //print stdout buffer and clear it
+    INP,    //read line from stdin
+    PLUS,   // +
+    MUL,    // *
     GIF,    //gotoif
     G,      //goto
-    PUSHNTH,
-    DROPNTH,
-    NBROT,
-    LT,
-    EQ,
-    NOT,
-    OR,
-    EXIT,
-    PSTK,  //print stack
-    PSTKE, //print stack & exit
-    DBGMSG(Box<str>),
-    DUMP,
-    ARGC,
-    ARGV,
-    READ,  //read file to string
+    PUSHNTH,//copy nth element to the top
+    DROPNTH,//remove nth element
+    NBROT,  //move top of the stack to n elements to left
+    LT,     // <
+    EQ,     // ==
+    NOT,    // !
+    OR,     // ||
+    EXIT,   //exit the program
+    PSTK,   //print stack
+    PSTKE,  //print stack & exit
+    DBGMSG(Box<str>), //print debug message
+    DUMP,   //print stack top
+    ARGC,   //command line arguments: get length
+    ARGV,   //command line arguments: get element by index
+    READ,   //read file to string
+    EMPTY,  //does nothing
 }
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
-//////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
     if false {
         eprintln!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
@@ -446,14 +448,11 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
     let mut res: Vec<(Result<Op, String>, Loc)> = vec![];
     #[derive(Debug)]
     enum State {
-        NONE,
-        //label without definition
-        LBL,
-        //label with definition
-        FN,
-        DBGMSG,
-        //function address
-        FNADDR,
+        NONE, //no special commands
+        LBL, //label without definition (maybe useless)
+        FN, //label with definition
+        DBGMSG, //print debug message
+        FNADDR, //function address
     }
     let mut state: State = State::NONE;
     let mut labels: Vec<(String, Option<i64>)> = Vec::new();
@@ -461,6 +460,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
     //multi-line comment
     let mut mlc: u32 = 0;
     let mut callstk: Vec<usize> = Vec::new();
+    let mut stksim: Vec<usize> = Vec::new();
     let mut ind: isize = -1;
     while {ind+=1;ind} < pr.len()as isize{
         let i: &Tok = &pr[ind as usize];
@@ -544,19 +544,24 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
             }
             tmpres
         } else {match strtoi64(val) {
-            Some(x) => {vec![
-                (Ok(Op::Push(x)), *loc),
-            ]},
-            None => { match state {
-                    State::NONE =>
-                vec![(match val.as_str() {
+            Some(x) => {
+                res.append(&mut vec![
+                    (Ok(Op::Push(x)), *loc),
+                ]);
+                stksim.push(res.len());
+                continue;
+            },
+            None => match state {
+                    State::NONE => {
+use crate::Op::*;
+                let matchresult: Op = match val.as_str() {
                     ""|"\n" => continue,
-                    "+" => Ok(Op::PLUS),
-                    "*" => Ok(Op::MUL),
-                    "putc" => Ok(Op::PRINT),
-                    "puts" => Ok(Op::PUTS),
-                    "flush" => Ok(Op::FLUSH),
-                    "input" => Ok(Op::INP),
+                    "+" => PLUS,
+                    "*" => MUL,
+                    "putc" => PRINT,
+                    "puts" => PUTS,
+                    "flush" => FLUSH,
+                    "input" => INP,
                     "lbl" => {
                         state = State::LBL;
                         continue;
@@ -565,26 +570,26 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                         state = State::FN;
                         continue;
                     },
-                    "if" => Ok(Op::GIF),
+                    "if" => GIF,
                     ":" => {
                         state = State::FNADDR;
                         continue;
                     },
-                    "pushnth" => Ok(Op::PUSHNTH),
-                    "dropnth" => Ok(Op::DROPNTH),
-                    "nbrot" => Ok(Op::NBROT),
-                    "<" => Ok(Op::LT),
-                    "=" => Ok(Op::EQ),
-                    "!" => Ok(Op::NOT),
-                    "|" => Ok(Op::OR),
-                    "exit" => Ok(Op::EXIT),
-                    "??#" => Ok(Op::PSTK),
-                    "???" => Ok(Op::PSTKE),
+                    "pushnth" => PUSHNTH,
+                    "dropnth" => DROPNTH,
+                    "nbrot" => NBROT,
+                    "<" => LT,
+                    "=" => EQ,
+                    "!" => NOT,
+                    "|" => OR,
+                    "exit" => EXIT,
+                    "??#" => PSTK,
+                    "???" => PSTKE,
                     "dbgmsg" => {
                         state = State::DBGMSG;
                         continue;
                     },
-                    "addr" => Ok(Op::Push(res.len()as i64)),
+                    "addr" => Push(res.len()as i64),
                     "paddr" => {
                         println!("paddr: {}", res.len());
                         continue;
@@ -594,7 +599,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                         ind = res.len()as isize;
                         continue;
                     },
-                    "dump" => Ok(Op::DUMP),
+                    "dump" => DUMP,
                     "(" => {
                         callstk.push(res.len());
                         continue;
@@ -602,30 +607,22 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                     ")" => {
                         let insertion_index: usize = match callstk.pop() {
                             Some(x) => x,
-                            None => {
-                                return parseerr("call underflow!");
-                            },
+                            None => return parseerr("call underflow!"),
                         };
-                        let address: Result<usize, String> = match res[insertion_index-1].0.clone() {
-                            Ok(x) => match x {
-                                Op::Push(y) => Ok(y as usize),
-                                _ => {
-                                    return parseerr("wrong call token");
-                                },
-                            },
-                            Err(x) => Err(x),
-                        };
-                        res.remove(insertion_index-1);
-                        res.push((match address {
-                            Ok(address) => Ok(Op::Push(address as i64)),
-                            Err(address) => Err(address),
-                        }, *loc));
+                        eprintln!("insertion_index={} res={:?}", insertion_index, res);
+                        let element = res.remove(insertion_index-1);
+                        res.push(element);
                         res.push((Ok(Op::G), *loc));
                         continue;
                     },
-                    "argc" => Ok(Op::ARGC),
-                    "argv" => Ok(Op::ARGV),
-                    "read" => Ok(Op::READ),
+                    "#" => {
+                        eprintln!("calling without pushing current address is not implemented yet");
+                        return None;
+                    },
+                    "argc" => ARGC,
+                    "argv" => ARGV,
+                    "read" => READ,
+                    "empty_op" => EMPTY,
                     _ => {
                         res.append(&mut vec![
                             (Err(val.to_string()), *loc),
@@ -633,7 +630,12 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                         ]);
                         continue;
                     },
-                }, *loc)],
+                };
+                res.append(&mut vec![
+                    (Ok(matchresult), *loc),
+                ]);
+                continue;
+                    },
                     State::LBL => {
                         if let "main" = &*val.as_str() {
                             main = Some(res.len()as usize);
@@ -676,8 +678,8 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
                     },
                 }
             }
-        }});
-    }
+        }
+    );}
     let parseerr = |msg: &str| {
         eprintln!("{}:EOF: Error: {}", filename, msg);
         return None::<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)>;
@@ -757,7 +759,13 @@ fn sim(pr: &mut Vec<(Op, Loc)>,
        output_to_file: Option<String>) -> simResult {
 use simResult::*;
 use std::fs::{File, OpenOptions};
-    eprintln!("[simulation...]");
+use crate::Op::*;
+    if !LINK_DEBUG {
+        eprintln!("[simulation...]");
+    } else {
+        eprintln!("[simulation: {:?}]", pr);
+        return stopped;
+    }
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
         Some(x) => match x.0 {
@@ -809,10 +817,10 @@ use std::fs::{File, OpenOptions};
             eprintln!("---- {},{}:{:?} ----\n{:?}", lin, index, i, stack);
         }
         match i {
-            Op::Push(x) => {
+            Push(x) => {
                 stack.push(*x);
             },
-            Op::PRINT => {
+            PRINT => {
                 match output_to_file {
                     Some(_) => {
                         _ = f.as_ref().unwrap().write(&[stack.pop().unwrap()as u8]);
@@ -822,7 +830,7 @@ use std::fs::{File, OpenOptions};
                     },
                 }
             },
-            Op::PUTS => {
+            PUTS => {
                 if SIM_DEBUG {
                     eprintln!("debug: puts: {:?}", stack);
                 }
@@ -843,17 +851,17 @@ use std::fs::{File, OpenOptions};
                     },
                 }
             },
-            Op::FLUSH => {
+            FLUSH => {
                 _ = std::io::stdout().flush();
             },
-            Op::INP => {
+            INP => {
                 let mut input: String = String::new();
                 let stdin = std::io::stdin();
                 _ = stdin.read_line(&mut input);
                 stack.append(&mut from(&input).iter().rev().map(|x| *x).collect::<Vec<i64>>());
                 stack.push(input.len()as i64);
             },
-            Op::PLUS => {
+            PLUS => {
                 let a: i64 = match stack.pop() {
                     Some(x) => x,
                     None => {
@@ -868,7 +876,7 @@ use std::fs::{File, OpenOptions};
                 };
                 stack.push(a + b)
             },
-            Op::MUL => {
+            MUL => {
                 let a: i64 = match stack.pop() {
                     Some(x) => x,
                     None => {
@@ -883,7 +891,7 @@ use std::fs::{File, OpenOptions};
                 };
                 stack.push(a * b)
             },
-            Op::GIF => {
+            GIF => {
                 let addr: i64 = match stack.pop() {
                     Some(x) => x-1,
                     None => {
@@ -900,7 +908,7 @@ use std::fs::{File, OpenOptions};
                     ind = addr.try_into().unwrap();
                 }
             },
-            Op::G => {
+            G => {
                 let addr: i64 = match stack.pop() {
                     Some(x) => x-1,
                     None => {
@@ -909,7 +917,7 @@ use std::fs::{File, OpenOptions};
                 };
                 ind = addr.try_into().unwrap();
             },
-            Op::PUSHNTH => {
+            PUSHNTH => {
                 let a: i64 = stack.pop().unwrap();
                 if a >= stack.len()as i64 {
                     return errs("pushnth overflow".to_owned());
@@ -917,51 +925,51 @@ use std::fs::{File, OpenOptions};
                 let b: i64 = stack[stack.len()-1-a as usize];
                 stack.push(b);
             },
-            Op::DROPNTH => {
+            DROPNTH => {
                 let a: i64 = stack.pop().unwrap();
                 stack.remove(stack.len()-1-a as usize);
             },
-            Op::NBROT => {
+            NBROT => {
                 let l: i64 = stack.pop().unwrap();
                 let a: i64 = stack.pop().unwrap();
                 stack.insert(stack.len()-0-l as usize, a);
             },
-            Op::LT => {
+            LT => {
                 let a: i64 = stack.pop().unwrap();
                 let b: i64 = stack.pop().unwrap();
                 stack.push((b < a).try_into().unwrap());
             },
-            Op::EQ => {
+            EQ => {
                 let a: i64 = stack.pop().unwrap();
                 let b: i64 = stack.pop().unwrap();
                 stack.push((b == a).try_into().unwrap());
             },
-            Op::NOT => {
+            NOT => {
                 let a: i64 = stack.pop().unwrap();
                 stack.push((a == 0).try_into().unwrap());
             },
-            Op::OR => {
+            OR => {
                 let a: i64 = stack.pop().unwrap();
                 let b: i64 = stack.pop().unwrap();
                 stack.push(((a != 0) || (b != 0)).try_into().unwrap());
             },
-            Op::EXIT => {
+            EXIT => {
                 println!();
                 let a: i64 = stack.pop().unwrap();
                 return ok(a.try_into().unwrap());
             },
-            Op::PSTK => {
+            PSTK => {
                 if !SIM_DEBUG {
                     println!("{}:{}: pstk  {:?}", lin, index, stack);
                 }
             },
-            Op::PSTKE => {
+            PSTKE => {
                 if !SIM_DEBUG {
                     println!("{}:{}: pstke {:?}", lin, index, stack);
                 }
                 return err;
             },
-            Op::DUMP => {
+            DUMP => {
                 println!("dump: {}", match stack.pop() {
                     Some(x) => x,
                     None => {
@@ -969,10 +977,10 @@ use std::fs::{File, OpenOptions};
                     },
                 });
             },
-            Op::ARGC => {
+            ARGC => {
                 stack.push(argv.len().try_into().unwrap());
             },
-            Op::ARGV => {
+            ARGV => {
                 let a: i64 = stack.pop().unwrap();
                 if a >= argv.len()as i64 {
                     return errs("Argv overflow".to_owned());
@@ -985,7 +993,7 @@ use std::fs::{File, OpenOptions};
                 }
                 stack.push(argv[a as usize].len().try_into().unwrap());
             },
-            Op::READ => {
+            READ => {
                 let mut filename: String = "".to_owned();
                 let filename_len: usize  = stack.pop().unwrap().try_into().unwrap();
                 let mut ind: usize = 0;
@@ -1003,8 +1011,11 @@ use std::fs::{File, OpenOptions};
                 stack.append(&mut file.chars().map(|x| x as i64).collect::<Vec<i64>>());
                 stack.push(file.len().try_into().unwrap());
             },
-            Op::DBGMSG(x) => {
+            DBGMSG(x) => {
                 println!("dbgmsg: {}", repr(x));
+            },
+            EMPTY => {
+
             },
             _ => {
                 return errs(strcat("unknown op: ", &i.to_string()));
@@ -1053,7 +1064,7 @@ use simResult::*;
                                 eprintln!("[Simulation of {} failed due to this error: {}]", repr(&i), repr(&x));
                             },
                             stopped => {
-
+                                eprintln!("[Simulation of {} stopped]", repr(&i));
                             },
                             _ => {
                                 eprintln!("[Simulation of {}: Internal error: Unknown  state: {:?}]", repr(&i), err);
