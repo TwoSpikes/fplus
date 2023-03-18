@@ -282,4 +282,130 @@ Stack: [1] because (1 | 1 <=> true)
 
 Same will happen if all 1's will change to bigger numbers because `Or` anyways will cast arguments to boolean.
 
-'; DROP DATABASE USERS;
+## Command line arguments
+
+#### Providing
+```console
+$ ./target/release/fplus sim main.tspl -- a b c
+```
+
+This option will provide `main.tspl`, `a`, `b` and `c` command line arguments.
+This is how to get access to him:
+
+#### Argc `argc`
+
+Consumes 0 arguments.\
+Returns number of provided command line arguments.
+
+```fplus
+argc
+```
+Stack: [4]
+
+#### Argv `argv`
+
+Consumes 1 argument: `(number) a`\
+Returns [String](#String) with a-th command line argument.
+
+```fplus
+2 argv
+```
+Stack: [98, 1] or "b"
+
+All this programs will work like that only if you provide `a`, `b` and `c` command line arguments.
+
+## Files
+
+#### Reading `read`
+
+Consumes 1 [String](#String).\
+Return 1 [String](#String): file's content with given name.
+
+```fplus
+"main.tspl" read
+```
+Stack: [108, 112, 115, 116, 46, 110, 105, 97, 109, 9, 16] or '"main.tspl" read'
+
+## Special
+
+#### Empty op `empty_op`
+
+Does nothing. Just need for debugging purposes.
+
+#### Dump `dump`
+
+Consumes 1 argument: `(number) a`\
+Print `a` without converting it from ASCII to string.\
+Need for debugging purposes.
+
+```fplus
+69 dump
+```
+Stdout is empty.\
+Stderr: "69"
+
+#### Exit `exit`
+
+Exit the program
+
+Consumes 1 argument: `(number) exitcode`\
+Exits the program. It does not need to return anything.
+
+```fplus
+0 exit
+```
+Stderr: '[Simulation of "main.tspl" succed]'
+
+```fplus
+1 exit
+```
+Stderr: '[Simulation of "main.tspl" finished with exit code 1]'
+
+## Input, Output (I/O)
+
+#### Print char `putc`
+
+Consumes 1 argument: `(number) chr`\
+Returns nothing.\
+Prints chr as ASCII to stdout (printing to stderr is not implemented yet).
+
+```fplus
+69 putc
+```
+Stdout: "E"
+
+#### Print string `puts`
+
+I will write how to make [String](#String) later.
+
+```fplus
+65 66 67 3 args
+```
+Stdout: "abc"
+
+```fplus
+"Hello, World!" puts
+```
+Stdout: "Hello, World!"
+
+## Literals
+
+#### String
+
+Strings are like:
+```fplus
+"Hello, World!"
+```
+Stack: [33, 100, 108, 114, 111, 87, 32, 44, 111, 108, 108, 101, 72, 13]
+
+You can use simple escaping like in C like this:
+
+| Code                      | Stdout                      |
+| ---                       | ---                         |
+| "\n"                      | new string                  |
+| "\t"                      | tab                         |
+| "\\"                      | backslash                   |
+| "\'"                      | quote                       |
+| "\""                      | double quote                |
+
+Strings are inverted at the stack and has its length at the end.
