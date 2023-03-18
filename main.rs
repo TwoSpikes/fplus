@@ -695,7 +695,8 @@ use crate::Callmode::*;
                     _ => {
                         res.append(&mut vec![
                             (Err(val.to_string()), *loc),
-                            (Ok(Op::G), *loc),
+                            (Ok(Push(1)), *loc),
+                            (Ok(G), *loc),
                         ]);
                         continue;
                     },
