@@ -1,7 +1,0 @@
-fn a
-  :b#()
-  /* same will be in following case #:b() */
-
-  1 exit
-fn b
-  ???

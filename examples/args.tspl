@@ -1,8 +1,8 @@
 fn loop
-  0 pushnth argc < ! end if
+  0 pushnth argc < ! :end if
   0 pushnth argv puts '\n putc
   1 +
-  loop:
+  loop
 
 fn end
   "end of the program\n" puts
@@ -10,4 +10,4 @@ fn end
 
 fn main
   0
-  loop:
+  loop
