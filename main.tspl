@@ -1,5 +1,7 @@
 fn a
-  "fn a\n" puts
+  :b#()
+  /* same will be in following case #:b() */
+
+  1 exit
+fn b
   ???
-fn main
-  :a(1 2 3)

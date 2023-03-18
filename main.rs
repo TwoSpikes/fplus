@@ -4,8 +4,42 @@ use std:: {
     fmt
 };
 
-const SIM_DEBUG: bool = true;
+
+// -- simulating --
+//show every token on runtime and stack state
+const SIM_DEBUG: bool = false;
+//show stack state in puts command
+const SIM_DEBUG_PUTS: bool = false;
+
+// -- linking --
+//Show resulting program
 const LINK_DEBUG: bool = false;
+//Stop on linking, do not run
+//(e.g. when infinite loop)
+const ONLY_LINK: bool = false;
+//print message "[linking succed]"
+const LINK_DEBUG_SUCCED: bool = true;
+
+// -- parsing --
+//show every token and some variables for parsing
+const PARSE_DEBUG: bool = false;
+//show callstack
+const PARSE_DEBUG_CALL: bool = false;
+//print message "[Parsing succed]"
+const PARSE_DEBUG_SUCCED: bool = true;
+//callmode without # operator
+const CALLMODE_DEFAULT: Callmode = Callmode::WITH_ADDRESS_LEFT;
+//callmode with # operator
+const CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
+
+#[derive(Debug)]
+enum Callmode {
+    WITHOUT_ADDRESS,    //like goto operator in C
+                        //or jmp operator in asm
+    WITH_ADDRESS_LEFT,  //save address in the top of the stack
+                        //to jump there in the end of function
+    WITH_ADDRESS_RIGHT, //save address before arguments
+}
 
 fn linkparselexget(filename: &String) -> Option<Vec<(Op, Loc)>> {
     match parse(&{
@@ -33,10 +67,14 @@ use crate::Retlex::E;
             },
     }}, &filename) {
         Some(x) => {
-            eprintln!("[Parsing succed]");
+            if PARSE_DEBUG_SUCCED {
+                eprintln!("[Parsing succed]");
+            }
             match link(&x.0, &x.1, &x.2, &x.3) {
                 Some(x) => {
-                    eprintln!("[linking succed]");
+                    if LINK_DEBUG_SUCCED {
+                        eprintln!("[linking succed]");
+                    }
                     Some(x)
                 },
                 None => {
@@ -200,7 +238,7 @@ error e               Print error code and information about them");
 fn version() {
     println!("F+, a stack-based interpreting programming language
 written on Rust v.1.68.0
-version: 0.1.0-3
+version: 0.1.0-4
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes");
 }
@@ -214,6 +252,7 @@ enum Mode {
     NONE,
     SIM,
     DUMP,
+    ERRCODES,
 }
 fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     let mut err: i32 = 0;
@@ -241,6 +280,10 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
         },
         "dump"|"d" => {
             return Ok(Mode::DUMP);
+        },
+        "error"|"e" => {
+            errorcodes();
+            return Ok(Mode::NONE);
         },
         _ => {
             eprintln!("Unknown subcommand: \"{}\"", args[1]);
@@ -337,8 +380,8 @@ use crate::Retlex::E;
                 return E;
             },
         }
-        //'\n' then push '\n'
-        if i == '\n' || i == ':' || i == '(' || i == ')' {
+        //push special symbols as special symbols
+        if i == '\n' || i == ':' || i == '(' || i == ')' || i == '#' {
             loc.0 += 1;
             loc.1  = 1;
             res.push(Tok(ploc, tmp.to_owned()));
@@ -448,9 +491,9 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
     let mut res: Vec<(Result<Op, String>, Loc)> = vec![];
     #[derive(Debug)]
     enum State {
-        NONE, //no special commands
-        LBL, //label without definition (maybe useless)
-        FN, //label with definition
+        NONE,   //no special commands
+        LBL,    //label without definition (maybe useless)
+        FN,     //label with definition
         DBGMSG, //print debug message
         FNADDR, //function address
     }
@@ -461,6 +504,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
     let mut mlc: u32 = 0;
     let mut callstk: Vec<usize> = Vec::new();
     let mut stksim: Vec<usize> = Vec::new();
+    let mut callmode: Callmode = CALLMODE_DEFAULT;
     let mut ind: isize = -1;
     while {ind+=1;ind} < pr.len()as isize{
         let i: &Tok = &pr[ind as usize];
@@ -493,7 +537,10 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
         if mlc > 0 {
             continue;
         }
-        eprintln!("parse: callstk={:?} val={}", callstk, repr(val.as_str()));
+        if PARSE_DEBUG {
+            eprintln!("parse: callstk={:?} val={} callmode={:?}",
+                      callstk, repr(val.as_str()), callmode);
+        }
 
         res.append(&mut if val.as_str().chars().nth(0) == Some('\'') && matches!(state, State::NONE) {
             vec![
@@ -605,19 +652,41 @@ use crate::Op::*;
                         continue;
                     },
                     ")" => {
+use crate::Callmode::*;
                         let insertion_index: usize = match callstk.pop() {
                             Some(x) => x,
                             None => return parseerr("call underflow!"),
                         };
-                        eprintln!("insertion_index={} res={:?}", insertion_index, res);
+                        if PARSE_DEBUG_CALL {
+                            eprintln!("insertion_index={} res={:?}", insertion_index, res);
+                        }
+                        //remove address
                         let element = res.remove(insertion_index-1);
+                        //push it to the top
                         res.push(element);
-                        res.push((Ok(Op::G), *loc));
+
+                        match callmode {
+                            WITHOUT_ADDRESS => {
+                                
+                            },
+                            WITH_ADDRESS_LEFT => {
+                                res.insert(insertion_index, (Ok(Push(res.len()as i64)), *loc));
+                                callmode = WITHOUT_ADDRESS;
+                            },
+                            WITH_ADDRESS_RIGHT => {
+                                res.push((Ok(Push(res.len()as i64)), *loc));
+                                callmode = WITHOUT_ADDRESS;
+                            },
+                        }
+
+                        //push condition (true)
+                        res.push((Ok(Push(1)), *loc));
+                        res.push((Ok(G), *loc));
                         continue;
                     },
                     "#" => {
-                        eprintln!("calling without pushing current address is not implemented yet");
-                        return None;
+                        callmode = CALLMODE_ON_OPERATOR;
+                        continue;
                     },
                     "argc" => ARGC,
                     "argv" => ARGV,
@@ -763,7 +832,16 @@ use crate::Op::*;
     if !LINK_DEBUG {
         eprintln!("[simulation...]");
     } else {
-        eprintln!("[simulation: {:?}]", pr);
+        eprintln!("[simulation:");
+        let mut ind: usize = 0;
+        for i in &mut *pr {
+            ind += 1;
+            eprintln!("  {}  {}:{}:{:?}",
+                      ind, i.1.0, i.1.1, i.0);
+        }
+        eprintln!("]");
+    }
+    if ONLY_LINK {
         return stopped;
     }
     let mut stack: Vec<i64> = vec![];
@@ -831,7 +909,7 @@ use crate::Op::*;
                 }
             },
             PUTS => {
-                if SIM_DEBUG {
+                if SIM_DEBUG_PUTS && !SIM_DEBUG{
                     eprintln!("debug: puts: {:?}", stack);
                 }
                 let strlen: usize = stack.pop().unwrap()as usize;
