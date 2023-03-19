@@ -7,13 +7,13 @@ use std:: {
 
 // -- simulating --
 //show every token on runtime and stack state
-const SIM_DEBUG: bool = false;
+const SIM_DEBUG: bool = true;
 //show stack state in puts command
 const SIM_DEBUG_PUTS: bool = false;
 
 // -- linking --
 //Show resulting program
-const LINK_DEBUG: bool = false;
+const LINK_DEBUG: bool = true;
 //Stop on linking, do not run
 //(e.g. when infinite loop)
 const ONLY_LINK: bool = false;
@@ -25,6 +25,8 @@ const LINK_DEBUG_SUCCED: bool = true;
 const PARSE_DEBUG: bool = false;
 //show callstack
 const PARSE_DEBUG_CALL: bool = false;
+//show debug information about strings
+const PARSE_DEBUG_STRING: bool = true;
 //print message "[Parsing succed]"
 const PARSE_DEBUG_SUCCED: bool = true;
 //callmode without # operator
@@ -582,12 +584,17 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
             let mut tmpres: Vec<(Result<Op, String>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
                 "" => tmpres.push((Ok(Op::Push((tmpStr.len()).try_into().unwrap())), Loc(-1,-1))),
+                // FIXME: '\n' symbol must be at the left
                 "r" => {},
+                // FIXME: string length must be at the left
                 "c" => tmpres.push((Ok(Op::Push(0)), Loc(-1,-1))),
                 _ => {
                     eprintln!("custom string postfixes are not implemented yet: {}", tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
                     return None;
                 },
+            }
+            if PARSE_DEBUG_STRING {
+                eprintln!("tmpres={:?}", tmpres);
             }
             tmpres
         } else {match strtoi64(val) {
@@ -660,27 +667,27 @@ use crate::Callmode::*;
                         if PARSE_DEBUG_CALL {
                             eprintln!("insertion_index={} res={:?}", insertion_index, res);
                         }
-                        //remove address
-                        let element = res.remove(insertion_index-1);
-                        //push it to the top
-                        res.push(element);
 
                         match callmode {
                             WITHOUT_ADDRESS => {
                                 
                             },
                             WITH_ADDRESS_LEFT => {
-                                res.insert(insertion_index, (Ok(Push(res.len()as i64)), *loc));
-                                callmode = WITHOUT_ADDRESS;
+                                eprintln!("inserting {} to {}: {:?}", res.len(), insertion_index, res);
+                                res.insert(insertion_index, (Ok(Push((res.len()+2)as i64)), *loc));
+                                eprintln!("inserted: {:?}", res);
                             },
                             WITH_ADDRESS_RIGHT => {
-                                res.push((Ok(Push(res.len()as i64)), *loc));
-                                callmode = WITHOUT_ADDRESS;
+                                res.push((Ok(Push((res.len()+1)as i64)), *loc));
                             },
                         }
+                        callmode = CALLMODE_DEFAULT;
 
-                        //push condition (true)
-                        res.push((Ok(Push(1)), *loc));
+                        //remove address to jump in
+                        let element = res.remove(insertion_index-1);
+                        //push it to the top
+                        res.push(element);
+
                         res.push((Ok(G), *loc));
                         continue;
                     },
@@ -836,9 +843,9 @@ use crate::Op::*;
         eprintln!("[simulation:");
         let mut ind: usize = 0;
         for i in &mut *pr {
-            ind += 1;
             eprintln!("  {}  {}:{}:{:?}",
                       ind, i.1.0, i.1.1, i.0);
+            ind += 1;
         }
         eprintln!("]");
     }
@@ -893,7 +900,7 @@ use crate::Op::*;
         let lin: i64 = loc.0;
         let index: i64 = loc.1;
         if SIM_DEBUG {
-            eprintln!("---- {},{}:{:?} ----\n{:?}", lin, index, i, stack);
+            eprintln!("---- {}. {}:{}:{:?} ----\n{:?}", ind, lin, index, i, stack);
         }
         match i {
             Push(x) => {
@@ -914,6 +921,9 @@ use crate::Op::*;
                     eprintln!("debug: puts: {:?}", stack);
                 }
                 let strlen: usize = stack.pop().unwrap()as usize;
+                if stack.len() < strlen {
+                    return errs("puts underflow".to_owned());
+                }
                 let mut i: usize = 0;
                 let mut string: String = "".to_owned();
                 while i < strlen {
