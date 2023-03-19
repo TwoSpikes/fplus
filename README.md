@@ -8,20 +8,41 @@ There're my goals for the future:
 - [x] repr(&str) and urepr(&str) functions (proper escaping like in C)
 - [x] Function predeclaration (linking)
 - [x] Negative numbers (`-1`, `---50`)
-- [ ] Float numbers (same type with "normal" numbers)
+- [ ] Float numbers (same type with "normal" numbers) (F64)
+- [ ] Float numbers with double precision (same type with "normal" numbers) (D64)
+- [ ] Unsigned 64-bit numbers (same type with "normal" numbers) (like `30u`)
 - [ ] `include` keyword
 - [ ] `macro` keyword
 - [x] Drop-in documentation
 - [x] `dump` subcommand (dump tokens)
 - [ ] `undump` subcommand
-- [ ] `com` and `token-com` subcommand
+- [ ] `com` and `token-com` subcommand (for compilation)
 - [ ] `native` keyword
 - [ ] Vim and Emacs syntax highlighting (later)
 - [x] Output debug information to stderr instead of stdout
+- [ ] Ability to stderr printing
+- [x] Command line arguments (see [argc](#argc) and [argv](#argv))
+- [x] Global variables that switch debug information on/off
+- [ ] Variables that switch denug information on/off through file `debug.tsconf` or through command line options
+- [ ] Colored output somehow through escaping
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
+
+- [ ] Standard library (not implemented yet because [including files](#include) is not implemented yet:
+- [ ] I64ToStr function
+- [ ] U64ToStr function
+- [ ] F64ToStr function
+- [ ] D64ToStr function
+- [ ] StrToI64 function
+- [ ] StrToU64 function
+- [ ] StrToF64 function
+- [ ] StrToD64 function
+
+[\\]: # TODO: print about functions and function calls
+[\\]: # TODO: remove that stderr printing is not implemented yet when it is implemented
 
 Supported compilation modes:
 - Simulation (default)
+- C (not implemented yet)
 
 # Compiler
 
@@ -367,7 +388,7 @@ Stderr: '[Simulation of "main.tspl" finished with exit code 1]'
 
 Consumes 1 argument: `(number) chr`\
 Returns nothing.\
-Prints chr as ASCII to stdout (printing to stderr is not implemented yet).
+Prints chr as ASCII to stdout ([printing to stderr](#stderr printing) is not implemented yet).
 
 ```fplus
 69 putc
