@@ -7,13 +7,13 @@ use std:: {
 
 // -- simulating --
 //show every token on runtime and stack state
-const SIM_DEBUG: bool = true;
+const SIM_DEBUG: bool = false;
 //show stack state in puts command
 const SIM_DEBUG_PUTS: bool = false;
 
 // -- linking --
 //Show resulting program
-const LINK_DEBUG: bool = true;
+const LINK_DEBUG: bool = false;
 //Stop on linking, do not run
 //(e.g. when infinite loop)
 const ONLY_LINK: bool = false;
@@ -26,7 +26,7 @@ const PARSE_DEBUG: bool = false;
 //show callstack
 const PARSE_DEBUG_CALL: bool = false;
 //show debug information about strings
-const PARSE_DEBUG_STRING: bool = true;
+const PARSE_DEBUG_STRING: bool = false;
 //print message "[Parsing succed]"
 const PARSE_DEBUG_SUCCED: bool = true;
 //callmode without # operator
