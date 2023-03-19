@@ -26,7 +26,9 @@ There're my goals for the future:
 - [ ] Variables that switch denug information on/off through file `debug.tsconf` or through command line options
 - [ ] Colored output somehow through escaping
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
+
 .
+
 - [ ] Standard library (not implemented yet because [including files](#include) is not implemented yet:
 - [ ] I64ToStr function
 - [ ] U64ToStr function
