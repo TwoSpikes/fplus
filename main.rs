@@ -700,11 +700,22 @@ use crate::Callmode::*;
                     "read" => READ,
                     "empty_op" => EMPTY,
                     _ => {
+use crate::Callmode::*;
+                        match callmode {
+                            WITHOUT_ADDRESS => {
+                                
+                            },
+                            WITH_ADDRESS_LEFT|WITH_ADDRESS_RIGHT => {
+                                res.push((Ok(Push((res.len()+1)as i64)), *loc));
+                            },
+                        }
+                        callmode = CALLMODE_DEFAULT;
+
                         res.append(&mut vec![
                             (Err(val.to_string()), *loc),
-                            (Ok(Push(1)), *loc),
                             (Ok(G), *loc),
                         ]);
+
                         continue;
                     },
                 };
