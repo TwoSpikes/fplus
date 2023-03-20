@@ -42,8 +42,8 @@ Standard library (it is not implemented yet because [including files](#include) 
 
 In progress:
 
-[\\]: # TODO: print about functions and function calls
-[\\]: # TODO: remove that stderr printing is not implemented yet when it is implemented
+[\\]: # (TODO: print about functions and function calls)
+[\\]: # (TODO: remove that stderr printing is not implemented yet when it is implemented)
 
 Supported compilation modes:
 - Simulation (default)
