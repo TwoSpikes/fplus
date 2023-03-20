@@ -34,6 +34,10 @@ const CALLMODE_DEFAULT: Callmode = Callmode::WITH_ADDRESS_LEFT;
 //callmode with # operator
 const CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
 
+// -- max levels --
+//maximum level of include recursion
+const MAX_INCLUDE_LEVEL: usize = 500;
+
 #[derive(Debug)]
 enum Callmode {
     WITHOUT_ADDRESS,    //like goto operator in C
@@ -493,6 +497,9 @@ impl fmt::Display for Op {
 }
 //////////////////////////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
+    if include_level > MAX_INCLUDE_LEVEL {
+        eprintln!("exceeded max include level: {}", MAX_INCLUDE_LEVEL);
+    }
     if false {
         eprintln!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
     } else {
