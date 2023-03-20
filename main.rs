@@ -43,7 +43,7 @@ enum Callmode {
     WITH_ADDRESS_RIGHT, //save address before arguments
 }
 
-fn linkparselexget(filename: &String) -> Option<Vec<(Op, Loc)>> {
+fn parselexget(filename: &String) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
     match parse(&{
 use crate::Retlex::EMPTY;
 use crate::Retlex::N;
@@ -67,26 +67,31 @@ use crate::Retlex::E;
                 eprintln!("Unknown lexing return state");
                 return None;
             },
-    }}, &filename) {
+    }}, &filename, 0) {
         Some(x) => {
             if PARSE_DEBUG_SUCCED {
                 eprintln!("[Parsing succed]");
             }
-            match link(&x.0, &x.1, &x.2, &x.3) {
-                Some(x) => {
-                    if LINK_DEBUG_SUCCED {
-                        eprintln!("[linking succed]");
-                    }
-                    Some(x)
-                },
-                None => {
-                    eprintln!("[linking failed]");
-                    return None;
-                },
-            }
+            return Some(x);
         },
         None => {
             eprintln!("[Parsing failed]");
+            return None;
+        },
+    }
+}
+
+fn linkparselexget(filename: &String) -> Option<Vec<(Op, Loc)>> {
+    let x = parselexget(&filename).unwrap();
+    match link(&x.0, &x.1, &x.2, &x.3) {
+        Some(x) => {
+            if LINK_DEBUG_SUCCED {
+                eprintln!("[linking succed]");
+            }
+            return Some(x);
+        },
+        None => {
+            eprintln!("[linking failed]");
             return None;
         },
     }
@@ -484,7 +489,7 @@ impl fmt::Display for Op {
     }
 }
 //////////////////////////////////////////////////////////////////////
-fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
+fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
     if false {
         eprintln!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
     } else {
@@ -498,6 +503,7 @@ fn parse(pr: &Vec<Tok>, filename: &String) -> Option<(String, Vec<(Result<Op, St
         FN,     //label with definition
         DBGMSG, //print debug message
         FNADDR, //function address
+        INCLUDE,//recursively include file
     }
     let mut state: State = State::NONE;
     let mut labels: Vec<(String, Option<i64>)> = Vec::new();
@@ -624,6 +630,10 @@ use crate::Op::*;
                         state = State::FN;
                         continue;
                     },
+                    "include" => {
+                        state = State::INCLUDE;
+                        continue;
+                    },
                     "if" => GIF,
                     ":" => {
                         state = State::FNADDR;
@@ -745,6 +755,21 @@ use crate::Callmode::*;
                             }
                         };
                         labels[pos].1 = Some(res.len()as i64);
+                        state = State::NONE;
+                        continue;
+                    },
+                    State::INCLUDE => {
+                        //eprintln!("including {}...", val);
+                        let mut tokens = parselexget(val).unwrap();
+                        match tokens.3 {
+                            Some(_) => {
+                                eprintln!("main function cannot be in non-main file");
+                                return None;
+                            },
+                            None => {},
+                        }
+                        res.append(&mut tokens.1);
+                        labels.append(&mut tokens.2);
                         state = State::NONE;
                         continue;
                     },
@@ -1179,6 +1204,7 @@ use simResult::*;
                                         fargs: &Vec<String>,
                                         args: &Vec<String>,
                                         output_to_file: Option<String>| {
+//fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
                         let tokens: Vec<(Op, Loc)> = match linkparselexget(&i) {
                             Some(x) => x,
                             None => return,
