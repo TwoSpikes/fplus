@@ -1,0 +1,6 @@
+include examples/include-file.tspl
+
+fn main
+  :a#()
+  "unreachable" puts
+  1 exit

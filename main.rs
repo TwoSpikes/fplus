@@ -7,7 +7,7 @@ use std:: {
 
 // -- simulating --
 //show every token on runtime and stack state
-const SIM_DEBUG: bool = false;
+const SIM_DEBUG: bool = true;
 //show stack state in puts command
 const SIM_DEBUG_PUTS: bool = false;
 
@@ -497,6 +497,7 @@ impl fmt::Display for Op {
 }
 //////////////////////////////////////////////////////////////////////
 fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
+use crate::Op::*;
     if include_level > MAX_INCLUDE_LEVEL {
         eprintln!("exceeded max include level: {}", MAX_INCLUDE_LEVEL);
     }
@@ -623,7 +624,6 @@ fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(Stri
             },
             None => match state {
                     State::NONE => {
-use crate::Op::*;
                 let matchresult: Op = match val.as_str() {
                     ""|"\n" => continue,
                     "+" => PLUS,
@@ -783,7 +783,7 @@ use crate::Callmode::*;
                         };
                         match tokens.3 {
                             Some(_) => {
-                                eprintln!("main function cannot be in non-main file");
+                                eprintln!("{}: main function cannot be in non-main file", repr(filename));
                                 return None;
                             },
                             None => {},
@@ -828,6 +828,11 @@ use crate::Callmode::*;
     }
     //to avoid not founding labels
     labels.push(("".to_string(), None));
+
+    res.append(&mut vec![
+        (Ok(Push(0)), Loc(-2,-2)),
+        (Ok(EXIT), Loc(-2,-2)),
+    ]);
 
     return Some((filename.to_string(), res, labels, main));
 }

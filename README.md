@@ -32,7 +32,9 @@ To do:
 - [ ] Colored output somehow through escaping
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
-Standard library (it is not implemented yet because [including files](#include) is not implemented yet:
+Standard library:
+- [x] max\_2\_I64 function
+- [ ] min\_2\_I64 function
 - [ ] I64ToStr function
 - [ ] U64ToStr function
 - [ ] F64ToStr function
