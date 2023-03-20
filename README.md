@@ -14,12 +14,14 @@ Done:
 - [x] Output debug information to stderr instead of stdout
 - [x] Command line arguments (see [argc](#argc) and [argv](#argv))
 - [x] Global variables that switch debug information on/off
+- [x] `include` keyword
+
+In progress:
 
 To do:
 - [ ] Float numbers (same type with "normal" numbers) (F64)
 - [ ] Float numbers with double precision (same type with "normal" numbers) (D64)
 - [ ] Unsigned 64-bit numbers (same type with "normal" numbers) (like `30u`)
-- [ ] `include` keyword
 - [ ] `macro` keyword
 - [ ] `undump` subcommand
 - [ ] `com` and `token-com` subcommand (for compilation)
@@ -39,8 +41,6 @@ Standard library (it is not implemented yet because [including files](#include) 
 - [ ] StrToU64 function
 - [ ] StrToF64 function
 - [ ] StrToD64 function
-
-In progress:
 
 [\\]: # (TODO: print about functions and function calls)
 [\\]: # (TODO: remove that stderr printing is not implemented yet when it is implemented)
