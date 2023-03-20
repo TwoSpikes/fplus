@@ -82,7 +82,10 @@ use crate::Retlex::E;
 }
 
 fn linkparselexget(filename: &String) -> Option<Vec<(Op, Loc)>> {
-    let x = parselexget(&filename).unwrap();
+    let x = match parselexget(&filename) {
+        Some(x) => x,
+        None => return None,
+    };
     match link(&x.0, &x.1, &x.2, &x.3) {
         Some(x) => {
             if LINK_DEBUG_SUCCED {
@@ -304,7 +307,7 @@ fn get(name: &String) -> Option<String> {
     match std::fs::read_to_string(name) {
         Ok(x) => Some(x),
         Err(_) => {
-            eprintln!("Cannot read file \"{}\"", name);
+            eprintln!("Cannot read file {}", repr(name));
             return None;
         },
     }
@@ -760,7 +763,17 @@ use crate::Callmode::*;
                     },
                     State::INCLUDE => {
                         //eprintln!("including {}...", val);
-                        let mut tokens = parselexget(val).unwrap();
+                        let mut tokens = match parselexget(&(if val.chars().nth(0) == Some('\"') {
+                            let cut_string: &str = &val[1..][..val.len()-2];
+                            cut_string.to_owned()
+                        } else {
+                            val.to_string()
+                        })) {
+                            Some(x) => x,
+                            None => {
+                                return None;
+                            },
+                        };
                         match tokens.3 {
                             Some(_) => {
                                 eprintln!("main function cannot be in non-main file");
