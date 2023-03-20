@@ -1,35 +1,36 @@
 # F+ (Forth+)
 
 Stack-based programming language made by me (TwoSpikes, 2022-2023) for studing purposes.
-There're my goals for the future:
+
+Done:
 - [x] Turing-completeness (`:` and `if` operations)
 - [x] Multi-line comment support (they're like in CSS (`/* */`), but not 100%)
 - [x] Chars (`''`), strings (`""`) and string postfixes (`""b` and `""c`)
 - [x] repr(&str) and urepr(&str) functions (proper escaping like in C)
 - [x] Function predeclaration (linking)
 - [x] Negative numbers (`-1`, `---50`)
+- [x] Drop-in documentation
+- [x] `dump` subcommand (dump tokens)
+- [x] Output debug information to stderr instead of stdout
+- [x] Command line arguments (see [argc](#argc) and [argv](#argv))
+- [x] Global variables that switch debug information on/off
+
+To do:
 - [ ] Float numbers (same type with "normal" numbers) (F64)
 - [ ] Float numbers with double precision (same type with "normal" numbers) (D64)
 - [ ] Unsigned 64-bit numbers (same type with "normal" numbers) (like `30u`)
 - [ ] `include` keyword
 - [ ] `macro` keyword
-- [x] Drop-in documentation
-- [x] `dump` subcommand (dump tokens)
 - [ ] `undump` subcommand
 - [ ] `com` and `token-com` subcommand (for compilation)
 - [ ] `native` keyword
 - [ ] Vim and Emacs syntax highlighting (later)
-- [x] Output debug information to stderr instead of stdout
 - [ ] Ability to stderr printing
-- [x] Command line arguments (see [argc](#argc) and [argv](#argv))
-- [x] Global variables that switch debug information on/off
 - [ ] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 - [ ] Colored output somehow through escaping
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
-.
-
-- [ ] Standard library (not implemented yet because [including files](#include) is not implemented yet:
+Standard library (it is not implemented yet because [including files](#include) is not implemented yet:
 - [ ] I64ToStr function
 - [ ] U64ToStr function
 - [ ] F64ToStr function
@@ -38,6 +39,8 @@ There're my goals for the future:
 - [ ] StrToU64 function
 - [ ] StrToF64 function
 - [ ] StrToD64 function
+
+In progress:
 
 [\\]: # TODO: print about functions and function calls
 [\\]: # TODO: remove that stderr printing is not implemented yet when it is implemented
