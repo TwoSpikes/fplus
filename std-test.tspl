@@ -1,5 +1,5 @@
 include std.tspl
 
-fn main
+pub fn main
   :max_2_I64(35 34)
-  dump dump
+  dump

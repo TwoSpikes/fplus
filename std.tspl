@@ -1,8 +1,8 @@
 /*
   find maximum from two I64
 */
-fn max_2_I64 /* * a b */
+pub fn max_2_I64 /* * a b */
   1 pushnth 1 pushnth < :max_2_I64_less if
   0 dropnth 1 nbrot #()
-fn max_2_I64_less
+pri fn max_2_I64_less
   1 dropnth 1 nbrot #()

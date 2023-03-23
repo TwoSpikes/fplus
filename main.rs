@@ -13,7 +13,7 @@ const SIM_DEBUG_PUTS: bool = false;
 
 // -- linking --
 //Show resulting program
-const LINK_DEBUG: bool = false;
+const LINK_DEBUG: bool = true;
 //Stop on linking, do not run
 //(e.g. when infinite loop)
 const ONLY_LINK: bool = false;
@@ -33,6 +33,8 @@ const PARSE_DEBUG_SUCCED: bool = true;
 const CALLMODE_DEFAULT: Callmode = Callmode::WITH_ADDRESS_LEFT;
 //callmode with # operator
 const CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
+//access modifier without any operators ("pub" and "pri")
+const CURMOD_DEFAULT: Mod = Mod::PRI;
 
 // -- max levels --
 //maximum level of include recursion
@@ -47,7 +49,7 @@ enum Callmode {
     WITH_ADDRESS_RIGHT, //save address before arguments
 }
 
-fn parselexget(filename: &String) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
+fn parselexget(filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>)>, Vec<(Op, Loc)>)> {
     match parse(&{
 use crate::Retlex::EMPTY;
 use crate::Retlex::N;
@@ -71,12 +73,12 @@ use crate::Retlex::E;
                 eprintln!("Unknown lexing return state");
                 return None;
             },
-    }}, &filename, 0) {
+    }}, &filename, include_level) {
         Some(x) => {
             if PARSE_DEBUG_SUCCED {
                 eprintln!("[Parsing succed]");
             }
-            return Some(x);
+            return Some((x.0, x.1));
         },
         None => {
             eprintln!("[Parsing failed]");
@@ -85,23 +87,23 @@ use crate::Retlex::E;
     }
 }
 
-fn linkparselexget(filename: &String) -> Option<Vec<(Op, Loc)>> {
-    let x = match parselexget(&filename) {
-        Some(x) => x,
-        None => return None,
-    };
-    match link(&x.0, &x.1, &x.2, &x.3) {
+fn matchlink(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
+    match link(&filename, &res, &labels, &main, include_level) {
         Some(x) => {
             if LINK_DEBUG_SUCCED {
                 eprintln!("[linking succed]");
             }
-            return Some(x);
+            Some(x)
         },
         None => {
             eprintln!("[linking failed]");
-            return None;
+            None
         },
     }
+}
+
+fn linkparselexget(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
+    matchlink(&filename, &res, &labels, &main, include_level)
 }
 
 fn for_each_arg(args: &Vec<String>,
@@ -495,8 +497,15 @@ impl fmt::Display for Op {
         write!(f, "{:?}", self)
     }
 }
+//access modifier for macros and functions
+#[derive(Clone, Copy, Debug)]
+enum Mod {
+    UNK, //unknown
+    PRI, //only in this file
+    PUB, //anywhere
+}
 //////////////////////////////////////////////////////////////////////
-fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)> {
+fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>)>, Vec<(Op, Loc)>)> {
 use crate::Op::*;
     if include_level > MAX_INCLUDE_LEVEL {
         eprintln!("exceeded max include level: {}", MAX_INCLUDE_LEVEL);
@@ -506,7 +515,8 @@ use crate::Op::*;
     } else {
         eprintln!("[parsing...]");
     }
-    let mut res: Vec<(Result<Op, String>, Loc)> = vec![];
+    let mut result: Vec<(Op, Loc)> = Vec::new();
+    let mut res: Vec<(Result<Op, String>, Loc)> = Vec::new();
     #[derive(Debug)]
     enum State {
         NONE,   //no special commands
@@ -524,6 +534,10 @@ use crate::Op::*;
     let mut callstk: Vec<usize> = Vec::new();
     let mut stksim: Vec<usize> = Vec::new();
     let mut callmode: Callmode = CALLMODE_DEFAULT;
+    //current access modifier
+    let mut curmod: Mod = Mod::UNK;
+    //access modifiers for every element of labels array
+    let mut labmod: Vec<Mod> = Vec::new();
     let mut ind: isize = -1;
     while {ind+=1;ind} < pr.len()as isize{
         let i: &Tok = &pr[ind as usize];
@@ -624,8 +638,20 @@ use crate::Op::*;
             },
             None => match state {
                     State::NONE => {
+                if !matches!(curmod, Mod::UNK) && val != "fn" && val != "lbl" {
+                    parsewarn("access modifier is set to unknown. after acces modifier must go function definition/declaration");
+                    curmod = Mod::UNK;
+                }
                 let matchresult: Op = match val.as_str() {
                     ""|"\n" => continue,
+                    "pri" => {
+                        curmod = Mod::PRI;
+                        continue;
+                    },
+                    "pub" => {
+                        curmod = Mod::PUB;
+                        continue;
+                    },
                     "+" => PLUS,
                     "*" => MUL,
                     "putc" => PRINT,
@@ -694,7 +720,7 @@ use crate::Callmode::*;
                             },
                             WITH_ADDRESS_LEFT => {
                                 eprintln!("inserting {} to {}: {:?}", res.len(), insertion_index, res);
-                                res.insert(insertion_index, (Ok(Push((res.len()+2)as i64)), *loc));
+                                res.insert(insertion_index, (Ok(Push((res.len()+2+result.len())as i64)), *loc));
                                 eprintln!("inserted: {:?}", res);
                             },
                             WITH_ADDRESS_RIGHT => {
@@ -745,51 +771,65 @@ use crate::Callmode::*;
                 continue;
                     },
                     State::LBL => {
+                        if matches!(curmod, Mod::UNK) {
+                            curmod = CURMOD_DEFAULT;
+                        }
                         if let "main" = &*val.as_str() {
                             main = Some(res.len()as usize);
                         }
                         labels.push((val.to_string(), None));
+                        labmod.push(curmod);
                         state = State::NONE;
                         continue;
                     },
                     State::FN => {
+                        eprintln!("curstate: {:?}", curmod);
                         let pos: usize = match labels.iter().position(|x| String::from(x.0.clone()).eq(val)) {
                             Some(pos) => pos,
                             None => {
+                                if matches!(curmod, Mod::UNK) {
+                                    curmod = CURMOD_DEFAULT;
+                                }
                                 if let "main" = &*val.as_str() {
-                                    main = Some(res.len()as usize);
+                                    main = Some((res.len()+result.len())as usize);
                                 }
                                 labels.push((val.to_string(), Some(res.len()as i64)));
+                                labmod.push(curmod);
                                 state = State::NONE;
                                 continue;
                             }
                         };
                         labels[pos].1 = Some(res.len()as i64);
+                        if !matches!(curmod, Mod::UNK) {
+                            parsewarn("access modifier does not need to be in definition of declared already function");
+                            curmod = Mod::UNK;
+                        }
                         state = State::NONE;
                         continue;
                     },
                     State::INCLUDE => {
-                        //eprintln!("including {}...", val);
+                        eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(val));
                         let mut tokens = match parselexget(&(if val.chars().nth(0) == Some('\"') {
                             let cut_string: &str = &val[1..][..val.len()-2];
                             cut_string.to_owned()
                         } else {
                             val.to_string()
-                        })) {
+                        }), include_level+1) {
                             Some(x) => x,
                             None => {
                                 return None;
                             },
                         };
-                        match tokens.3 {
-                            Some(_) => {
-                                eprintln!("{}: main function cannot be in non-main file", repr(filename));
-                                return None;
-                            },
-                            None => {},
+                        eprintln!("toappend: {:?}", tokens.1);
+                        // FIXME: implement including with access modifiers
+                        let mut loopindex: usize = 0;
+                        while loopindex < tokens.0.len() {
+                            labmod.push(Mod::PUB);
+                            loopindex += 1;
                         }
-                        res.append(&mut tokens.1);
-                        labels.append(&mut tokens.2);
+                        result.append(&mut tokens.1);
+                        labels.append(&mut tokens.0);
+                        eprintln!("{}:{}:{}: yeah boi included {}...: {:?}", filename, lin, index, repr(val), labmod);
                         state = State::NONE;
                         continue;
                     },
@@ -815,7 +855,7 @@ use crate::Callmode::*;
     );}
     let parseerr = |msg: &str| {
         eprintln!("{}:EOF: Error: {}", filename, msg);
-        return None::<(String, Vec<(Result<Op, String>, Loc)>, Vec<(String, Option<i64>)>, Option<usize>)>;
+        return None::<(Vec<(String, Option<i64>)>, Vec<(Op, Loc)>)>;
     };
     let parsewarn = |msg: &str| {
         eprintln!("{}:EOF: Warning: {}", filename, msg);
@@ -826,18 +866,41 @@ use crate::Callmode::*;
     if callstk.len() > 0 {
         return parseerr("Callstk is not empty");
     }
-    //to avoid not founding labels
-    labels.push(("".to_string(), None));
 
     res.append(&mut vec![
         (Ok(Push(0)), Loc(-2,-2)),
         (Ok(EXIT), Loc(-2,-2)),
     ]);
 
-    return Some((filename.to_string(), res, labels, main));
+    eprintln!("labels now are: {:?}", labels);
+    eprintln!("include_level is now: {}", include_level);
+    eprintln!("main is {:?}", main);
+
+    result.append(&mut linkparselexget(&filename, &res, &labels, &main, include_level).unwrap());
+
+    {
+        if labels.len() != labmod.len() {
+            eprintln!("{}: lengths are not the same: {} and {}:\n   {:?}\n  {:?}", filename, labels.len(), labmod.len(), labels, labmod);
+            todo!();
+        }
+        let mut ind: usize = 0;
+        while ind < labels.len() {
+            if !matches!(labmod[ind], Mod::PUB) {
+                labels.remove(ind);
+                labmod.remove(ind);
+            } else {
+                ind += 1;
+            }
+        }
+    }
+
+    eprintln!("parsereturning:\n?{:?}\n?{:?}",
+              labels, result);
+
+    return Some((labels, result));
 }
-fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
-    eprintln!("[linking...]");
+fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
+    eprintln!("[linking {}...[{}]]", repr(filename), include_level);
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {
@@ -877,10 +940,12 @@ fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(S
             },
         };
     }
-    linkres.push((Op::Push(match main {
-        Some(x) => *x as i64,
-        None => 0,
-    }), Loc(-2,-2)));
+    if include_level == 0 {
+        linkres.push((Op::Push(match main {
+            Some(x) => *x as i64,
+            None => 0,
+        }), Loc(-2,-2)));
+    }
     return Some(linkres);
 }
 
@@ -1077,6 +1142,9 @@ use crate::Op::*;
             },
             DROPNTH => {
                 let a: i64 = stack.pop().unwrap();
+                if a >= stack.len()as i64 {
+                    return errs("dropnth overflow".to_string());
+                }
                 stack.remove(stack.len()-1-a as usize);
             },
             NBROT => {
@@ -1189,8 +1257,8 @@ fn clah(args: &Vec<String>) {
                                         args: &Vec<String>,
                                         output_to_file: Option<String>| {
 use simResult::*;
-                        let error: simResult = sim(&mut match linkparselexget(&i) {
-                            Some(x) => x,
+                        let error: simResult = sim(&mut match parselexget(&i, 0) {
+                            Some(x) => x.1,
                             None => return,
                         }, &i, if ind==(argv.len()-1).try_into().unwrap() {
                             fargs.clone()
@@ -1229,9 +1297,8 @@ use simResult::*;
                                         fargs: &Vec<String>,
                                         args: &Vec<String>,
                                         output_to_file: Option<String>| {
-//fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>) -> Option<Vec<(Op, Loc)>> {
-                        let tokens: Vec<(Op, Loc)> = match linkparselexget(&i) {
-                            Some(x) => x,
+                        let tokens: Vec<(Op, Loc)> = match parselexget(&i, 0) { 
+                            Some(x) => x.1,
                             None => return,
                         };
                         match output_to_file {
