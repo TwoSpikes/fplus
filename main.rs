@@ -7,7 +7,7 @@ use std:: {
 // -- LEXER --
 //Show resulting token array
 const LEX_DEBUG: bool = false;
-//Stop on lexing, to not parse
+//Stop on lexing, do not parse
 const ONLY_LEX: bool = false;
 
 // -- LINKING --
