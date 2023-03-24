@@ -7,13 +7,13 @@ use std:: {
 
 // -- simulating --
 //show every token on runtime and stack state
-const SIM_DEBUG: bool = true;
+const SIM_DEBUG: bool = false;
 //show stack state in puts command
 const SIM_DEBUG_PUTS: bool = false;
 
 // -- linking --
 //Show resulting program
-const LINK_DEBUG: bool = true;
+const LINK_DEBUG: bool = false;
 //Stop on linking, do not run
 //(e.g. when infinite loop)
 const ONLY_LINK: bool = false;
@@ -27,7 +27,11 @@ const PARSE_DEBUG: bool = false;
 const PARSE_DEBUG_CALL: bool = false;
 //show debug information about strings
 const PARSE_DEBUG_STRING: bool = false;
-//print message "[Parsing succed]"
+//show message about including each file
+const PARSE_DEBUG_INCLUDE: bool = true;
+//show message about every succed include operation
+const PARSE_DEBUG_INCLUDE_SUCCED: bool = true;
+//show message "[Parsing succed]"
 const PARSE_DEBUG_SUCCED: bool = true;
 //callmode without # operator
 const CALLMODE_DEFAULT: Callmode = Callmode::WITH_ADDRESS_LEFT;
@@ -638,10 +642,6 @@ use crate::Op::*;
             },
             None => match state {
                     State::NONE => {
-                if !matches!(curmod, Mod::UNK) && val != "fn" && val != "lbl" {
-                    parsewarn("access modifier is set to unknown. after acces modifier must go function definition/declaration");
-                    curmod = Mod::UNK;
-                }
                 let matchresult: Op = match val.as_str() {
                     ""|"\n" => continue,
                     "pri" => {
@@ -660,10 +660,12 @@ use crate::Op::*;
                     "input" => INP,
                     "lbl" => {
                         state = State::LBL;
+                        curmod = Mod::UNK;
                         continue;
                     },
                     "fn" => {
                         state = State::FN;
+                        curmod = Mod::UNK;
                         continue;
                     },
                     "include" => {
@@ -719,9 +721,7 @@ use crate::Callmode::*;
                                 
                             },
                             WITH_ADDRESS_LEFT => {
-                                eprintln!("inserting {} to {}: {:?}", res.len(), insertion_index, res);
                                 res.insert(insertion_index, (Ok(Push((res.len()+2+result.len())as i64)), *loc));
-                                eprintln!("inserted: {:?}", res);
                             },
                             WITH_ADDRESS_RIGHT => {
                                 res.push((Ok(Push((res.len()+1)as i64)), *loc));
@@ -783,7 +783,6 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::FN => {
-                        eprintln!("curstate: {:?}", curmod);
                         let pos: usize = match labels.iter().position(|x| String::from(x.0.clone()).eq(val)) {
                             Some(pos) => pos,
                             None => {
@@ -808,7 +807,9 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::INCLUDE => {
-                        eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(val));
+                        if PARSE_DEBUG_INCLUDE {
+                            eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(val));
+                        }
                         let mut tokens = match parselexget(&(if val.chars().nth(0) == Some('\"') {
                             let cut_string: &str = &val[1..][..val.len()-2];
                             cut_string.to_owned()
@@ -820,7 +821,6 @@ use crate::Callmode::*;
                                 return None;
                             },
                         };
-                        eprintln!("toappend: {:?}", tokens.1);
                         // FIXME: implement including with access modifiers
                         let mut loopindex: usize = 0;
                         while loopindex < tokens.0.len() {
@@ -829,7 +829,9 @@ use crate::Callmode::*;
                         }
                         result.append(&mut tokens.1);
                         labels.append(&mut tokens.0);
-                        eprintln!("{}:{}:{}: yeah boi included {}...: {:?}", filename, lin, index, repr(val), labmod);
+                        if PARSE_DEBUG_INCLUDE_SUCCED {
+                            eprintln!("{}:{}:{}: succed include {}", filename, lin, index, repr(val));
+                        }
                         state = State::NONE;
                         continue;
                     },
@@ -872,10 +874,6 @@ use crate::Callmode::*;
         (Ok(EXIT), Loc(-2,-2)),
     ]);
 
-    eprintln!("labels now are: {:?}", labels);
-    eprintln!("include_level is now: {}", include_level);
-    eprintln!("main is {:?}", main);
-
     result.append(&mut linkparselexget(&filename, &res, &labels, &main, include_level).unwrap());
 
     {
@@ -894,13 +892,10 @@ use crate::Callmode::*;
         }
     }
 
-    eprintln!("parsereturning:\n?{:?}\n?{:?}",
-              labels, result);
-
     return Some((labels, result));
 }
 fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
-    eprintln!("[linking {}...[{}]]", repr(filename), include_level);
+    eprintln!("[linking {}...[recursion_level: {}]]", repr(filename), include_level);
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {
