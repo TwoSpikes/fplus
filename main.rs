@@ -5,13 +5,13 @@ use std:: {
 };
 
 
-// -- simulating --
+// -- SIMULATING --
 //show every token on runtime and stack state
 const SIM_DEBUG: bool = false;
 //show stack state in puts command
 const SIM_DEBUG_PUTS: bool = false;
 
-// -- linking --
+// -- LINKING --
 //Show resulting program
 const LINK_DEBUG: bool = false;
 //Stop on linking, do not run
@@ -20,7 +20,7 @@ const ONLY_LINK: bool = false;
 //print message "[linking succed]"
 const LINK_DEBUG_SUCCED: bool = true;
 
-// -- parsing --
+// -- PARSING --
 //show every token and some variables for parsing
 const PARSE_DEBUG: bool = false;
 //show callstack
@@ -42,7 +42,7 @@ const CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
 //access modifier without any operators ("pub" and "pri")
 const CURMOD_DEFAULT: Mod = Mod::PRI;
 
-// -- max levels --
+// -- MAX LEVELS --
 //maximum level of include recursion
 const MAX_INCLUDE_LEVEL: usize = 500;
 
