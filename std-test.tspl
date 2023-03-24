@@ -1,5 +1,4 @@
 include std.tspl
 
 pub fn main
-  :min_2_I64(35 34)
-  dump
+  0 1 / dump

@@ -481,6 +481,7 @@ enum Op {
     INP,    //read line from stdin
     PLUS,   // +
     MUL,    // *
+    DIV,    // 1
     GIF,    //gotoif
     G,      //goto
     PUSHNTH,//copy nth element to the top
@@ -658,6 +659,7 @@ use crate::Op::*;
                     },
                     "+" => PLUS,
                     "*" => MUL,
+                    "/" => DIV,
                     "putc" => PRINT,
                     "puts" => PUTS,
                     "flush" => FLUSH,
@@ -1106,6 +1108,24 @@ use crate::Op::*;
                     },
                 };
                 stack.push(a * b)
+            },
+            DIV => {
+                let b: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `b` for DIV intrinsic not found".to_string());
+                    },
+                };
+                if b == 0 {
+                    return errs("Cannot divide by zero (0)".to_string());
+                }
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for DIV intrinsic not found".to_string());
+                    },
+                };
+                stack.push(a/b);
             },
             GIF => {
                 let addr: i64 = match stack.pop() {
