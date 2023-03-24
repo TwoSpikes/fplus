@@ -4,12 +4,11 @@ use std:: {
     fmt,
 };
 
-
-// -- SIMULATING --
-//show every token on runtime and stack state
-const SIM_DEBUG: bool = false;
-//show stack state in puts command
-const SIM_DEBUG_PUTS: bool = false;
+// -- LEXER --
+//Show resulting token array
+const LEX_DEBUG: bool = false;
+//Stop on lexing, to not parse
+const ONLY_LEX: bool = false;
 
 // -- LINKING --
 //Show resulting program
@@ -42,6 +41,12 @@ const CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
 //access modifier without any operators ("pub" and "pri")
 const CURMOD_DEFAULT: Mod = Mod::PRI;
 
+// -- SIMULATING --
+//show every token on runtime and stack state
+const SIM_DEBUG: bool = false;
+//show stack state in puts command
+const SIM_DEBUG_PUTS: bool = false;
+
 // -- MAX LEVELS --
 //maximum level of include recursion
 const MAX_INCLUDE_LEVEL: usize = 500;
@@ -57,10 +62,8 @@ enum Callmode {
 
 fn parselexget(filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>)>, Vec<(Op, Loc)>)> {
     match parse(&{
-use crate::Retlex::EMPTY;
-use crate::Retlex::N;
-use crate::Retlex::E;
-        match lex(&match get(&filename) {
+use crate::Retlex::*;
+        match lex(&filename, &match get(&filename) {
         Some(x) => x,
         None => {
             return None;
@@ -74,7 +77,13 @@ use crate::Retlex::E;
                 eprintln!("[lexing failed]");
                 return None;
             },
-            N(x) => x,
+            N(x) => {
+                x
+            },
+            STOPPED => {
+                eprintln!("[lexing stopped]");
+                return None;
+            },
             _ => {
                 eprintln!("Unknown lexing return state");
                 return None;
@@ -338,11 +347,20 @@ enum Retlex {
     E,
     //empty file
     EMPTY,
+    STOPPED,
 }
-fn lex(file: &String) -> Retlex {
-use crate::Retlex::EMPTY;
-use crate::Retlex::N;
-use crate::Retlex::E;
+#[derive(Debug)]
+enum Quotes {
+    NO,
+    IN,
+    POSTF,
+}
+/*
+ * Warning!: Legacy code warning.
+ */
+fn lex(filename: &String, file: &String) -> Retlex {
+use crate::Retlex::*;
+use crate::Quotes::*;
     if file.len() == 0 {
         return EMPTY;
     }
@@ -350,12 +368,6 @@ use crate::Retlex::E;
     let mut tmp: String = "".to_owned();
     let mut ploc: Loc = Loc(1, 1);
     let mut loc:  Loc = Loc(1, 1);
-    #[derive(Debug)]
-    enum Quotes {
-        NO,
-        IN,
-        POSTF,
-    }
     let mut quotes: Quotes = Quotes::NO;
     for i in file.chars() {
         loc.1 += 1;
@@ -379,16 +391,16 @@ use crate::Retlex::E;
             continue;
         }
         match quotes {
-            Quotes::NO => {
+            NO => {
                 
             },
-            Quotes::IN => {
+            IN => {
                 tmp.push(i);
                 continue;
             },
-            Quotes::POSTF => {
+            POSTF => {
                 if i == '\n' || i == ' ' {
-                    quotes = Quotes::NO;
+                    quotes = NO;
                     res.push(Tok(ploc, tmp.to_owned()));
                     tmp = "".to_owned();
                     ploc = loc.clone();
@@ -403,11 +415,11 @@ use crate::Retlex::E;
             },
         }
         if i == '\n' {
-            loc.1 += 1;
+            loc.1 = 1;
+            loc.0 += 1;
         }
         //push special symbols as special symbols
         if i == '\n' || i == ':' || i == '(' || i == ')' || i == '#' {
-            loc.0 += 1;
             res.push(Tok(ploc, tmp.to_owned()));
             res.push(Tok(loc, String::from(i)));
             tmp = "".to_owned();
@@ -418,9 +430,9 @@ use crate::Retlex::E;
         if i == ' ' || i == '\t' {
             if tmp.len() > 0 {
                 res.push(Tok(ploc, tmp.to_owned()));
-                ploc = loc.clone();
                 tmp = "".to_owned();
             }
+            ploc = loc.clone();
             continue;
         }
         tmp.push(i);
@@ -428,6 +440,18 @@ use crate::Retlex::E;
     if tmp.len() > 0 {
         res.push(Tok(ploc, tmp.to_owned()));
     }
+
+    if LEX_DEBUG {
+        eprintln!("{}: Lexing result: [", filename);
+        for i in &res {
+            eprintln!("  {}:{}: {:?}", i.0.0, i.0.1, i.1);
+        }
+        eprintln!("]");
+    }
+    if ONLY_LEX {
+        return STOPPED;
+    }
+
     return N(res);
 }
 
