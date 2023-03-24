@@ -33,16 +33,28 @@ To do:
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
 Standard library:
-- [x] max\_2\_I64 function
-- [x] min\_2\_I64 function
-- [ ] I64ToStr function
-- [ ] U64ToStr function
-- [ ] F64ToStr function
-- [ ] D64ToStr function
-- [ ] StrToI64 function
-- [ ] StrToU64 function
-- [ ] StrToF64 function
-- [ ] StrToD64 function
+- [x] max\_2\_I64 function ((b: I64, a: I64) -> I64)
+- [x] min\_2\_I64 function ((b: I64, a: I64) -> I64)
+- [ ] I64ToStr function ((val: I64) -> (len: I64, I64[len]))
+- [ ] U64ToStr function ((val: U64) -> (len: I64, I64[len]))
+- [ ] F64ToStr function ((val: F64) -> (len: I64, I64[len]))
+- [ ] D64ToStr function ((val: D64) -> (len: I64, I64[len]))
+- [ ] StrToI64 function ((len: I64, arr: I64[len]) -> (I64))
+- [ ] StrToU64 function ((len: I64, arr: I64[len]) -> (U64))
+- [ ] StrToF64 function ((len: I64, arr: I64[len]) -> (F64))
+- [ ] StrToD64 function ((len: I64, arr: I64[len]) -> (D64))
+- [ ] I64ToU64 function ((val: I64) -> (U64))
+- [ ] U64ToI64 function ((val: I64) -> (I64))
+- [ ] I64ToF64 function ((val: I64) -> (F64))
+- [ ] F64ToI64 function ((val: F64) -> (I64))
+- [ ] U64ToF64 function ((val: U64) -> (F64))
+- [ ] F64ToU64 function ((val: F64) -> (U64))
+- [ ] I64ToD64 function ((val: I64) -> (D64))
+- [ ] D64ToI64 function ((val: D64) -> (I64))
+- [ ] U64ToD64 function ((val: U64) -> (D64))
+- [ ] D64ToU64 function ((val: D64) -> (U64))
+- [ ] F64ToD64 function ((val: F64) -> (D64))
+- [ ] D64ToF64 function ((val: D64) -> (F64))
 
 [\\]: # (TODO: print about functions and function calls)
 [\\]: # (TODO: remove that stderr printing is not implemented yet when it is implemented)
