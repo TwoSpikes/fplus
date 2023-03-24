@@ -34,7 +34,7 @@ To do:
 
 Standard library:
 - [x] max\_2\_I64 function
-- [ ] min\_2\_I64 function
+- [x] min\_2\_I64 function
 - [ ] I64ToStr function
 - [ ] U64ToStr function
 - [ ] F64ToStr function
