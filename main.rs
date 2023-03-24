@@ -29,6 +29,8 @@ const PARSE_DEBUG_CALL: bool = false;
 const PARSE_DEBUG_STRING: bool = false;
 //show message about including each file
 const PARSE_DEBUG_INCLUDE: bool = true;
+//show message how many fns is being included in the specific including operation
+const PARSE_DEBUG_INCLUDE_ADDING: bool = false;
 //show message about every succed include operation
 const PARSE_DEBUG_INCLUDE_SUCCED: bool = true;
 //show message "[Parsing succed]"
@@ -784,7 +786,6 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::FN => {
-                        eprintln!("fncurmod: {:?}", curmod);
                         let pos: usize = match labels.iter().position(|x| String::from(x.0.clone()).eq(val)) {
                             Some(pos) => pos,
                             None => {
@@ -825,7 +826,9 @@ use crate::Callmode::*;
                         };
                         // FIXME: implement including with access modifiers
                         let mut loopindex: usize = 0;
-                        eprintln!("adding {} fns...", tokens.0.len());
+                        if PARSE_DEBUG_INCLUDE_ADDING {
+                            eprintln!("adding {} fns...", tokens.0.len());
+                        }
                         while loopindex < tokens.0.len() {
                             labmod.push(Mod::PUB);
                             loopindex += 1;
