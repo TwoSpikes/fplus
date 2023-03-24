@@ -357,7 +357,7 @@ use crate::Retlex::E;
     let mut quotes: Quotes = Quotes::NO;
     for i in file.chars() {
         loc.1 += 1;
-        //if '"'  then remember it
+        //" then remember it
         if i == '"' {
             tmp.push(i);
             quotes = match quotes {
@@ -400,10 +400,12 @@ use crate::Retlex::E;
                 return E;
             },
         }
+        if i == '\n' {
+            loc.1 += 1;
+        }
         //push special symbols as special symbols
         if i == '\n' || i == ':' || i == '(' || i == ')' || i == '#' {
             loc.0 += 1;
-            loc.1  = 1;
             res.push(Tok(ploc, tmp.to_owned()));
             res.push(Tok(loc, String::from(i)));
             tmp = "".to_owned();
@@ -665,7 +667,6 @@ use crate::Op::*;
                     },
                     "fn" => {
                         state = State::FN;
-                        curmod = Mod::UNK;
                         continue;
                     },
                     "include" => {
@@ -783,6 +784,7 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::FN => {
+                        eprintln!("fncurmod: {:?}", curmod);
                         let pos: usize = match labels.iter().position(|x| String::from(x.0.clone()).eq(val)) {
                             Some(pos) => pos,
                             None => {
@@ -823,6 +825,7 @@ use crate::Callmode::*;
                         };
                         // FIXME: implement including with access modifiers
                         let mut loopindex: usize = 0;
+                        eprintln!("adding {} fns...", tokens.0.len());
                         while loopindex < tokens.0.len() {
                             labmod.push(Mod::PUB);
                             loopindex += 1;
