@@ -1,12 +1,14 @@
 include std.tspl
 
-pub fn main
+fn main
   0
-pri fn loop
+  #loop
+
+fn loop {
   1 +
   0 pushnth 100 < ! :loop_end if
   #loop
-pri fn loop_end
+fn loop_end
   "loop_ends" puts
   0 exit
-scope_ends
+}
