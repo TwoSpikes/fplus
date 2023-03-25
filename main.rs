@@ -984,7 +984,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, l
                 for j in &*labels {
                     //if (Label)(j.name) = (Op)(x.Err.String)
                     if String::from(j.0.clone()).eq(&String::from(x.0.clone())) {
-                        if covariant_right(&x.1, &j.2) {
+                        if covariant_right(&j.2, &x.1) {
                             match j.1 {
                                 //found definition
                                 Some(def) => {
