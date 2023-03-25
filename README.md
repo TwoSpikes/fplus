@@ -30,6 +30,8 @@ To do:
 - [ ] Ability to stderr printing
 - [ ] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 - [ ] Colored output somehow through escaping
+- [ ] Colored debug output
+- [ ] Nested label scopes (only one level of scoping is implemented now)
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
 Standard library:
@@ -82,6 +84,8 @@ usage use u help h ? info information
 dump d                Dump the tokens of the program.
 error e               Print error codes and information about them
 ```
+
+While building, you must be in `fplus` directory (it is important)
 
 #### Error codes:
 This message will be shown with `error` (or `e`) subcommand:
