@@ -4,6 +4,7 @@ pub fn max_2_I64
   0 dropnth 1 nbrot #()
 pri fn max_2_I64_less
   1 dropnth 1 nbrot #()
+scope_ends
 
 /* return minimum from two I64 numbers */
 pub fn min_2_I64
@@ -11,3 +12,4 @@ pub fn min_2_I64
   1 dropnth 1 nbrot #()
 pri fn min_2_I64_more
   0 dropnth 1 nbrot #()
+scope_ends

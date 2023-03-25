@@ -60,7 +60,7 @@ enum Callmode {
     WITH_ADDRESS_RIGHT, //save address before arguments
 }
 
-fn parselexget(filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>)>, Vec<(Op, Loc)>)> {
+fn parselexget(filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>)> {
     match parse(&{
 use crate::Retlex::*;
         match lex(&filename, &match get(&filename) {
@@ -102,7 +102,7 @@ use crate::Retlex::*;
     }
 }
 
-fn matchlink(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
+fn matchlink(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
     match link(&filename, &res, &labels, &main, include_level) {
         Some(x) => {
             if LINK_DEBUG_SUCCED {
@@ -117,7 +117,7 @@ fn matchlink(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &V
     }
 }
 
-fn linkparselexget(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
+fn linkparselexget(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
     matchlink(&filename, &res, &labels, &main, include_level)
 }
 
@@ -538,7 +538,7 @@ enum Mod {
     PUB, //anywhere
 }
 //////////////////////////////////////////////////////////////////////
-fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>)>, Vec<(Op, Loc)>)> {
+fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>)> {
 use crate::Op::*;
     if include_level > MAX_INCLUDE_LEVEL {
         eprintln!("exceeded max include level: {}", MAX_INCLUDE_LEVEL);
@@ -549,7 +549,7 @@ use crate::Op::*;
         eprintln!("[parsing...]");
     }
     let mut result: Vec<(Op, Loc)> = Vec::new();
-    let mut res: Vec<(Result<Op, String>, Loc)> = Vec::new();
+    let mut res: Vec<(Result<Op, (String, Vec<usize>)>, Loc)> = Vec::new();
     #[derive(Debug)]
     enum State {
         NONE,   //no special commands
@@ -560,7 +560,7 @@ use crate::Op::*;
         INCLUDE,//recursively include file
     }
     let mut state: State = State::NONE;
-    let mut labels: Vec<(String, Option<i64>)> = Vec::new();
+    let mut labels: Vec<(String, Option<i64>, Vec<usize>)> = Vec::new();
     let mut main: Option<usize> = None;
     //multi-line comment
     let mut mlc: u32 = 0;
@@ -571,6 +571,7 @@ use crate::Op::*;
     let mut curmod: Mod = Mod::UNK;
     //access modifiers for every element of labels array
     let mut labmod: Vec<Mod> = Vec::new();
+    let mut scope_id: Vec<usize> = vec![1,];
     let mut ind: isize = -1;
     while {ind+=1;ind} < pr.len()as isize{
         let i: &Tok = &pr[ind as usize];
@@ -624,7 +625,7 @@ use crate::Op::*;
             ]
         } else if val.chars().nth(0) == Some('\"') && matches!(state, State::NONE) {
             let mut postfix: Option<usize> = None;
-            let mut tmp: Vec<i64> = {
+            let tmp: Vec<i64> = {
                 let mut res: Vec<i64> = Vec::new();
                 let mut jnd: isize = -1;
                 let mut j: char = ' ';
@@ -645,7 +646,7 @@ use crate::Op::*;
             };
             let tmpStr: String = urepr(tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>().as_str());
             let tmpstr: &str = tmpStr.as_str();
-            let mut tmpres: Vec<(Result<Op, String>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
+            let mut tmpres: Vec<(Result<Op, (String, Vec<usize>)>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
                 "" => tmpres.push((Ok(Op::Push((tmpStr.len()).try_into().unwrap())), Loc(-1,-1))),
                 // FIXME: '\n' symbol must be at the left
@@ -774,6 +775,11 @@ use crate::Callmode::*;
                     "argv" => ARGV,
                     "read" => READ,
                     "empty_op" => EMPTY,
+                    "scope_ends" => {
+                        let len: usize = scope_id.len()-1;
+                        scope_id[len] += 1;
+                        continue;
+                    },
                     _ => {
 use crate::Callmode::*;
                         match callmode {
@@ -787,7 +793,7 @@ use crate::Callmode::*;
                         callmode = CALLMODE_DEFAULT;
 
                         res.append(&mut vec![
-                            (Err(val.to_string()), *loc),
+                            (Err((val.to_string(), scope_id.clone())), *loc),
                             (Ok(G), *loc),
                         ]);
 
@@ -806,7 +812,7 @@ use crate::Callmode::*;
                         if let "main" = &*val.as_str() {
                             main = Some(res.len()as usize);
                         }
-                        labels.push((val.to_string(), None));
+                        labels.push((val.to_string(), None, scope_id.clone()));
                         labmod.push(curmod);
                         state = State::NONE;
                         continue;
@@ -821,7 +827,7 @@ use crate::Callmode::*;
                                 if let "main" = &*val.as_str() {
                                     main = Some((res.len()+result.len())as usize);
                                 }
-                                labels.push((val.to_string(), Some(res.len()as i64)));
+                                labels.push((val.to_string(), Some(res.len()as i64), scope_id.clone()));
                                 labmod.push(curmod);
                                 state = State::NONE;
                                 continue;
@@ -869,7 +875,7 @@ use crate::Callmode::*;
                     },
                     State::FNADDR => {
                         res.append(&mut vec![
-                            (Err(val.to_string()), *loc),
+                            (Err((val.to_string(), scope_id.clone())), *loc),
                         ]);
                         state = State::NONE;
                         continue;
@@ -889,7 +895,7 @@ use crate::Callmode::*;
     );}
     let parseerr = |msg: &str| {
         eprintln!("{}:EOF: Error: {}", filename, msg);
-        return None::<(Vec<(String, Option<i64>)>, Vec<(Op, Loc)>)>;
+        return None::<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>)>;
     };
     let parsewarn = |msg: &str| {
         eprintln!("{}:EOF: Warning: {}", filename, msg);
@@ -926,7 +932,7 @@ use crate::Callmode::*;
 
     return Some((labels, result));
 }
-fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(String, Option<i64>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
+fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
     eprintln!("[linking {}...[recursion_level: {}]]", repr(filename), include_level);
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     let mut ind: i64 = -1;
@@ -943,25 +949,30 @@ fn link(filename: &String, res: &Vec<(Result<Op, String>, Loc)>, labels: &Vec<(S
                 let mut ret: i64 = -1;
                 //tring to find declaration
                 for j in &*labels {
-                    //if found by name
-                    if String::from(j.0.clone()).eq(&String::from(x.clone())) {
-                        match j.1 {
-                            //found definition
-                            Some(def) => {
-                                linkres.push((Op::Push(def), loc));
-                            },
-                            //not found definition
-                            None => {
-                                eprintln!("{}:{}:{}: label is declared, but has no definition", filename, lin, index);
-                                return None;
+                    //if (Label)(j.name) = (Op)(x.Err.String)
+                    if String::from(j.0.clone()).eq(&String::from(x.0.clone())) {
+                        if j.2 == x.1 {
+                            match j.1 {
+                                //found definition
+                                Some(def) => {
+                                    linkres.push((Op::Push(def), loc));
+                                },
+                                //not found definition
+                                None => {
+                                    eprintln!("{}:{}:{}: Error: label is declared, but has no definition", filename, lin, index);
+                                    return None;
+                                }
                             }
+                        } else {
+                            eprintln!("{}:{}:{}: Error: label is private", filename, lin, index);
+                            return None;
                         }
                     } else {
                         ret += 1;
                     }
                 }
                 if ret >= labels.len()as i64 - 1 {
-                    eprintln!("{}:{}:{}: label not found: {}", filename, lin, index, repr(x));
+                    eprintln!("{}:{}:{}: label not found: {}", filename, lin, index, repr(&x.0));
                     return None;
                 }
             },
@@ -1018,7 +1029,7 @@ use crate::Op::*;
         },
         None => return ok(0),
     };
-    let mut f: Option<File> = match output_to_file {
+    let f: Option<File> = match output_to_file {
         Some(ref x) => {
             //clear file
             {
