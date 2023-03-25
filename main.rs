@@ -23,11 +23,11 @@ const LINK_DEBUG_SUCCED: bool = true;
 
 // -- PARSING --
 //show every token and some variables for parsing
-const PARSE_DEBUG: bool = true;
+const PARSE_DEBUG: bool = false;
 //show debug state
-const PARSE_DEBUG_STATE: bool = true;
+const PARSE_DEBUG_STATE: bool = false;
 //show scope_id
-const PARSE_DEBUG_ID: bool = true;
+const PARSE_DEBUG_ID: bool = false;
 //show callstack
 const PARSE_DEBUG_CALL: bool = false;
 //show debug information about strings
