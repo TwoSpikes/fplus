@@ -15,6 +15,7 @@ Done:
 - [x] Command line arguments (see [argc](#argc) and [argv](#argv))
 - [x] Global variables that switch debug information on/off
 - [x] `include` keyword
+- [x] Nested label scopes
 
 In progress:
 
@@ -31,7 +32,6 @@ To do:
 - [ ] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 - [ ] Colored output somehow through escaping
 - [ ] Colored debug output
-- [ ] Nested label scopes (only one level of scoping is implemented now)
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
 Standard library:
