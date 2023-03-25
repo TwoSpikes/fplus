@@ -787,7 +787,7 @@ use crate::Callmode::*;
                                 
                             },
                             WITH_ADDRESS_LEFT|WITH_ADDRESS_RIGHT => {
-                                res.push((Ok(Push((res.len()+1)as i64)), *loc));
+                                res.push((Ok(Push((result.len()+res.len()+1)as i64)), *loc));
                             },
                         }
                         callmode = CALLMODE_DEFAULT;
@@ -827,7 +827,7 @@ use crate::Callmode::*;
                                 if let "main" = &*val.as_str() {
                                     main = Some((res.len()+result.len())as usize);
                                 }
-                                labels.push((val.to_string(), Some(res.len()as i64), scope_id.clone()));
+                                labels.push((val.to_string(), Some((result.len()+res.len())as i64), scope_id.clone()));
                                 labmod.push(curmod);
                                 state = State::NONE;
                                 continue;
