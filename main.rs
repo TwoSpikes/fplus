@@ -288,7 +288,7 @@ error e               Print error code and information about them");
 }
 fn version() {
     println!("F+, a stack-based interpreting programming language
-written on Rust v.1.68.0
+written on Rust v.1.68.1
 version: 0.1.0-4
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes");

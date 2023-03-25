@@ -1,4 +1,4 @@
-# F+ (Forth+)
+1 F+ (Forth+)
 
 Stack-based programming language made by me (TwoSpikes, 2022-2023) for studing purposes.
 
@@ -154,7 +154,7 @@ If you will not provide `-o` option, Hello, World! will be printed to the stdout
 ## VERSION:
 ```
 F+, a stack-based interpreting programming language
-written on Rust v.1.68.0
+written on Rust v.1.68.1
 version: 0.1.0-4
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes
