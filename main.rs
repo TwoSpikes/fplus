@@ -1,3 +1,5 @@
+#[allow(non_cames_case_types)]
+
 use std:: {
     io::Write,
     convert::TryInto,
@@ -21,7 +23,11 @@ const LINK_DEBUG_SUCCED: bool = true;
 
 // -- PARSING --
 //show every token and some variables for parsing
-const PARSE_DEBUG: bool = false;
+const PARSE_DEBUG: bool = true;
+//show debug state
+const PARSE_DEBUG_STATE: bool = true;
+//show scope_id
+const PARSE_DEBUG_ID: bool = true;
 //show callstack
 const PARSE_DEBUG_CALL: bool = false;
 //show debug information about strings
@@ -51,6 +57,20 @@ const SIM_DEBUG_PUTS: bool = false;
 //maximum level of include recursion
 const MAX_INCLUDE_LEVEL: usize = 500;
 
+fn covariant_right<T: std::cmp::PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
+    if a.len() > b.len() {
+        return false;
+    }
+    let mut ind: usize = 0;
+    while ind < b.len()-1 {
+        if a[ind] != b[ind] {
+            return false;
+        }
+        ind += 1;
+    }
+    return true;
+}
+
 #[derive(Debug)]
 enum Callmode {
     WITHOUT_ADDRESS,    //like goto operator in C
@@ -60,7 +80,7 @@ enum Callmode {
     WITH_ADDRESS_RIGHT, //save address before arguments
 }
 
-fn parselexget(filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>)> {
+fn parselexget(filename: &String, include_level: usize, scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
     match parse(&{
 use crate::Retlex::*;
         match lex(&filename, &match get(&filename) {
@@ -88,12 +108,12 @@ use crate::Retlex::*;
                 eprintln!("Unknown lexing return state");
                 return None;
             },
-    }}, &filename, include_level) {
+    }}, &filename, include_level, scope_id) {
         Some(x) => {
             if PARSE_DEBUG_SUCCED {
                 eprintln!("[Parsing succed]");
             }
-            return Some((x.0, x.1));
+            return Some((x.0, x.1, x.2));
         },
         None => {
             eprintln!("[Parsing failed]");
@@ -538,7 +558,7 @@ enum Mod {
     PUB, //anywhere
 }
 //////////////////////////////////////////////////////////////////////
-fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>)> {
+fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize, mut scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
 use crate::Op::*;
     if include_level > MAX_INCLUDE_LEVEL {
         eprintln!("exceeded max include level: {}", MAX_INCLUDE_LEVEL);
@@ -571,7 +591,6 @@ use crate::Op::*;
     let mut curmod: Mod = Mod::UNK;
     //access modifiers for every element of labels array
     let mut labmod: Vec<Mod> = Vec::new();
-    let mut scope_id: Vec<usize> = vec![1,];
     let mut ind: isize = -1;
     while {ind+=1;ind} < pr.len()as isize{
         let i: &Tok = &pr[ind as usize];
@@ -607,6 +626,12 @@ use crate::Op::*;
         if PARSE_DEBUG {
             eprintln!("parse: callstk={:?} val={} callmode={:?}",
                       callstk, repr(val.as_str()), callmode);
+        }
+        if PARSE_DEBUG_STATE {
+            eprintln!("State: {:?}", state);
+        }
+        if PARSE_DEBUG_ID {
+            eprintln!("scope_id: {:?}", scope_id);
         }
 
         res.append(&mut if val.as_str().chars().nth(0) == Some('\'') && matches!(state, State::NONE) {
@@ -775,9 +800,12 @@ use crate::Callmode::*;
                     "argv" => ARGV,
                     "read" => READ,
                     "empty_op" => EMPTY,
-                    "scope_ends" => {
-                        let len: usize = scope_id.len()-1;
-                        scope_id[len] += 1;
+                    "{" => {
+                        scope_id.push(0);
+                        continue;
+                    },
+                    "}" => {
+                        _ = scope_id.pop().unwrap();
                         continue;
                     },
                     _ => {
@@ -818,6 +846,10 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::FN => {
+                        {
+                            let len: usize = scope_id.len()-1;
+                            scope_id[len] += 1;
+                        }
                         let pos: usize = match labels.iter().position(|x| String::from(x.0.clone()).eq(val)) {
                             Some(pos) => pos,
                             None => {
@@ -850,12 +882,13 @@ use crate::Callmode::*;
                             cut_string.to_owned()
                         } else {
                             val.to_string()
-                        }), include_level+1) {
+                        }), include_level+1, scope_id.clone()) {
                             Some(x) => x,
                             None => {
                                 return None;
                             },
                         };
+                        scope_id = tokens.2;
                         // FIXME: implement including with access modifiers
                         let mut loopindex: usize = 0;
                         if PARSE_DEBUG_INCLUDE_ADDING {
@@ -895,7 +928,7 @@ use crate::Callmode::*;
     );}
     let parseerr = |msg: &str| {
         eprintln!("{}:EOF: Error: {}", filename, msg);
-        return None::<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>)>;
+        return None::<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)>;
     };
     let parsewarn = |msg: &str| {
         eprintln!("{}:EOF: Warning: {}", filename, msg);
@@ -930,7 +963,7 @@ use crate::Callmode::*;
         }
     }
 
-    return Some((labels, result));
+    return Some((labels, result, scope_id));
 }
 fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
     eprintln!("[linking {}...[recursion_level: {}]]", repr(filename), include_level);
@@ -951,7 +984,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, l
                 for j in &*labels {
                     //if (Label)(j.name) = (Op)(x.Err.String)
                     if String::from(j.0.clone()).eq(&String::from(x.0.clone())) {
-                        if j.2 == x.1 {
+                        if covariant_right(&x.1, &j.2) {
                             match j.1 {
                                 //found definition
                                 Some(def) => {
@@ -1313,7 +1346,7 @@ fn clah(args: &Vec<String>) {
                                         args: &Vec<String>,
                                         output_to_file: Option<String>| {
 use simResult::*;
-                        let error: simResult = sim(&mut match parselexget(&i, 0) {
+                        let error: simResult = sim(&mut match parselexget(&i, 0, vec![0,]) {
                             Some(x) => x.1,
                             None => return,
                         }, &i, if ind==(argv.len()-1).try_into().unwrap() {
@@ -1353,7 +1386,7 @@ use simResult::*;
                                         fargs: &Vec<String>,
                                         args: &Vec<String>,
                                         output_to_file: Option<String>| {
-                        let tokens: Vec<(Op, Loc)> = match parselexget(&i, 0) { 
+                        let tokens: Vec<(Op, Loc)> = match parselexget(&i, 0, vec![0,]) { 
                             Some(x) => x.1,
                             None => return,
                         };

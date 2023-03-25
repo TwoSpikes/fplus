@@ -1,4 +1,4 @@
 include std.tspl
 
 pub fn main
-  
+  :max_2_I64_less
