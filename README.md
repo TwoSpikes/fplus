@@ -77,6 +77,9 @@ Supported compilation modes:
 $ cargo build --release
 ```
 
+Dependences:
+* Cargo
+
 #### Usage:
 ```console
 $ ./target/release/fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
@@ -91,6 +94,15 @@ error e               Print error codes and information about them
 ```
 
 While building, you must be in `fplus` directory (it is important)
+
+#### VERSION:
+```
+F+, a stack-based interpreting programming language
+written on Rust v.1.68.1
+version: 0.1.0-4
+download: https://github.com/TwoSpikes/fplus
+2022-2023 @ TwoSpikes
+```
 
 #### Error codes:
 This message will be shown with `error` (or `e`) subcommand:
@@ -155,15 +167,6 @@ Hello, World!
 into the `hello-world-output.txt` file.
 
 If you will not provide `-o` option, Hello, World! will be printed to the stdout instead.
-
-## VERSION:
-```
-F+, a stack-based interpreting programming language
-written on Rust v.1.68.1
-version: 0.1.0-4
-download: https://github.com/TwoSpikes/fplus
-2022-2023 @ TwoSpikes
-```
 
 # Programming language
 
