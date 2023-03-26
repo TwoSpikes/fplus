@@ -1,4 +1,4 @@
-1 F+ (Forth+)
+F+ (Forth+)
 
 Stack-based programming language made by me (TwoSpikes, 2022-2023) for studing purposes.
 
