@@ -18,6 +18,7 @@ Done:
 - [x] Nested label scopes
 - [x] Ability to stderr printing
 - [x] File reading
+- [x] `gettime` operation — returns time in nanoseconds as i128
 
 In progress:
 
@@ -36,7 +37,6 @@ To do:
 - [ ] C-like file reading
 - [ ] Raw file reading
 - [ ] File writing
-- [ ] `gettime` operation
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
 Standard library:

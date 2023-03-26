@@ -61,6 +61,14 @@ const SIM_DEBUG_PUTS: bool = false;
 //maximum level of include recursion
 const MAX_INCLUDE_LEVEL: usize = 500;
 
+fn hi(x: u128) -> i64 {
+    (((x >> 64)as i128)-9223372036854775807)as i64
+}
+
+fn lo(x: u128) -> i64 {
+    ((x as i128)-9223372036854775807)as i64
+}
+
 fn covariant_right<T: std::cmp::PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
     if a.len() > b.len() {
         return false;
@@ -560,6 +568,7 @@ enum Op {
     ARGC,   //command line arguments: get length
     ARGV,   //command line arguments: get element by index
     READ,   //read file to string
+    GETTIME,//returns u128 with number of nanoseconds
     EMPTY,  //does nothing
 }
 impl fmt::Display for Op {
@@ -828,6 +837,7 @@ use crate::Callmode::*;
                         _ = scope_id.pop().unwrap();
                         continue;
                     },
+                    "gettime" => GETTIME,
                     _ => {
 use crate::Callmode::*;
                         match callmode {
@@ -1374,6 +1384,15 @@ use crate::Op::*;
                 };
                 stack.append(&mut file.chars().map(|x| x as i64).collect::<Vec<i64>>());
                 stack.push(file.len().try_into().unwrap());
+            },
+            GETTIME => {
+use std::time::{
+    SystemTime,
+    UNIX_EPOCH,
+};
+                let time: u128 = SystemTime::now().duration_since(UNIX_EPOCH).expect("lol").as_nanos();
+                stack.push(hi(time));
+                stack.push(lo(time));
             },
             DBGMSG(x) => {
                 println!("dbgmsg: {}", repr(x));
