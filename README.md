@@ -16,6 +16,7 @@ Done:
 - [x] Global variables that switch debug information on/off
 - [x] `include` keyword
 - [x] Nested label scopes
+- [x] Ability to stderr printing
 
 In progress:
 
@@ -28,7 +29,6 @@ To do:
 - [ ] `com` and `token-com` subcommand (for compilation)
 - [ ] `native` keyword
 - [ ] Vim and Emacs syntax highlighting (later)
-- [ ] Ability to stderr printing
 - [ ] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 - [ ] Colored output somehow through escaping
 - [ ] Colored debug output

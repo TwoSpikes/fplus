@@ -521,7 +521,10 @@ enum Op {
     Push(i64), //push number to the stack
     PRINT,  //print char (same as number)
     PUTS,   //print string
+    EPRINT, //print char to stderr (see ::PRINT)
+    EPUTS,  //print string to stderr (see ::PUTS)
     FLUSH,  //print stdout buffer and clear it
+    EFLUSH, //print stderr buffer and clear it (see ::EFLUSH)
     INP,    //read line from stdin
     PLUS,   // +
     MUL,    // *
@@ -712,7 +715,10 @@ use crate::Op::*;
                     "/" => DIV,
                     "putc" => PRINT,
                     "puts" => PUTS,
+                    "eputc" => EPRINT,
+                    "eputs" => EPUTS,
                     "flush" => FLUSH,
+                    "eflush" => EFLUSH,
                     "input" => INP,
                     "lbl" => {
                         state = State::LBL;
@@ -1137,8 +1143,45 @@ use crate::Op::*;
                     },
                 }
             },
+            EPRINT => {
+                match output_to_file {
+                    Some(_) => {
+                        _ = f.as_ref().unwrap().write(&[stack.pop().unwrap()as u8]);
+                    },
+                    None => {
+                        eprint!("{}", char::from_u32(stack.pop().unwrap()as u32).unwrap());
+                    },
+                }
+            },
+            EPUTS => {
+                if SIM_DEBUG_PUTS && !SIM_DEBUG{
+                    eprintln!("debug: puts: {:?}", stack);
+                }
+                let strlen: usize = stack.pop().unwrap()as usize;
+                if stack.len() < strlen {
+                    return errs("puts underflow".to_owned());
+                }
+                let mut i: usize = 0;
+                let mut string: String = "".to_owned();
+                while i < strlen {
+                    let chr = char::from_u32(stack.pop().unwrap()as u32).unwrap();
+                    string.push(chr);
+                    i += 1;
+                }
+                match output_to_file {
+                    Some(_) => {
+                        f.as_ref().unwrap().write(string.as_bytes());
+                    },
+                    None => {
+                        eprint!("{}", string);
+                    },
+                }
+            },
             FLUSH => {
                 _ = std::io::stdout().flush();
+            },
+            EFLUSH => {
+                _ = std::io::stderr().flush();
             },
             INP => {
                 let mut input: String = String::new();
