@@ -6,6 +6,8 @@ use std:: {
     fmt,
 };
 
+const cargo_version: &str = "1.68.1";
+
 // -- LEXER --
 //Show resulting token array
 const LEX_DEBUG: bool = false;
@@ -47,7 +49,9 @@ const CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
 //access modifier without any operators ("pub" and "pri")
 const CURMOD_DEFAULT: Mod = Mod::PRI;
 
-// -- SIMULATING --
+// -- SIMULATION --
+//disable simulation for smaller executable file
+const SIM_ENABLE: bool = true;
 //show every token on runtime and stack state
 const SIM_DEBUG: bool = false;
 //show stack state in puts command
@@ -288,14 +292,18 @@ error e               Print error code and information about them");
 }
 fn version() {
     println!("F+, a stack-based interpreting programming language
-written on Rust v.1.68.1
+written on Rust v.{}
 version: 0.1.0-4
 download: https://github.com/TwoSpikes/fplus
-2022-2023 @ TwoSpikes");
+2022-2023 @ TwoSpikes", cargo_version);
 }
 fn errorcodes() {
     println!("errorcodes:
 E0                    Cannot open file");
+}
+
+fn compile_insructions() {
+    println!("\nDownload source code from https://github.com/TwoSpikes/fplus/#/main.rs and recompile it using Cargo v.{}", cargo_version);
 }
 
 #[derive(Debug)]
@@ -314,12 +322,18 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     }
     match args[1].as_str() {
         "sim"|"s" => {
-            if args.len() <= 2 {
-                eprintln!("No source file provided");
-                usage();
-                return Err({err+=1; err});
+            if SIM_ENABLE {
+                if args.len() <= 2 {
+                    eprintln!("No source file provided");
+                    usage();
+                    return Err({err+=1; err});
+                }
+                return Ok(Mode::SIM);
+            } else {
+                eprintln!("Simulation is disabled.");
+                compile_insructions();
+                Ok(Mode::NONE)
             }
-            return Ok(Mode::SIM);
         },
         "version"|"ver"|"v" => {
             version();
