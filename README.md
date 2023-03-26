@@ -17,6 +17,7 @@ Done:
 - [x] `include` keyword
 - [x] Nested label scopes
 - [x] Ability to stderr printing
+- [x] File reading
 
 In progress:
 
@@ -27,11 +28,15 @@ To do:
 - [ ] `macro` keyword
 - [ ] `undump` subcommand
 - [ ] `com` and `token-com` subcommand (for compilation)
-- [ ] `native` keyword
+- [ ] `addsource` keyword
 - [ ] Vim and Emacs syntax highlighting (later)
 - [ ] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 - [ ] Colored output somehow through escaping
 - [ ] Colored debug output
+- [ ] C-like file reading
+- [ ] Raw file reading
+- [ ] File writing
+- [ ] `gettime` operation
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
 
 Standard library:
