@@ -1,0 +1,4 @@
+fn main
+  '6 '6 '6
+  eputc eputc eputc
+  
