@@ -181,7 +181,7 @@ Stack: [34, 36]
 
 #### Copying elements (numbers) — `pushnth`
 
-Pushnth takes one argument: `(number) a`\
+Pushnth takes one argument: `(I64) a`\
 First, provide this argument, and second, write `pushnth`
 
 If stack is [10, 11, 12, 13, 14],\
@@ -205,8 +205,8 @@ Stack: [34, 36, 36]
 
 #### Plus `+`
 
-Consumes 2 arguments: `(number) a, (number) b`\
-Returns: `(number)(a + b)`
+Consumes 2 arguments: `(I64) a, (I64) b`\
+Returns: `(I64)(a + b)`
 
 ```fplus
 34 35 +
@@ -227,8 +227,8 @@ Stack: [48]
 
 #### Multiply `*`
 
-Consumes 2 arguments: `(number) a, (number) b`\
-Returns: `(number)(a * b)`
+Consumes 2 arguments: `(I64) a, (I64) b`\
+Returns: `(I64)(a * b)`
 
 ```fplus
 2 3 *
@@ -240,9 +240,24 @@ Stack: [6]
 ```
 Stack: [-98]
 
+#### Division `/`
+
+Consumes 2 arguments: `(I64) a, (I64) b`\
+Returns: `(I64)(a / b)`
+
+```fplus
+2 / 3
+```
+Stack: [0]
+
+```fplus
+48 -2 /
+```
+Stack: [-24]
+
 #### Less than `<`
 
-Consumes 2 arguments: `(number) a, (number) b`\
+Consumes 2 arguments: `(I64) a, (I64) b`\
 Returns: `(boolean)(a < b)`
 
 ```fplus
@@ -262,7 +277,7 @@ Stack: [0] because (34 < 34 <=> false)
 
 #### Equals `=`
 
-Consumes 2 arguments: `(number) a, (number) b`\
+Consumes 2 arguments: `(I64) a, (I64) b`\
 Returns: `(boolean)(a = b)`
 
 ```fplus
@@ -353,7 +368,7 @@ Stack: [4]
 
 #### Argv `argv`
 
-Consumes 1 argument: `(number) a`\
+Consumes 1 argument: `(I64) a`\
 Returns [String](#String) with a-th command line argument.
 
 ```fplus
@@ -383,7 +398,7 @@ Does nothing. Just need for debugging purposes.
 
 #### Dump `dump`
 
-Consumes 1 argument: `(number) a`\
+Consumes 1 argument: `(I64) a`\
 Print `a` without converting it from ASCII to string.\
 Need for debugging purposes.
 
@@ -397,7 +412,7 @@ Stderr: "69"
 
 Exit the program
 
-Consumes 1 argument: `(number) exitcode`\
+Consumes 1 argument: `(I64) exitcode`\
 Exits the program. It does not need to return anything.
 
 ```fplus
@@ -414,7 +429,7 @@ Stderr: '[Simulation of "main.tspl" finished with exit code 1]'
 
 #### Print char `putc`
 
-Consumes 1 argument: `(number) chr`\
+Consumes 1 argument: `(I64) chr`\
 Returns nothing.\
 Prints chr as ASCII to stdout ([printing to stderr](#stderr printing) is not implemented yet).
 
@@ -458,3 +473,179 @@ You can use simple escaping like in C like this:
 | "\""                      | double quote                |
 
 Strings are inverted at the stack and has its length at the end.
+
+Empty string:
+```fplus
+""
+```
+Stack: [0]
+
+## Functions and calls
+
+#### Function
+
+First, you need to create a function
+
+We will call it `foo`:
+
+Syntax:
+fn `{function name}`
+
+```fplus
+fn foo
+```
+
+#### Main function
+
+`main` function is the start of the program
+
+If you don't have `main` function then program will start from first line of file you given.
+
+You cannot have the `main` function (maybe later I will implement it) in files that you [included](#include).
+
+You will define it like this:
+```fplus
+fn main
+```
+
+With the [previous function we created: `foo`](#foo):
+
+```fplus
+fn foo
+
+fn main
+```
+
+#### Function calling
+
+You can call your function by just writing its name:
+```fplus
+fn foo
+
+fn main
+  foo
+```
+
+But this program will go into the infinite loop (because it is returing to `main` function) so you have to [exit](#exit) it somewhere.
+
+```fplus
+fn foo
+  1 exit
+
+fn main
+  foo
+```
+
+Let's print string as indicator that we called it:
+```fplus
+fn foo
+  "foo called" puts
+  1 exit
+
+fn main
+  foo
+```
+
+Okay, now let's move on!
+
+Actually you called it and save your next operation address to jump to it at the end of function.
+
+Let's check:
+```fplus
+fn foo
+  "foo called" puts
+  dump
+  1 exit
+
+fn main
+  foo
+```
+Stdout: "foo called\n16\n"
+
+This address is too large because of our string.\
+Every char is the 1 operation (and the length of string too).
+
+We do not need it now so I will show how to not do that:
+```fplus
+fn foo
+  "foo called" puts
+  1 exit
+
+fn main
+  #foo
+```
+
+Yeah, you just need to put `#` sign before function name
+
+#### Get function address
+
+You can get function addresses by pushing `:` character before its name
+
+Let's get address of `foo` function
+
+```fplus
+fn foo
+  "foo called" puts
+  1 exit
+
+fn main
+  :foo
+```
+Stack: [0] because `foo` starts at first operation
+
+#### Scopes
+
+You cannot access fns outside of its scope.
+
+```fplus
+fn a {
+  fn a.1
+  fn a.2
+  fn a.3
+}
+
+fn main
+  :a   /* 0 */
+  :a.1 /* Error: label is private */
+```
+
+## Function arguments
+
+#### Old way
+
+You can provide arguments to function, placing them before calling:
+```fplus
+fn foo
+  dump dump dump
+  0 exit
+
+fn main
+  1 2 3 #foo
+```
+Stdout: "3\n2\n1\n"
+
+#### New way
+
+```fplus
+fn foo
+  dump dump dump
+  0 exit
+
+fn main
+  #foo(1 2 3)
+```
+Stdout: "3\n2\n1\n"
+
+## Comments
+
+#### Multi-line
+
+```fplus
+/* this is a comment */
+
+/* this is a nested comment
+  /* yeah, nested comment */
+*/
+```
+
+Yes, space (or new line or tab) before and after `/*` is neccesary
