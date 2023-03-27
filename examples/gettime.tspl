@@ -1,0 +1,5 @@
+fn main
+  gettime
+  dump
+  dump
+  0 exit
