@@ -1,4 +1,4 @@
-#[allow(non_cames_case_types)]
+#[allow(non_camel_case_types)]
 
 use std:: {
     io::Write,
@@ -93,7 +93,7 @@ enum Callmode {
 }
 
 fn parselexget(filename: &String, include_level: usize, scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
-    match parse(&{
+    match parse(&mut {
 use crate::Retlex::*;
         match lex(&filename, &match get(&filename) {
         Some(x) => x,
@@ -149,9 +149,6 @@ fn matchlink(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc
     }
 }
 
-fn linkparselexget(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
-    matchlink(&filename, &res, &labels, &main, include_level)
-}
 
 fn for_each_arg(args: &Vec<String>,
                 func: fn(i: &String,
@@ -461,7 +458,7 @@ use crate::Quotes::*;
             loc.0 += 1;
         }
         //push special symbols as special symbols
-        if i == '\n' || i == ':' || i == '(' || i == ')' || i == '#' {
+        if i == '\n' || i == ':' || i == '(' || i == ')'{
             res.push(Tok(ploc, tmp.to_owned()));
             res.push(Tok(loc, String::from(i)));
             tmp = "".to_owned();
@@ -584,7 +581,7 @@ enum Mod {
     PUB, //anywhere
 }
 //////////////////////////////////////////////////////////////////////
-fn parse(pr: &Vec<Tok>, filename: &String, include_level: usize, mut scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
+fn parse(pr: &mut Vec<Tok>, filename: &String, include_level: usize, mut scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
 use crate::Op::*;
     if include_level > MAX_INCLUDE_LEVEL {
         eprintln!("exceeded max include level: {}", MAX_INCLUDE_LEVEL);
@@ -619,8 +616,8 @@ use crate::Op::*;
     let mut labmod: Vec<Mod> = Vec::new();
     let mut ind: isize = -1;
     while {ind+=1;ind} < pr.len()as isize{
-        let i: &Tok = &pr[ind as usize];
-        let val: &String = &i.1;
+        let i: &mut Tok = &mut pr[ind as usize];
+        let mut val: &mut String = &mut i.1;
         let loc: &Loc = &i.0;
         let lin: &i64 = &loc.0;
         let index: &i64 = &loc.1;
@@ -713,7 +710,14 @@ use crate::Op::*;
                 eprintln!("tmpres={:?}", tmpres);
             }
             tmpres
-        } else {match strtoi64(val) {
+        } else {
+            let check_for_hash = || -> Option<(String, Callmode)> {
+                if val.chars().nth(0) == Some('#') {
+                    return Some((val[1..].to_string(), CALLMODE_ON_OPERATOR));
+                }
+                return None;
+            };
+            match strtoi64(&val) {
             Some(x) => {
                 res.append(&mut vec![
                     (Ok(Op::Push(x)), *loc),
@@ -721,7 +725,8 @@ use crate::Op::*;
                 stksim.push(res.len());
                 continue;
             },
-            None => match state {
+            None => {
+                match state {
                     State::NONE => {
                 let matchresult: Op = match val.as_str() {
                     ""|"\n" => continue,
@@ -905,7 +910,7 @@ use crate::Callmode::*;
                     },
                     State::INCLUDE => {
                         if PARSE_DEBUG_INCLUDE {
-                            eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(val));
+                            eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(&val));
                         }
                         let mut tokens = match parselexget(&(if val.chars().nth(0) == Some('\"') {
                             let cut_string: &str = &val[1..][..val.len()-2];
@@ -931,12 +936,19 @@ use crate::Callmode::*;
                         result.append(&mut tokens.1);
                         labels.append(&mut tokens.0);
                         if PARSE_DEBUG_INCLUDE_SUCCED {
-                            eprintln!("{}:{}:{}: succed include {}", filename, lin, index, repr(val));
+                            eprintln!("{}:{}:{}: succed include {}", filename, lin, index, repr(&val));
                         }
                         state = State::NONE;
                         continue;
                     },
                     State::FNADDR => {
+                        match check_for_hash() {
+                            Some(x) => {
+                                *val = x.0;
+                                callmode = x.1;
+                            },
+                            None => {},
+                        }
                         res.append(&mut vec![
                             (Err((val.to_string(), scope_id.clone())), *loc),
                         ]);
@@ -944,7 +956,12 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::DBGMSG => {
-                        res.push((Ok(Op::DBGMSG(val.as_str().into())), *loc));
+                        println!("{}, {}, {}", repr(val.as_str()), val, urepr(val.as_str()));
+                        res.push((Ok(Op::DBGMSG(if val.chars().nth(0) == Some('\"') {
+                            urepr(&val[1..val.len()-1])
+                        } else {
+                            val.to_string()
+                        }.into())), *loc));
                         state = State::NONE;
                         continue;
                     },
@@ -953,6 +970,7 @@ use crate::Callmode::*;
                         return None;
                     },
                 }
+            }
             }
         }
     );}
@@ -975,7 +993,10 @@ use crate::Callmode::*;
         (Ok(EXIT), Loc(-2,-2)),
     ]);
 
-    result.append(&mut linkparselexget(&filename, &res, &labels, &main, include_level).unwrap());
+    result.append(&mut match matchlink(&filename, &res, &labels, &main, include_level) {
+        Some(x) => x,
+        None => return None,
+    });
 
     {
         if labels.len() != labmod.len() {
@@ -1209,8 +1230,8 @@ use crate::Op::*;
             },
             INP => {
                 let mut input: String = String::new();
-                let stdin = std::io::stdin();
-                _ = stdin.read_line(&mut input);
+use std::io::stdin;
+                _ = stdin().read_line(&mut input);
                 stack.append(&mut from(&input).iter().rev().map(|x| *x).collect::<Vec<i64>>());
                 stack.push(input.len()as i64);
             },
