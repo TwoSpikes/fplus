@@ -621,20 +621,24 @@ use crate::Op::*;
         let loc: &Loc = &i.0;
         let lin: &i64 = &loc.0;
         let index: &i64 = &loc.1;
-        let parseerr = |msg: &str| {
-            eprintln!("{}:{}:{}: Error: {}", filename, lin, index, msg);
-            return None;
-        };
-        let parsewarn = |msg: &str| {
-            eprintln!("{}:{}:{}: Warning: {}", filename, lin, index, msg);
-        };
+        macro_rules! parseerr {
+            ($msg:expr) => {
+                eprintln!("{}:{}:{}: Error: {}", filename, lin, index, $msg);
+            };
+        }
+        macro_rules! parsewarn {
+            ($msg:expr) => {
+                eprintln!("{}:{}:{}: Warning: {}", filename, lin, index, $msg);
+            };
+        }
         match val.as_str() {
             "/*" => {
                 mlc += 1;
             },
             "*/" => {
                 if mlc <= 0 {
-                    return parseerr("Comment underflow!");
+                    parseerr!("Comment underflow!");
+                    return None;
                 }
                 mlc -= 1;
                 continue;
@@ -664,7 +668,7 @@ use crate::Op::*;
                     _ => {
                         let repred_string: String = urepr(&val[1..]);
                         if repred_string.len() > 1 {
-                            parseerr("Char is more than one symbol");
+                            parseerr!("Char is more than one symbol");
                             return None;
                         }
                         repred_string.chars().nth(0).unwrap()
@@ -799,7 +803,10 @@ use crate::Op::*;
 use crate::Callmode::*;
                         let insertion_index: usize = match callstk.pop() {
                             Some(x) => x,
-                            None => return parseerr("call underflow!"),
+                            None => {
+                                parseerr!("call underflow!");
+                                return None;
+                            },
                         };
                         if PARSE_DEBUG_CALL {
                             eprintln!("insertion_index={} res={:?}", insertion_index, res);
@@ -902,7 +909,7 @@ use crate::Callmode::*;
                         };
                         labels[pos].1 = Some(res.len()as i64);
                         if !matches!(curmod, Mod::UNK) {
-                            parsewarn("access modifier does not need to be in definition of declared already function");
+                            parsewarn!("access modifier does not need to be in definition of declared already function");
                             curmod = Mod::UNK;
                         }
                         state = State::NONE;
@@ -974,18 +981,22 @@ use crate::Callmode::*;
             }
         }
     );}
-    let parseerr = |msg: &str| {
-        eprintln!("{}:EOF: Error: {}", filename, msg);
-        return None::<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)>;
-    };
-    let parsewarn = |msg: &str| {
-        eprintln!("{}:EOF: Warning: {}", filename, msg);
-    };
+    macro_rules! parseerr {
+        ($msg:literal) => {
+            eprintln!("{}:EOF: Error: {}", filename, stringify!($msg));
+            return None;
+        }
+    }
+    macro_rules! parsewarn {
+        ($msg:literal) => {
+            eprintln!("{}:EOF: Warning: {}", filename, stringify!($msg));
+        }
+    }
     if !matches!(state, State::NONE) {
-        return parseerr("Parsing is ended but state is not none");
+        parseerr!("Parsing is ended but state is not none");
     }
     if callstk.len() > 0 {
-        return parseerr("Callstk is not empty");
+        parseerr!("Callstk is not empty");
     }
 
     res.append(&mut vec![
