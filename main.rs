@@ -580,6 +580,21 @@ enum Mod {
     PRI, //only in this file
     PUB, //anywhere
 }
+macro_rules! parsemsg {
+    ($msg:expr, $msg2:expr, $lin:expr, $index:expr, $filename:expr) => {
+        eprintln!("{}:{}:{}: {}: {}", $filename, $lin, $index, $msg, $msg2);
+    };
+}
+macro_rules! parseerrmsg {
+    ($msg:expr, $lin:expr, $index:expr, $filename:expr) => {
+        parsemsg!("\x1b[91mError\x1b[0m", $msg, $lin, $index, $filename);
+    };
+}
+macro_rules! parsewarnmsg {
+    ($msg:expr, $lin:expr, $index:expr, $filename:expr) => {
+        parsemsg!("\x1b[93mWarning\x1b[0m", $msg, $lin, $index, $filename);
+    };
+}
 //////////////////////////////////////////////////////////////////////
 fn parse(pr: &mut Vec<Tok>, filename: &String, include_level: usize, mut scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
 use crate::Op::*;
@@ -623,12 +638,12 @@ use crate::Op::*;
         let index: &i64 = &loc.1;
         macro_rules! parseerr {
             ($msg:expr) => {
-                eprintln!("{}:{}:{}: Error: {}", filename, lin, index, $msg);
+                parseerrmsg!($msg, lin, index, filename);
             };
         }
         macro_rules! parsewarn {
             ($msg:expr) => {
-                eprintln!("{}:{}:{}: Warning: {}", filename, lin, index, $msg);
+                parsewarnmsg!($msg, lin, index, filename);
             };
         }
         match val.as_str() {
@@ -982,14 +997,13 @@ use crate::Callmode::*;
         }
     );}
     macro_rules! parseerr {
-        ($msg:literal) => {
-            eprintln!("{}:EOF: Error: {}", filename, stringify!($msg));
-            return None;
+        ($msg:expr) => {
+            parseerrmsg!($msg, "EOF", "EOF", filename);
         }
     }
     macro_rules! parsewarn {
-        ($msg:literal) => {
-            eprintln!("{}:EOF: Warning: {}", filename, stringify!($msg));
+        ($msg:expr) => {
+            parsewarnmsg!($msg, "EOF", "EOF", filename);
         }
     }
     if !matches!(state, State::NONE) {
@@ -1067,7 +1081,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, l
                     }
                 }
                 if ret >= labels.len()as i64 - 1 {
-                    eprintln!("{}:{}:{}: label not found: {}", filename, lin, index, repr(&x.0));
+                    parseerrmsg!("label not found", lin, index, filename);
                     return None;
                 }
             },

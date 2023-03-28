@@ -19,6 +19,7 @@ Done:
 - [x] Ability to stderr printing
 - [x] File reading
 - [x] `gettime` operation — returns time in nanoseconds as i128
+- [x] Colored debug output (Error and Warning)
 
 In progress:
 
@@ -33,7 +34,6 @@ To do:
 - [ ] Vim and Emacs syntax highlighting (later)
 - [ ] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 - [ ] Colored output somehow through escaping
-- [ ] Colored debug output
 - [ ] C-like file reading
 - [ ] Raw file reading
 - [ ] File writing
