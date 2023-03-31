@@ -580,19 +580,29 @@ enum Mod {
     PRI, //only in this file
     PUB, //anywhere
 }
+macro_rules! parsemsg_loop {
+    ($head:expr, $(,$tail:expr)+) => {
+        eprint!("{}", $head);
+        parsemsg_loop!($($tail),+);
+    };
+    () => {
+        println!();
+    };
+}
 macro_rules! parsemsg {
-    ($msg:expr, $msg2:expr, $lin:expr, $index:expr, $filename:expr) => {
-        eprintln!("{}:{}:{}: {}: {}", $filename, $lin, $index, $msg, $msg2);
+    ($msg:expr, $lin:expr, $index:expr, $filename:expr, $(,$msg2:expr)+) => {
+        eprint!("{}:{}:{}: {}: ", $filename, $lin, $index, $msg);
+        parsemsg_loop!($($msg2),+);
     };
 }
 macro_rules! parseerrmsg {
-    ($msg:expr, $lin:expr, $index:expr, $filename:expr) => {
-        parsemsg!("\x1b[91mError\x1b[0m", $msg, $lin, $index, $filename);
+    ($lin:expr, $index:expr, $filename:expr, $(,$msg:expr)*) => {
+        parsemsg!("\x1b[91mError\x1b[0m", $lin, $index, $filename, $($msg),+);
     };
 }
 macro_rules! parsewarnmsg {
-    ($msg:expr, $lin:expr, $index:expr, $filename:expr) => {
-        parsemsg!("\x1b[93mWarning\x1b[0m", $msg, $lin, $index, $filename);
+    ($lin:expr, $index:expr, $filename:expr, $(,$msg:expr)*) => {
+        parsemsg!("\x1b[93mWarning\x1b[0m", $lin, $index, $filename, $($msg),+);
     };
 }
 //////////////////////////////////////////////////////////////////////
@@ -637,13 +647,13 @@ use crate::Op::*;
         let lin: &i64 = &loc.0;
         let index: &i64 = &loc.1;
         macro_rules! parseerr {
-            ($msg:expr) => {
-                parseerrmsg!($msg, lin, index, filename);
+            ($(,$msg:expr)*) => {
+                parseerrmsg!(lin, index, filename, $($msg),*);
             };
         }
         macro_rules! parsewarn {
-            ($msg:expr) => {
-                parsewarnmsg!($msg, lin, index, filename);
+            ($(,$msg:expr)*) => {
+                parsewarnmsg!(lin, index, filename, $($msg),*);
             };
         }
         match val.as_str() {
