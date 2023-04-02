@@ -581,28 +581,28 @@ enum Mod {
     PUB, //anywhere
 }
 macro_rules! parsemsg_loop {
-    ($head:expr, $(,$tail:expr)+) => {
-        eprint!("{}", $head);
-        parsemsg_loop!($($tail),+);
-    };
     () => {
-        println!();
+        eprintln!();
+    };
+    ($head:expr, $($tail:expr),*) => {
+        eprint!("{}", $head);
+        parsemsg_loop!($($tail),*);
     };
 }
 macro_rules! parsemsg {
-    ($msg:expr, $lin:expr, $index:expr, $filename:expr, $(,$msg2:expr)+) => {
+    ($msg:expr, $lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
         eprint!("{}:{}:{}: {}: ", $filename, $lin, $index, $msg);
-        parsemsg_loop!($($msg2),+);
+        parsemsg_loop!($($tail,)*);
     };
 }
 macro_rules! parseerrmsg {
-    ($lin:expr, $index:expr, $filename:expr, $(,$msg:expr)*) => {
-        parsemsg!("\x1b[91mError\x1b[0m", $lin, $index, $filename, $($msg),+);
+    ($lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
+        parsemsg!("\x1b[91mError\x1b[0m", $lin, $index, $filename, $($tail),*);
     };
 }
 macro_rules! parsewarnmsg {
-    ($lin:expr, $index:expr, $filename:expr, $(,$msg:expr)*) => {
-        parsemsg!("\x1b[93mWarning\x1b[0m", $lin, $index, $filename, $($msg),+);
+    ($lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
+        parsemsg!("\x1b[93mWarning\x1b[0m", $lin, $index, $filename, $($tail),*);
     };
 }
 //////////////////////////////////////////////////////////////////////
@@ -647,13 +647,13 @@ use crate::Op::*;
         let lin: &i64 = &loc.0;
         let index: &i64 = &loc.1;
         macro_rules! parseerr {
-            ($(,$msg:expr)*) => {
-                parseerrmsg!(lin, index, filename, $($msg),*);
+            ($($tail:expr),*) => {
+                parseerrmsg!(lin, index, filename, $($tail),*);
             };
         }
         macro_rules! parsewarn {
-            ($(,$msg:expr)*) => {
-                parsewarnmsg!(lin, index, filename, $($msg),*);
+            ($($tail:expr)*) => {
+                parsewarnmsg!(lin, index, filename, $($tail),*);
             };
         }
         match val.as_str() {
@@ -662,7 +662,7 @@ use crate::Op::*;
             },
             "*/" => {
                 if mlc <= 0 {
-                    parseerr!("Comment underflow!");
+                    parseerr!(("Comment underflow!"));
                     return None;
                 }
                 mlc -= 1;
@@ -693,7 +693,7 @@ use crate::Op::*;
                     _ => {
                         let repred_string: String = urepr(&val[1..]);
                         if repred_string.len() > 1 {
-                            parseerr!("Char is more than one symbol");
+                            parseerr!(("Char is more than one symbol"));
                             return None;
                         }
                         repred_string.chars().nth(0).unwrap()
@@ -829,7 +829,7 @@ use crate::Callmode::*;
                         let insertion_index: usize = match callstk.pop() {
                             Some(x) => x,
                             None => {
-                                parseerr!("call underflow!");
+                                parseerr!(("call underflow!"));
                                 return None;
                             },
                         };
@@ -934,7 +934,7 @@ use crate::Callmode::*;
                         };
                         labels[pos].1 = Some(res.len()as i64);
                         if !matches!(curmod, Mod::UNK) {
-                            parsewarn!("access modifier does not need to be in definition of declared already function");
+                            parsewarn!(("access modifier does not need to be in definition of declared already function"));
                             curmod = Mod::UNK;
                         }
                         state = State::NONE;
@@ -1007,20 +1007,20 @@ use crate::Callmode::*;
         }
     );}
     macro_rules! parseerr {
-        ($msg:expr) => {
-            parseerrmsg!($msg, "EOF", "EOF", filename);
+        ($($tail:expr),*) => {
+            parseerrmsg!("EOF", "EOF", filename, $($tail),*);
         }
     }
     macro_rules! parsewarn {
-        ($msg:expr) => {
-            parsewarnmsg!($msg, "EOF", "EOF", filename);
+        ($($tail:expr),*) => {
+            parsewarnmsg!("EOF", "EOF", filename, $($tail),*);
         }
     }
     if !matches!(state, State::NONE) {
-        parseerr!("Parsing is ended but state is not none");
+        parseerr!(("Parsing is ended but state is not none"));
     }
     if callstk.len() > 0 {
-        parseerr!("Callstk is not empty");
+        parseerr!(("Callstk is not empty"));
     }
 
     res.append(&mut vec![
@@ -1091,7 +1091,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, l
                     }
                 }
                 if ret >= labels.len()as i64 - 1 {
-                    parseerrmsg!("label not found", lin, index, filename);
+                    parseerrmsg!(lin, index, filename, ("label not found"));
                     return None;
                 }
             },
