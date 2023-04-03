@@ -61,6 +61,113 @@ static mut SIM_DEBUG_PUTS: bool = false;
 //maximum level of include recursion
 static mut MAX_INCLUDE_LEVEL: usize = 500;
 
+#[derive(Clone)]
+struct Formatstr {
+    string: String,
+    formatnums: Vec<usize>,
+    formatters: Vec<String>,
+    position: Vec<usize>,
+}
+struct ComputeFormatNumbers {
+    numbers: Vec<usize>,
+    position: Vec<usize>,
+    string: String,
+}
+impl Formatstr {
+    fn from(x: &str) -> Option<Self> {
+        let temp = Self::compute_format_numbers(&String::from(x))?;
+        return Some(Self {
+            string: temp.string,
+            formatnums: temp.numbers,
+            formatters: Vec::new(),
+            position: temp.position,
+        });
+    }
+    fn compute_format_numbers(string: &String) -> Option<ComputeFormatNumbers> {
+        let mut result: ComputeFormatNumbers = ComputeFormatNumbers {
+            numbers: Vec::new(),
+            string: String::new(),
+            position: Vec::new(),
+        };
+        let mut curly_bracket: bool = false;
+        let mut temp_num: usize = 0;
+        let mut ind: usize = 0;
+        for i in string.chars() {
+            match i {
+                '{' => {
+                    match curly_bracket {
+                        false => {
+                            curly_bracket = true;
+                            result.position.push(ind);
+                        },
+                        true => {
+                            return None;
+                        },
+                    }
+                },
+                '}' => {
+                    match curly_bracket {
+                        false => {
+                            return None;
+                        },
+                        true => {
+                            curly_bracket = false;
+                            result.numbers.push(temp_num);
+                            temp_num = 0;
+                        },
+                    }
+                },
+                _ => {
+                    match curly_bracket {
+                        false => {
+                            result.string.push(i);
+                            ind += 1;
+                        },
+                        true => {
+                            match i {
+                                '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9' => {
+                                    temp_num = temp_num*10 + strtoi64(&String::from(i))? as usize;
+                                }
+                                _ => {
+                                    return None;
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        }
+        return Some(result);
+    }
+    fn format(&mut self, x: &str) -> Option<Self> {
+        self.formatters.push(String::from(x));
+        if self.formatters.len() > match self.formatnums.iter().max() {
+            Some(x) => *x,
+            None => 0,
+        }+1 {
+            return None;
+        }
+        return Some(self.clone());
+    }
+    fn to_string(&self) -> String {
+        let mut result: String = self.string.clone();
+        let mut index: usize = 0;
+        let mut ind: usize = 0;
+        let mut already_inserted: usize = 0;
+        while ind < self.formatnums.len() {
+            let string: &String = &self.formatters[self.formatnums[ind]];
+            let mut ind2: usize = 0;
+            while ind2 < string.len() {
+                result.insert(self.position[ind]+ind2+already_inserted, self.formatters[self.formatnums[ind]].chars().nth(ind2).unwrap());
+                ind2 += 1;
+            }
+            already_inserted += ind2;
+            ind += 1;
+        }
+        return result;
+    }
+}
+
 fn hi(x: u128) -> i64 {
     (((x >> 64)as i128)-9223372036854775807)as i64
 }
@@ -786,7 +893,9 @@ use crate::Op::*;
             },
             "*/" => {
                 if mlc <= 0 {
-                    parseerr!(("Comment underflow!"));
+                    parseerr!((Formatstr::from("Comment underflow! {0}").unwrap()
+                               .format(&mlc.to_string()).unwrap()
+                               .to_string()));
                     return None;
                 }
                 mlc -= 1;
@@ -817,7 +926,9 @@ use crate::Op::*;
                     _ => {
                         let repred_string: String = urepr(&val[1..]);
                         if repred_string.len() > 1 {
-                            parseerr!(("Char is more than one symbol"));
+                            parseerr!((Formatstr::from("Char is more than one symbol: {0}").unwrap()
+                                       .format(&repred_string).unwrap()
+                                       .to_string()));
                             return None;
                         }
                         repred_string.chars().nth(0).unwrap()
@@ -1215,7 +1326,10 @@ fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, l
                     }
                 }
                 if ret >= labels.len()as i64 - 1 {
-                    parseerrmsg!(lin, index, filename, ("label not found"));
+                    parseerrmsg!(lin, index, filename,
+                                 (Formatstr::from("label not found: {0}").unwrap()
+                                  .format(&x.0).unwrap()
+                                  .to_string()));
                     return None;
                 }
             },
@@ -1703,15 +1817,17 @@ use std::fs::{File, OpenOptions};
 }
 
 fn _test() {
+    dbg!(Formatstr::from("Hello, {0} (fuck {1}) {0}!").unwrap()
+         .format("world").unwrap()
+         .format("you").unwrap()
+         .to_string()
+    );
 }
-
 fn _main() {
     let args: Vec<String> = std::env::args().collect();
     clah(&args);
 }
-
 fn main() {
     _main();
 }
-
 //bip bop. this is the end of the code
