@@ -20,6 +20,7 @@ Done:
 - [x] File reading
 - [x] `gettime` operation — returns time in nanoseconds as i128
 - [x] Colored debug output (Error and Warning)
+- [x] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 
 In progress:
 
@@ -32,7 +33,6 @@ To do:
 - [ ] `com` and `token-com` subcommand (for compilation)
 - [ ] `addsource` keyword
 - [ ] Vim and Emacs syntax highlighting (later)
-- [ ] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 - [ ] Colored output somehow through escaping
 - [ ] C-like file reading
 - [ ] Raw file reading

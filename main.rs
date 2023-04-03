@@ -6,60 +6,60 @@ use std:: {
     fmt,
 };
 
-const cargo_version: &str = "1.68.1";
+static mut CARGO_VERSION: &str = "1.68.1";
 
 // -- LEXER --
 //Show resulting token array
-const LEX_DEBUG: bool = false;
+static mut LEX_DEBUG: bool = false;
 //Stop on lexing, do not parse
-const ONLY_LEX: bool = false;
+static mut ONLY_LEX: bool = false;
 
 // -- LINKING --
 //Show resulting program
-const LINK_DEBUG: bool = false;
+static mut LINK_DEBUG: bool = false;
 //Stop on linking, do not run
 //(e.g. when infinite loop)
-const ONLY_LINK: bool = false;
+static mut ONLY_LINK: bool = false;
 //print message "[linking succed]"
-const LINK_DEBUG_SUCCED: bool = true;
+static mut LINK_DEBUG_SUCCED: bool = true;
 
 // -- PARSING --
 //show every token and some variables for parsing
-const PARSE_DEBUG: bool = false;
+static mut PARSE_DEBUG: bool = false;
 //show debug state
-const PARSE_DEBUG_STATE: bool = false;
+static mut PARSE_DEBUG_STATE: bool = false;
 //show scope_id
-const PARSE_DEBUG_ID: bool = false;
+static mut PARSE_DEBUG_ID: bool = false;
 //show callstack
-const PARSE_DEBUG_CALL: bool = false;
+static mut PARSE_DEBUG_CALL: bool = false;
 //show debug information about strings
-const PARSE_DEBUG_STRING: bool = false;
+static mut PARSE_DEBUG_STRING: bool = false;
 //show message about including each file
-const PARSE_DEBUG_INCLUDE: bool = true;
+static mut PARSE_DEBUG_INCLUDE: bool = true;
 //show message how many fns is being included in the specific including operation
-const PARSE_DEBUG_INCLUDE_ADDING: bool = false;
+static mut PARSE_DEBUG_INCLUDE_ADDING: bool = false;
 //show message about every succed include operation
-const PARSE_DEBUG_INCLUDE_SUCCED: bool = true;
+static mut PARSE_DEBUG_INCLUDE_SUCCED: bool = true;
 //show message "[Parsing succed]"
-const PARSE_DEBUG_SUCCED: bool = true;
+static mut PARSE_DEBUG_SUCCED: bool = true;
 //callmode without # operator
-const CALLMODE_DEFAULT: Callmode = Callmode::WITH_ADDRESS_LEFT;
+static mut CALLMODE_DEFAULT: Callmode = Callmode::WITH_ADDRESS_LEFT;
 //callmode with # operator
-const CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
+static mut CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
 //access modifier without any operators ("pub" and "pri")
-const CURMOD_DEFAULT: Mod = Mod::PRI;
+static mut CURMOD_DEFAULT: Mod = Mod::PRI;
 
 // -- SIMULATION --
 //disable simulation for smaller executable file
-const SIM_ENABLE: bool = true;
+static mut SIM_ENABLE: bool = true;
 //show every token on runtime and stack state
-const SIM_DEBUG: bool = false;
+static mut SIM_DEBUG: bool = false;
 //show stack state in puts command
-const SIM_DEBUG_PUTS: bool = false;
+static mut SIM_DEBUG_PUTS: bool = false;
 
 // -- MAX LEVELS --
 //maximum level of include recursion
-const MAX_INCLUDE_LEVEL: usize = 500;
+static mut MAX_INCLUDE_LEVEL: usize = 500;
 
 fn hi(x: u128) -> i64 {
     (((x >> 64)as i128)-9223372036854775807)as i64
@@ -83,7 +83,7 @@ fn covariant_right<T: std::cmp::PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
     return true;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Callmode {
     WITHOUT_ADDRESS,    //like goto operator in C
                         //or jmp operator in asm
@@ -122,7 +122,7 @@ use crate::Retlex::*;
             },
     }}, &filename, include_level, scope_id) {
         Some(x) => {
-            if PARSE_DEBUG_SUCCED {
+            if unsafe { PARSE_DEBUG_SUCCED } {
                 eprintln!("[Parsing succed]");
             }
             return Some((x.0, x.1, x.2));
@@ -137,7 +137,7 @@ use crate::Retlex::*;
 fn matchlink(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
     match link(&filename, &res, &labels, &main, include_level) {
         Some(x) => {
-            if LINK_DEBUG_SUCCED {
+            if unsafe {LINK_DEBUG_SUCCED} {
                 eprintln!("[linking succed]");
             }
             Some(x)
@@ -157,16 +157,20 @@ fn for_each_arg(args: &Vec<String>,
                          fargs: &Vec<String>,
                          args: &Vec<String>,
                          output_to_file: Option<String>) -> ()) {
+    enum Argsstate {
+        NONE,
+        MAX_INCLUDE_LEVEL,
+    }
+    let mut state: Argsstate = Argsstate::NONE;
     let mut argv: Vec<String> = Vec::new();
     //fucking arguments
     let mut fargs: Vec<String> = Vec::new();
     let mut output_to_file: Option<Option<String>> = None;
     {
-        let mut i: String = "".to_owned();
         let mut ind: isize = 1;
         let mut isargs: bool = false;
         while {ind+=1;ind} < args.len().try_into().unwrap() {
-            i = args[ind as usize].clone();
+            let i = args[ind as usize].clone();
 
             match output_to_file.clone() {
                 Some(x) => {
@@ -189,9 +193,129 @@ fn for_each_arg(args: &Vec<String>,
                 fargs.push(i);
                 continue;
             }
-            if (i == "-o") | (i == "--output") {
-                output_to_file = Some(None);
-                continue;
+            match state {
+                Argsstate::NONE => {
+                    match i.to_lowercase().as_str() {
+                        "-o"|"--output"|"-output" => {
+                            output_to_file = Some(None);
+                            continue;
+                        },
+                        "--lex-debug"|"-lex-debug" => {
+                            unsafe {
+                                LEX_DEBUG = !LEX_DEBUG;
+                            }
+                            continue;
+                        },
+                        "--only-lex"|"-only-lex" => {
+                            unsafe {
+                                ONLY_LEX = !ONLY_LEX;
+                            }
+                            continue;
+                        },
+                        "--link-debug"|"-link-debug" => {
+                            unsafe {
+                                LINK_DEBUG = !LINK_DEBUG;
+                            }
+                            continue;
+                        },
+                        "--only-link"|"-only-link" => {
+                            unsafe {
+                                ONLY_LINK = !ONLY_LINK;
+                            }
+                            continue;
+                        },
+                        "--link-debug-succed"|"-link-debug-succed" => {
+                            unsafe {
+                                LINK_DEBUG_SUCCED = !LINK_DEBUG_SUCCED;
+                            }
+                            continue;
+                        },
+                        "--parse-debug"|"-parse-debug" => {
+                            unsafe {
+                                PARSE_DEBUG = !PARSE_DEBUG;
+                            }
+                            continue;
+                        },
+                        "--parse-debug-state"|"-parse-debug-state" => {
+                            unsafe {
+                                PARSE_DEBUG_STATE = !PARSE_DEBUG_STATE;
+                            }
+                            continue;
+                        },
+                        "--parse-debug-id"|"-parse-debug-id" => {
+                            unsafe {
+                                PARSE_DEBUG_ID = !PARSE_DEBUG_ID;
+                            }
+                            continue;
+                        },
+                        "--parse-debug-call"|"-parse-debug-call" => {
+                            unsafe {
+                                PARSE_DEBUG_CALL = !PARSE_DEBUG_CALL;
+                            }
+                            continue;
+                        },
+                        "--parse-debug-string"|"-parse-debug-string" => {
+                            unsafe {
+                                PARSE_DEBUG_STRING = !PARSE_DEBUG_STRING;
+                            }
+                            continue;
+                        },
+                        "--parse-debug-include"|"-parse-debug-include" => {
+                            unsafe {
+                                PARSE_DEBUG_INCLUDE = !PARSE_DEBUG_INCLUDE;
+                            }
+                            continue;
+                        },
+                        "--parse-debug-include-adding"|"-parse-debug-include-adding" => {
+                            unsafe {
+                                PARSE_DEBUG_INCLUDE_ADDING = !PARSE_DEBUG_INCLUDE_ADDING;
+                            }
+                            continue;
+                        },
+                        "--parse-debug-include-succed"|"-parse-debug-include-succed" => {
+                            unsafe {
+                                PARSE_DEBUG_INCLUDE_SUCCED = !PARSE_DEBUG_INCLUDE_SUCCED;
+                            }
+                            continue;
+                        },
+                        "--parse-debug-succed"|"-parse-debug-succed" => {
+                            unsafe {
+                                PARSE_DEBUG_SUCCED = !PARSE_DEBUG_SUCCED;
+                            }
+                            continue;
+                        },
+                        "--sim-enable"|"-sim-enable" => {
+                            unsafe {
+                                SIM_ENABLE = !SIM_ENABLE;
+                            }
+                            continue;
+                        },
+                        "--sim-debug"|"-sim-debug" => {
+                            unsafe {
+                                SIM_DEBUG = !SIM_DEBUG;
+                            }
+                            continue;
+                        },
+                        "--sim-debug-puts"|"-sim-debug-puts" => {
+                            unsafe {
+                                SIM_DEBUG_PUTS = !SIM_DEBUG_PUTS;
+                            }
+                            continue;
+                        },
+                        "--max-include-level"|"-max-include-level" => {
+                            state = Argsstate::MAX_INCLUDE_LEVEL;
+                            continue;
+                        },
+                        &_ => {},
+                    }
+                },
+                Argsstate::MAX_INCLUDE_LEVEL => {
+                    unsafe {
+                        MAX_INCLUDE_LEVEL = strtoi64(&i).unwrap()as usize;
+                    }
+                    state = Argsstate::NONE;
+                    continue;
+                },
             }
             argv.push(i);
         }
@@ -300,7 +424,7 @@ fn version() {
 written on Rust v.{}
 version: 0.1.0-4
 download: https://github.com/TwoSpikes/fplus
-2022-2023 @ TwoSpikes", cargo_version);
+2022-2023 @ TwoSpikes", unsafe { CARGO_VERSION });
 }
 fn errorcodes() {
     println!("errorcodes:
@@ -308,7 +432,7 @@ E0                    Cannot open file");
 }
 
 fn compile_insructions() {
-    println!("\nDownload source code from https://github.com/TwoSpikes/fplus/#/main.rs and recompile it using Cargo v.{}", cargo_version);
+    println!("\nDownload source code from https://github.com/TwoSpikes/fplus/#/main.rs and recompile it using Cargo v.{}", unsafe { CARGO_VERSION });
 }
 
 #[derive(Debug)]
@@ -327,7 +451,7 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     }
     match args[1].as_str() {
         "sim"|"s" => {
-            if SIM_ENABLE {
+            if unsafe { SIM_ENABLE } {
                 if args.len() <= 2 {
                     eprintln!("No source file provided");
                     usage();
@@ -480,14 +604,14 @@ use crate::Quotes::*;
         res.push(Tok(ploc, tmp.to_owned()));
     }
 
-    if LEX_DEBUG {
+    if unsafe { LEX_DEBUG } {
         eprintln!("{}: Lexing result: [", filename);
         for i in &res {
             eprintln!("  {}:{}: {:?}", i.0.0, i.0.1, i.1);
         }
         eprintln!("]");
     }
-    if ONLY_LEX {
+    if unsafe { ONLY_LEX } {
         return STOPPED;
     }
 
@@ -608,8 +732,8 @@ macro_rules! parsewarnmsg {
 //////////////////////////////////////////////////////////////////////
 fn parse(pr: &mut Vec<Tok>, filename: &String, include_level: usize, mut scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
 use crate::Op::*;
-    if include_level > MAX_INCLUDE_LEVEL {
-        eprintln!("exceeded max include level: {}", MAX_INCLUDE_LEVEL);
+    if include_level > unsafe { MAX_INCLUDE_LEVEL } {
+        eprintln!("exceeded max include level: {}", unsafe { MAX_INCLUDE_LEVEL });
     }
     if false {
         eprintln!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
@@ -634,7 +758,7 @@ use crate::Op::*;
     let mut mlc: u32 = 0;
     let mut callstk: Vec<usize> = Vec::new();
     let mut stksim: Vec<usize> = Vec::new();
-    let mut callmode: Callmode = CALLMODE_DEFAULT;
+    let mut callmode: Callmode = unsafe { CALLMODE_DEFAULT };
     //current access modifier
     let mut curmod: Mod = Mod::UNK;
     //access modifiers for every element of labels array
@@ -675,14 +799,14 @@ use crate::Op::*;
         if mlc > 0 {
             continue;
         }
-        if PARSE_DEBUG {
+        if unsafe { PARSE_DEBUG } {
             eprintln!("parse: callstk={:?} val={} callmode={:?}",
                       callstk, repr(val.as_str()), callmode);
         }
-        if PARSE_DEBUG_STATE {
+        if unsafe { PARSE_DEBUG_STATE } {
             eprintln!("State: {:?}", state);
         }
-        if PARSE_DEBUG_ID {
+        if unsafe { PARSE_DEBUG_ID } {
             eprintln!("scope_id: {:?}", scope_id);
         }
 
@@ -722,7 +846,7 @@ use crate::Op::*;
                 res
             };
             let tmpStr: String = urepr(tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>().as_str());
-            let tmpstr: &str = tmpStr.as_str();
+            let _tmpstr: &str = tmpStr.as_str();
             let mut tmpres: Vec<(Result<Op, (String, Vec<usize>)>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
                 "" => tmpres.push((Ok(Op::Push((tmpStr.len()).try_into().unwrap())), Loc(-1,-1))),
@@ -735,14 +859,14 @@ use crate::Op::*;
                     return None;
                 },
             }
-            if PARSE_DEBUG_STRING {
+            if unsafe { PARSE_DEBUG_STRING } {
                 eprintln!("tmpres={:?}", tmpres);
             }
             tmpres
         } else {
             let check_for_hash = || -> Option<(String, Callmode)> {
                 if val.chars().nth(0) == Some('#') {
-                    return Some((val[1..].to_string(), CALLMODE_ON_OPERATOR));
+                    return Some((val[1..].to_string(), unsafe { CALLMODE_ON_OPERATOR }));
                 }
                 return None;
             };
@@ -833,7 +957,7 @@ use crate::Callmode::*;
                                 return None;
                             },
                         };
-                        if PARSE_DEBUG_CALL {
+                        if unsafe { PARSE_DEBUG_CALL } {
                             eprintln!("insertion_index={} res={:?}", insertion_index, res);
                         }
 
@@ -848,7 +972,7 @@ use crate::Callmode::*;
                                 res.push((Ok(Push((res.len()+1)as i64)), *loc));
                             },
                         }
-                        callmode = CALLMODE_DEFAULT;
+                        callmode = unsafe { CALLMODE_DEFAULT };
 
                         //remove address to jump in
                         let element = res.remove(insertion_index-1);
@@ -859,7 +983,7 @@ use crate::Callmode::*;
                         continue;
                     },
                     "#" => {
-                        callmode = CALLMODE_ON_OPERATOR;
+                        callmode = unsafe { CALLMODE_ON_OPERATOR };
                         continue;
                     },
                     "argc" => ARGC,
@@ -885,7 +1009,7 @@ use crate::Callmode::*;
                                 res.push((Ok(Push((result.len()+res.len()+1)as i64)), *loc));
                             },
                         }
-                        callmode = CALLMODE_DEFAULT;
+                        callmode = unsafe { CALLMODE_DEFAULT };
 
                         res.append(&mut vec![
                             (Err((val.to_string(), scope_id.clone())), *loc),
@@ -902,7 +1026,7 @@ use crate::Callmode::*;
                     },
                     State::LBL => {
                         if matches!(curmod, Mod::UNK) {
-                            curmod = CURMOD_DEFAULT;
+                            curmod = unsafe { CURMOD_DEFAULT };
                         }
                         if let "main" = &*val.as_str() {
                             main = Some(res.len()as usize);
@@ -921,7 +1045,7 @@ use crate::Callmode::*;
                             Some(pos) => pos,
                             None => {
                                 if matches!(curmod, Mod::UNK) {
-                                    curmod = CURMOD_DEFAULT;
+                                    curmod = unsafe { CURMOD_DEFAULT };
                                 }
                                 if let "main" = &*val.as_str() {
                                     main = Some((res.len()+result.len())as usize);
@@ -941,7 +1065,7 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::INCLUDE => {
-                        if PARSE_DEBUG_INCLUDE {
+                        if unsafe { PARSE_DEBUG_INCLUDE } {
                             eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(&val));
                         }
                         let mut tokens = match parselexget(&(if val.chars().nth(0) == Some('\"') {
@@ -958,7 +1082,7 @@ use crate::Callmode::*;
                         scope_id = tokens.2;
                         // FIXME: implement including with access modifiers
                         let mut loopindex: usize = 0;
-                        if PARSE_DEBUG_INCLUDE_ADDING {
+                        if unsafe { PARSE_DEBUG_INCLUDE_ADDING } {
                             eprintln!("adding {} fns...", tokens.0.len());
                         }
                         while loopindex < tokens.0.len() {
@@ -967,7 +1091,7 @@ use crate::Callmode::*;
                         }
                         result.append(&mut tokens.1);
                         labels.append(&mut tokens.0);
-                        if PARSE_DEBUG_INCLUDE_SUCCED {
+                        if unsafe { PARSE_DEBUG_INCLUDE_SUCCED } {
                             eprintln!("{}:{}:{}: succed include {}", filename, lin, index, repr(&val));
                         }
                         state = State::NONE;
@@ -1114,13 +1238,13 @@ enum simResult {
     stopped,
 }
 fn sim(pr: &mut Vec<(Op, Loc)>,
-       filename: &String,
+       _filename: &String,
        argv: Vec<String>,
        output_to_file: Option<String>) -> simResult {
 use simResult::*;
 use std::fs::{File, OpenOptions};
 use crate::Op::*;
-    if !LINK_DEBUG {
+    if !unsafe { LINK_DEBUG } {
         eprintln!("[simulation...]");
     } else {
         eprintln!("[simulation:");
@@ -1132,7 +1256,7 @@ use crate::Op::*;
         }
         eprintln!("]");
     }
-    if ONLY_LINK {
+    if unsafe { ONLY_LINK } {
         return stopped;
     }
     let mut stack: Vec<i64> = vec![];
@@ -1182,7 +1306,7 @@ use crate::Op::*;
         let loc: &Loc = &pr[ind as usize].1;
         let lin: i64 = loc.0;
         let index: i64 = loc.1;
-        if SIM_DEBUG {
+        if unsafe { SIM_DEBUG } {
             eprintln!("---- {}. {}:{}:{:?} ----\n{:?}", ind, lin, index, i, stack);
         }
         match i {
@@ -1200,7 +1324,7 @@ use crate::Op::*;
                 }
             },
             PUTS => {
-                if SIM_DEBUG_PUTS && !SIM_DEBUG{
+                if unsafe { SIM_DEBUG_PUTS } && !unsafe { SIM_DEBUG } {
                     eprintln!("debug: puts: {:?}", stack);
                 }
                 let strlen: usize = stack.pop().unwrap()as usize;
@@ -1216,7 +1340,7 @@ use crate::Op::*;
                 }
                 match output_to_file {
                     Some(_) => {
-                        f.as_ref().unwrap().write(string.as_bytes());
+                        _ = f.as_ref().unwrap().write(string.as_bytes());
                     },
                     None => {
                         print!("{}", string);
@@ -1234,7 +1358,7 @@ use crate::Op::*;
                 }
             },
             EPUTS => {
-                if SIM_DEBUG_PUTS && !SIM_DEBUG{
+                if unsafe { SIM_DEBUG_PUTS } && !unsafe { SIM_DEBUG } {
                     eprintln!("debug: puts: {:?}", stack);
                 }
                 let strlen: usize = stack.pop().unwrap()as usize;
@@ -1250,7 +1374,7 @@ use crate::Op::*;
                 }
                 match output_to_file {
                     Some(_) => {
-                        f.as_ref().unwrap().write(string.as_bytes());
+                        _ = f.as_ref().unwrap().write(string.as_bytes());
                     },
                     None => {
                         eprint!("{}", string);
@@ -1389,12 +1513,12 @@ use std::io::stdin;
                 return ok(a.try_into().unwrap());
             },
             PSTK => {
-                if !SIM_DEBUG {
+                if !unsafe { SIM_DEBUG } {
                     println!("{}:{}: pstk  {:?}", lin, index, stack);
                 }
             },
             PSTKE => {
-                if !SIM_DEBUG {
+                if !unsafe { SIM_DEBUG } {
                     println!("{}:{}: pstke {:?}", lin, index, stack);
                 }
                 return err;
@@ -1433,7 +1557,7 @@ use std::io::stdin;
                 }
                 let file: String = match std::fs::read_to_string(filename) {
                     Ok(x) => x.chars().rev().collect(),
-                    Err(x) => {
+                    Err(_x) => {
                         stack.push(-1);
                         continue;
                     },
@@ -1513,10 +1637,10 @@ use simResult::*;
                 },
                 Mode::DUMP => {
                     for_each_arg(&args, |i: &String,
-                                        ind: isize,
-                                        argv: &Vec<String>,
-                                        fargs: &Vec<String>,
-                                        args: &Vec<String>,
+                                        _ind: isize,
+                                        _argv: &Vec<String>,
+                                        _fargs: &Vec<String>,
+                                        _args: &Vec<String>,
                                         output_to_file: Option<String>| {
                         let tokens: Vec<(Op, Loc)> = match parselexget(&i, 0, vec![0,]) { 
                             Some(x) => x.1,
@@ -1531,7 +1655,7 @@ use std::fs::{File, OpenOptions};
                                 {
                                     let mut f = match OpenOptions::new().write(true).open(x) {
                                         Ok(y) => y,
-                                        Err(e) => {
+                                        Err(_e) => {
                                             todo!();
                                         },
                                     };
