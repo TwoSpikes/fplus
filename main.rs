@@ -764,9 +764,11 @@ fn strtoi64(x: &String) -> Option<i64> {
 enum Op {
     Push(i64), //push number to the stack
     PRINT,  //print char (same as number)
-    PUTS,   //print string
     EPRINT, //print char to stderr (see ::PRINT)
+    PUTS,   //print string
     EPUTS,  //print string to stderr (see ::PUTS)
+    PUTSLN, //print string with a new line (see ::PUTS)
+    EPUTSLN,//print string with a new line to stderr (see ::PUTSLN)
     FLUSH,  //print stdout buffer and clear it
     EFLUSH, //print stderr buffer and clear it (see ::EFLUSH)
     INP,    //read line from stdin
@@ -1000,9 +1002,11 @@ use crate::Op::*;
                     "*" => MUL,
                     "/" => DIV,
                     "putc" => PRINT,
-                    "puts" => PUTS,
                     "eputc" => EPRINT,
+                    "puts" => PUTS,
                     "eputs" => EPUTS,
+                    "putsln" => PUTSLN,
+                    "eputsln" => EPUTSLN,
                     "flush" => FLUSH,
                     "eflush" => EFLUSH,
                     "input" => INP,
@@ -1421,17 +1425,22 @@ use crate::Op::*;
             Push(x) => {
                 stack.push(*x);
             },
-            PRINT => {
+            PRINT|EPRINT => {
                 match output_to_file {
                     Some(_) => {
                         _ = f.as_ref().unwrap().write(&[stack.pop().unwrap()as u8]);
                     },
                     None => {
-                        print!("{}", char::from_u32(stack.pop().unwrap()as u32).unwrap());
+                        let chr: char = char::from_u32(stack.pop().unwrap()as u32).unwrap();
+                        match i {
+                            PRINT => print!("{}", chr),
+                            EPRINT => eprint!("{}", chr),
+                            _ => todo!(),
+                        }
                     },
                 }
             },
-            PUTS => {
+            PUTS|EPUTS|PUTSLN|EPUTSLN => {
                 if unsafe { SIM_DEBUG_PUTS } && !unsafe { SIM_DEBUG } {
                     eprintln!("debug: puts: {:?}", stack);
                 }
@@ -1439,53 +1448,27 @@ use crate::Op::*;
                 if stack.len() < strlen {
                     return errs("puts underflow".to_owned());
                 }
-                let mut i: usize = 0;
                 let mut string: String = "".to_owned();
-                while i < strlen {
-                    let chr = char::from_u32(stack.pop().unwrap()as u32).unwrap();
-                    string.push(chr);
-                    i += 1;
+                {
+                    let mut ind2: usize = 0;
+                    while ind2 < strlen {
+                        let chr = char::from_u32(stack.pop().unwrap()as u32).unwrap();
+                        string.push(chr);
+                        ind2 += 1;
+                    }
                 }
                 match output_to_file {
                     Some(_) => {
                         _ = f.as_ref().unwrap().write(string.as_bytes());
                     },
                     None => {
-                        print!("{}", string);
-                    },
-                }
-            },
-            EPRINT => {
-                match output_to_file {
-                    Some(_) => {
-                        _ = f.as_ref().unwrap().write(&[stack.pop().unwrap()as u8]);
-                    },
-                    None => {
-                        eprint!("{}", char::from_u32(stack.pop().unwrap()as u32).unwrap());
-                    },
-                }
-            },
-            EPUTS => {
-                if unsafe { SIM_DEBUG_PUTS } && !unsafe { SIM_DEBUG } {
-                    eprintln!("debug: puts: {:?}", stack);
-                }
-                let strlen: usize = stack.pop().unwrap()as usize;
-                if stack.len() < strlen {
-                    return errs("puts underflow".to_owned());
-                }
-                let mut i: usize = 0;
-                let mut string: String = "".to_owned();
-                while i < strlen {
-                    let chr = char::from_u32(stack.pop().unwrap()as u32).unwrap();
-                    string.push(chr);
-                    i += 1;
-                }
-                match output_to_file {
-                    Some(_) => {
-                        _ = f.as_ref().unwrap().write(string.as_bytes());
-                    },
-                    None => {
-                        eprint!("{}", string);
+                        match i {
+                            PUTS => { print!("{}", string); },
+                            EPUTS => { eprint!("{}", string); },
+                            PUTSLN => { println!("{}", string); },
+                            EPUTSLN => { eprintln!("{}", string); },
+                            _ => todo!(),
+                        }
                     },
                 }
             },
