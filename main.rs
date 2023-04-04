@@ -68,6 +68,7 @@ struct Formatstr {
     formatters: Vec<String>,
     position: Vec<usize>,
 }
+#[derive(Debug)]
 struct ComputeFormatNumbers {
     numbers: Vec<usize>,
     position: Vec<usize>,
@@ -90,6 +91,7 @@ impl Formatstr {
             position: Vec::new(),
         };
         let mut curly_bracket: bool = false;
+        let mut temp_position: Option<usize> = None;
         let mut temp_num: usize = 0;
         let mut ind: usize = 0;
         for i in string.chars() {
@@ -98,22 +100,29 @@ impl Formatstr {
                     match curly_bracket {
                         false => {
                             curly_bracket = true;
-                            result.position.push(ind);
+                            temp_position = Some(ind);
+                            result.string.push(i);
+                            ind += 1;
                         },
                         true => {
-                            return None;
+                            result.string.push(i);
+                            ind += 1;
                         },
                     }
                 },
                 '}' => {
                     match curly_bracket {
                         false => {
-
+                            result.string.push(i);
+                            ind += 1;
                         },
                         true => {
                             curly_bracket = false;
+                            result.position.push(temp_position.unwrap());
                             result.numbers.push(temp_num);
                             temp_num = 0;
+                            temp_position = None;
+                            result.string.pop();
                         },
                     }
                 },
@@ -126,11 +135,15 @@ impl Formatstr {
                         true => {
                             match i {
                                 '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9' => {
-                                    temp_num = temp_num*10 + strtoi64(&String::from(i))? as usize;
-                                }
+                                    temp_num = temp_num*10 + strtoi64(&String::from(i)).unwrap() as usize;
+                                },
                                 _ => {
+                                    result.string.push(i);
+                                    ind += 1;
                                     curly_bracket = false;
-                                }
+                                    temp_position = None;
+                                    temp_num = 0;
+                                },
                             }
                         },
                     }
@@ -158,7 +171,7 @@ impl Formatstr {
             let string: &String = &self.formatters[self.formatnums[ind]];
             let mut ind2: usize = 0;
             while ind2 < string.len() {
-                result.insert(self.position[ind]+ind2+already_inserted, self.formatters[self.formatnums[ind]].chars().nth(ind2).unwrap());
+                result.insert(self.position[ind]+ind2+already_inserted-ind, string.chars().nth(ind2).unwrap());
                 ind2 += 1;
             }
             already_inserted += ind2;
@@ -1818,11 +1831,14 @@ use std::fs::{File, OpenOptions};
 }
 
 fn _test() {
-    dbg!(Formatstr::from("Hello, {0} (fuck {1}) {0}!").unwrap()
+    println!("{} => {}", repr("Hello, {0} (fuck {1}) {0}!
+    {abc} def {2}"), repr(&Formatstr::from("Hello, {0} (fuck {1}) {0}!
+                         {abc} def {2}").unwrap()
          .format("world").unwrap()
          .format("you").unwrap()
+         .format("ebal").unwrap()
          .to_string()
-    );
+    ));
 }
 fn _main() {
     let args: Vec<String> = std::env::args().collect();
