@@ -1,0 +1,5 @@
+fn main
+  "Hello, " puts flush
+  "World!" putsln
+  "Fuck " eputs eflush
+  "you" eputsln
