@@ -6,7 +6,7 @@ use std:: {
     fmt,
 };
 
-static mut CARGO_VERSION: &str = "1.68.1";
+static mut CARGO_VERSION: &str = "1.68.2";
 
 // -- LEXER --
 //Show resulting token array
