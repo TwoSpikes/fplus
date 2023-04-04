@@ -108,7 +108,7 @@ impl Formatstr {
                 '}' => {
                     match curly_bracket {
                         false => {
-                            return None;
+
                         },
                         true => {
                             curly_bracket = false;
@@ -129,7 +129,7 @@ impl Formatstr {
                                     temp_num = temp_num*10 + strtoi64(&String::from(i))? as usize;
                                 }
                                 _ => {
-                                    return None;
+                                    curly_bracket = false;
                                 }
                             }
                         },
@@ -509,16 +509,40 @@ fn from(u: &String) -> Vec<i64> {
 }
 
 fn usage() {
-    println!("Usage:
+    println!("{}", Formatstr::from("Usage:
 $ ./target/release/fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
 
-SUBCOMMAND (insensible to register:
-sim s                 Simulate program
-version ver v         Print version information and exit
-usage use u help h ? info information
-		      Print help information and exit
-dump d                Dump the tokens of the program.
-error e               Print error code and information about them");
+SUBCOMMAND (insensitive to register):
+{sim s}                 Simulate program
+{version ver v}         Print version information and exit
+{usage use u help h ?} info information
+		                Print help information and exit
+{dump d}                Dump the tokens of the program.
+{error e}               Print error code and information about them
+
+OPTION (insensitive to register):
+{-o --output -output} FILE      dump output to FILE
+{--lex-debug -lex-debug}        show debug information during lexing
+{--only-lex -only-lex}          stop on lexing (for debugging purposes)
+{--link-debug -link-debug}      show debug information during linking
+{--only-link -only-link}        stop on linking (for debugging purposes)
+{--link-debug-succed -link-d...}show [linking succed]
+{--parse-debug -parse-debug}    show debug information during parsing
+{--parse-debug-state --parse...}show State information during parsing
+{--parse-debug-id --parse-de...}show scope-id information during parsing
+{--parse-debug-call -parse-d...}show function calling information during parsing
+{--parse-debug-string -parse...}show string information during parsing
+{--parse-debug-include -pars...}show including information
+{--parse-debug-include-adding -parse-debug-include-adding}
+                                TODO
+{--parse-debug-include-succed -parse-debug-include-succed}
+                                TODO
+{--sim-debug -sim-debug}        show debug information during simulation
+{--sim-debug-puts -sim-debuf...}show debug information debore printing
+{--max-include-level -max-include-level} NUMBER
+                                set max include level (max is {0})").unwrap()
+.format(&unsafe { MAX_INCLUDE_LEVEL }.to_string()).unwrap()
+.to_string());
 }
 fn version() {
     println!("F+, a stack-based interpreting programming language
