@@ -550,7 +550,7 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
         usage();
         return Err({err += 1; err});
     }
-    match args[1].as_str() {
+    match args[1].to_lowercase().as_str() {
         "sim"|"s" => {
             if unsafe { SIM_ENABLE } {
                 if args.len() <= 2 {
