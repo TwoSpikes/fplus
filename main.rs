@@ -512,7 +512,7 @@ fn usage() {
     println!("Usage:
 $ ./target/release/fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
 
-SUBCOMMAND:
+SUBCOMMAND (insensible to register:
 sim s                 Simulate program
 version ver v         Print version information and exit
 usage use u help h ? info information
