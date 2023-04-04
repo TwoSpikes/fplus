@@ -51,7 +51,7 @@ static mut CURMOD_DEFAULT: Mod = Mod::PRI;
 
 // -- SIMULATION --
 //disable simulation for smaller executable file
-static mut SIM_ENABLE: bool = true;
+const SIM_ENABLE: bool = true;
 //show every token on runtime and stack state
 static mut SIM_DEBUG: bool = false;
 //show stack state in puts command
@@ -388,12 +388,6 @@ fn for_each_arg(args: &Vec<String>,
                         "--parse-debug-succed"|"-parse-debug-succed" => {
                             unsafe {
                                 PARSE_DEBUG_SUCCED = !PARSE_DEBUG_SUCCED;
-                            }
-                            continue;
-                        },
-                        "--sim-enable"|"-sim-enable" => {
-                            unsafe {
-                                SIM_ENABLE = !SIM_ENABLE;
                             }
                             continue;
                         },
