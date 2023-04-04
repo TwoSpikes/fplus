@@ -50,7 +50,7 @@ static mut CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
 static mut CURMOD_DEFAULT: Mod = Mod::PRI;
 
 // -- SIMULATION --
-//disable simulation for smaller executable file
+//disable simulation for smaller executable file (saves ~33K)
 const SIM_ENABLE: bool = true;
 //show every token on runtime and stack state
 static mut SIM_DEBUG: bool = false;
