@@ -97,18 +97,12 @@ impl Formatstr {
         for i in string.chars() {
             match i {
                 '{' => {
-                    match curly_bracket {
-                        false => {
-                            curly_bracket = true;
-                            temp_position = Some(ind);
-                            result.string.push(i);
-                            ind += 1;
-                        },
-                        true => {
-                            result.string.push(i);
-                            ind += 1;
-                        },
+                    if !curly_bracket {
+                        curly_bracket = true;
+                        temp_position = Some(ind);
                     }
+                    result.string.push(i);
+                    ind += 1;
                 },
                 '}' => {
                     match curly_bracket {
@@ -135,7 +129,7 @@ impl Formatstr {
                         true => {
                             match i {
                                 '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9' => {
-                                    temp_num = temp_num*10 + strtoi64(&String::from(i)).unwrap() as usize;
+                                    temp_num = temp_num*10 + strtoi64_signed(&String::from(i)).unwrap() as usize;
                                 },
                                 _ => {
                                     result.string.push(i);
@@ -757,6 +751,13 @@ use crate::Quotes::*;
 }
 
 fn strtoi64(x: &String) -> Option<i64> {
+    return if x.chars().nth(x.len()-1).unwrap() == 'u' {
+        strtoi64_unsigned(&x[..x.len()-1].to_string())
+    } else {
+        strtoi64_signed(&x)
+    };
+}
+fn strtoi64_signed(x: &String) -> Option<i64> {
     let mut res: i64 = 0;
     let mut reversed: bool = false;
     let mut wasdigit: bool = false;
@@ -773,10 +774,9 @@ fn strtoi64(x: &String) -> Option<i64> {
             '8' => 8,
             '9' => 9,
             '-' => 0,
-            '+' => 0,
             _ => return None,
         };
-        if i == '-' || i == '+' {
+        if i == '-' {
             if wasdigit {
                 return None;
             }
@@ -795,6 +795,26 @@ fn strtoi64(x: &String) -> Option<i64> {
     } else {
         1
     } * res);
+}
+fn strtoi64_unsigned(x: &String) -> Option<i64> {
+    let mut res: u64 = 0;
+    let mut wasdigit: bool = false;
+    for i in x.chars() {
+        res = res*10 + match i {
+            '0' => 0,
+            '1' => 1,
+            '2' => 2,
+            '3' => 3,
+            '4' => 4,
+            '5' => 5,
+            '6' => 6,
+            '7' => 7,
+            '8' => 8,
+            '9' => 9,
+            _ => return None,
+        };
+    }
+    return Some(res as i64 - 9223372036854775807);
 }
 
 #[derive(Debug, Clone)]
@@ -1322,7 +1342,8 @@ use crate::Callmode::*;
     return Some((labels, result, scope_id));
 }
 fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
-    eprintln!("[linking {}...[recursion_level: {}]]", repr(filename), include_level);
+    eprintln!("[linking {}...[recursion_level: {}]]",
+              repr(filename), include_level);
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     let mut ind: i64 = -1;
     for i in res {

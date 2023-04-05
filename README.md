@@ -4,7 +4,7 @@ Stack-based programming language made by me (TwoSpikes, 2022-2023) for studing p
 
 Done:
 - [x] Turing-completeness (`:` and `if` operations)
-- [x] Multi-line comment support (they're like in CSS (`/* */`), but not 100%)
+- [x] Multi-line comment support (`/* comment */`)
 - [x] Chars (`''`), strings (`""`) and string postfixes (`""b` and `""c`)
 - [x] repr(&str) and urepr(&str) functions (proper escaping like in C)
 - [x] Function predeclaration (linking)
@@ -19,15 +19,15 @@ Done:
 - [x] Ability to stderr printing
 - [x] File reading
 - [x] `gettime` operation — returns time in nanoseconds as i128
-- [x] Colored debug output (Error and Warning)
+- [x] Colored debug output (Error (red) and Warning (yellow))
 - [x] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
+- [x] Unsigned 64-bit numbers (same type with signed numbers) (like `30u`)
 
 In progress:
 
 To do:
 - [ ] Float numbers (same type with "normal" numbers) (F64)
 - [ ] Float numbers with double precision (same type with "normal" numbers) (D64)
-- [ ] Unsigned 64-bit numbers (same type with "normal" numbers) (like `30u`)
 - [ ] `macro` keyword
 - [ ] `undump` subcommand
 - [ ] `com` and `token-com` subcommand (for compilation)
@@ -38,6 +38,7 @@ To do:
 - [ ] Raw file reading
 - [ ] File writing
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
+- [ ] One-line comment support (`// comment`)
 
 Standard library:
 - [x] max\_2\_I64 function ((b: I64, a: I64) -> I64)
