@@ -470,12 +470,12 @@ You can use simple escaping like in C like this:
 
 | Code                      | Stdout                      |
 | ---                       | ---                         |
-| "\r"                      | carriage return             |
-| "\n"                      | new string                  |
-| "\t"                      | tab                         |
-| "\\"                      | backslash                   |
-| "\'"                      | quote                       |
-| "\""                      | double quote                |
+| '\\r'                     | carriage return             |
+| '\\n'                     | new string                  |
+| '\\t'                     | tab                         |
+| '\\\\'                    | backslash                   |
+| '\\''                     | quote                       |
+| '\\"'                     | double quote                |
 
 Strings are inverted at the stack and has its length at the end.
 
