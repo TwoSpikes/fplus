@@ -463,6 +463,7 @@ fn repr(string: &str) -> String {
     let mut res: String = "\"".to_owned();
     for i in string.chars() {
         res += &match i {
+            '\r' => vec!['\\', 'r'],
             '\n' => vec!['\\', 'n'],
             '\t' => vec!['\\', 't'],
             '\\' => vec!['\\', '\\'],
@@ -488,6 +489,7 @@ fn urepr(string: &str) -> String {
                     Some(x) => x,
                     _ => panic!("Escape character not found"),
                 }{
+                'r' => '\r',
                 'n' => '\n',
                 't' => '\t',
                 '\\' => '\\',
