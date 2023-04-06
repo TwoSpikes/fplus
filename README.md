@@ -470,6 +470,7 @@ You can use simple escaping like in C like this:
 
 | Code                      | Stdout                      |
 | ---                       | ---                         |
+| "\r"                      | carriage return             |
 | "\n"                      | new string                  |
 | "\t"                      | tab                         |
 | "\\"                      | backslash                   |
