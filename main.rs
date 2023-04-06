@@ -751,7 +751,7 @@ use crate::Quotes::*;
 }
 
 fn strtoi64(x: &String) -> Option<i64> {
-    return if x.chars().nth(x.len()-1).unwrap() == 'u' {
+    return if x.len() >= 2 && x.chars().nth(x.len()-1).unwrap() == 'u' {
         strtoi64_unsigned(&x[..x.len()-1].to_string())
     } else {
         strtoi64_signed(&x)
