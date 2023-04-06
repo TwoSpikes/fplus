@@ -549,7 +549,7 @@ OPTION (insensitive to register):
 {--sim-debug -sim-debug}        show debug information during simulation
 {--sim-debug-puts -sim-debuf...}show debug information debore printing
 {--max-include-level -max-include-level} NUMBER
-                                set max include level (max is {0})").unwrap()
+                                set max include level (now is {0})").unwrap()
 .format(&unsafe { MAX_INCLUDE_LEVEL }.to_string()).unwrap()
 .to_string());
 }
