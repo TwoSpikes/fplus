@@ -76,16 +76,23 @@ Supported compilation modes:
 
 #### Installing (Building):
 ```console
-$ cargo build --release
+$ make
 ```
+If without Make:
+```console
+$ cargo build --release
+$ install ./target/release/fplus $PREFIX/bin
+```
+(I use $PREFIX because I am using Termux to create this project and Make does not work without $PREFIX)
 
 Dependences:
 * Cargo
+* make (unneccesary)
 
 #### Usage:
 ```console
 Usage:
-$ ./target/release/fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
+$ fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
 
 SUBCOMMAND (insensitive to register):
 {sim s}                 Simulate program
@@ -146,22 +153,22 @@ E0                    Cannot open file
 
 #### `sim` subcommand examples:
 ```console
-$ ./target/release/fplus sim main.tspol
+$ fplus sim main.tspol
 
 ALSO KNOWN AS
 
-$ ./target/release/fplus sim main.tspol --
+$ fplus sim main.tspol --
 ```
 F+ will simulate ./main.tspol file
 
 ```console
-$ ./target/release/fplus sim main.tspol -- a b c
+$ fplus sim main.tspol -- a b c
 ```
 F+ will simulate ./main.tspol file with `a b c` command line arguments
 #### `dump` subcommand examples:
 
 ```console
-$ ./target/release/fplus dump subc-dump.tspl -o subc-dump-file.txt
+$ fplus dump subc-dump.tspl -o subc-dump-file.txt
 ```
 It will translate F+ code to tokens and write this to subc-dump-file.txt:
 
@@ -182,7 +189,7 @@ If you will not provide `-o` option, tokens will dump on the stdout instead (wit
 
 #### `-o` option examples:
 ```console
-$ ./target/release/fplus sim hello-world.tspl -o hello-world-output.txt
+$ fplus sim hello-world.tspl -o hello-world-output.txt
 ```
 It will write
 ```

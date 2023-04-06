@@ -519,7 +519,7 @@ fn from(u: &String) -> Vec<i64> {
 
 fn usage() {
     println!("{}", Formatstr::from("Usage:
-$ ./target/release/fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
+$ fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
 
 SUBCOMMAND (insensitive to register):
 {sim s}                 Simulate program
