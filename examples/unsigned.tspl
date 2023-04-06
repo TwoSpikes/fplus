@@ -1,3 +1,11 @@
+include std.tspl
+
 fn main
   0u   dump
   30u  dump
+
+  :I64ToU64(0) dump
+  :I64ToU64(30) dump
+
+  :U64ToI64(-9223372036854775807) dump
+  :U64ToI64(-9223372036854775777) dump

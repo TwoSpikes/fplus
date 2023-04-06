@@ -13,3 +13,13 @@ pub fn min_2_I64 {
 fn min_2_I64_more
   0 dropnth 1 nbrot #()
 }
+
+/* convert signed number to unsigned */
+pub fn I64ToU64
+  -9223372036854775807 +
+  1 nbrot #()
+
+/* convert unsigned number to signed */
+pub fn U64ToI64
+  9223372036854775807 +
+  1 nbrot #()
