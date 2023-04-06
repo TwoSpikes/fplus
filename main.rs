@@ -830,6 +830,7 @@ enum Op {
     EFLUSH, //print stderr buffer and clear it (see ::EFLUSH)
     INP,    //read line from stdin
     PLUS,   // +
+    INVERT, // x - 2x
     MUL,    // *
     DIV,    // 1
     GIF,    //gotoif
@@ -1056,6 +1057,7 @@ use crate::Op::*;
                         continue;
                     },
                     "+" => PLUS,
+                    "--" => INVERT,
                     "*" => MUL,
                     "/" => DIV,
                     "putc" => PRINT,
@@ -1558,6 +1560,15 @@ use std::io::stdin;
                 };
                 stack.push(a + b)
             },
+            INVERT => {
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for INVERT intrinsic not found".to_string());
+                    },
+                };
+                stack.push(-a);
+            },
             MUL => {
                 let a: i64 = match stack.pop() {
                     Some(x) => x,
@@ -1730,7 +1741,9 @@ use std::time::{
 
             },
             _ => {
-                return errs(strcat("unknown op: ", &i.to_string()));
+                return errs(Formatstr::from("Unknown op: {0}").unwrap()
+                            .format(&i.to_string()).unwrap()
+                            .to_string());
             },
         }
     }
