@@ -23,3 +23,19 @@ pub fn I64ToU64
 pub fn U64ToI64
   9223372036854775807 +
   1 nbrot #()
+
+/* copy a vector (or a string) */
+pub fn veccpy /* *abc3 */ {
+  0
+  :#veccpy_loop()
+fn veccpy_loop
+  1 +
+  1 pushnth 1 pushnth -- + 2 + pushnth 2 pushnth 2 + nbrot
+  0 pushnth 2 pushnth < ! :veccpy_end if
+  :#veccpy_loop()
+fn veccpy_end
+  0 pushnth 1 + nbrot
+  0 pushnth 2 * 2 + pushnth 1 nbrot
+  0 pushnth 2 * 3 + dropnth 1 nbrot
+  #()
+}

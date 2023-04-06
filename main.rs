@@ -1779,16 +1779,23 @@ use simResult::*;
                         match error {
                             ok(x) => {
                                 if x == 0 {
-                                    eprintln!("[Simulation of {} succed]", repr(&i));
+                                eprintln!("{}", Formatstr::from("[Simulation of {0} \x1b[92msucced\x1b[0m]").unwrap()
+                                          .format(&repr(&i)).unwrap()
+                                          .to_string());
                                 } else {
                                     eprintln!("[Simulation of {} was finished with exit code {}]", repr(&i), x);
                                 }
                             },
                             err => {
-                                eprintln!("[Simulation of {} failed]", repr(&i));
+                                eprintln!("{}", Formatstr::from("[Simulation of {0} \x1b[91mfailed\x1b[0m]").unwrap()
+                                          .format(&repr(&i)).unwrap()
+                                          .to_string());
                             },
                             errs(x) => {
-                                eprintln!("[Simulation of {} failed due to this error: {}]", repr(&i), repr(&x));
+                                eprintln!("{}", Formatstr::from("[Simulation of {0} \x1b[91mfailed\x1b[0m due to this error: {1}]").unwrap()
+                                          .format(&repr(&i)).unwrap()
+                                          .format(&repr(&x)).unwrap()
+                                          .to_string());
                             },
                             stopped => {
                                 eprintln!("[Simulation of {} stopped]", repr(&i));

@@ -63,6 +63,7 @@ Standard library:
 - [ ] D64ToU64 function ((val: D64) -> (U64))
 - [ ] F64ToD64 function ((val: F64) -> (D64))
 - [ ] D64ToF64 function ((val: D64) -> (F64))
+- [ ] veccpy function
 
 [\\]: # (TODO: print about functions and function calls)
 [\\]: # (TODO: remove that stderr printing is not implemented yet when it is implemented)
