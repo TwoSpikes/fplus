@@ -1388,7 +1388,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, l
                 if ret >= labels.len()as i64 - 1 {
                     parseerrmsg!(lin, index, filename,
                                  (Formatstr::from("label not found: {0}").unwrap()
-                                  .format(&x.0).unwrap()
+                                  .format(&repr(&x.0)).unwrap()
                                   .to_string()));
                     return None;
                 }
