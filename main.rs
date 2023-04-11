@@ -178,11 +178,11 @@ impl Formatstr {
 }
 
 fn hi(x: u128) -> i64 {
-    (((x >> 64)as i128)-9223372036854775807)as i64
+    (((x >> 64) as i128)-9223372036854775807)as i64
 }
 
 fn lo(x: u128) -> i64 {
-    ((x as i128)-9223372036854775807)as i64
+    ((x as i128)-9223372036854775807) as i64
 }
 
 fn covariant_right<T: std::cmp::PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
@@ -440,7 +440,7 @@ fn for_each_arg(args: &Vec<String>,
                 },
                 Argsstate::MAX_INCLUDE_LEVEL => {
                     unsafe {
-                        MAX_INCLUDE_LEVEL = strtoi64(&i).unwrap()as usize;
+                        MAX_INCLUDE_LEVEL = strtoi64(&i).unwrap() as usize;
                     }
                     state = Argsstate::NONE;
                     continue;
@@ -470,7 +470,7 @@ fn for_each_arg(args: &Vec<String>,
 }
 
 fn strcat(a: &str, b: &str) -> String {
-    let mut res: String = "".to_owned();
+    let mut res: String = String::new();
     for i in a.chars() {
         res.push(i);
     }
@@ -481,7 +481,7 @@ fn strcat(a: &str, b: &str) -> String {
 }
 
 fn repr(string: &str) -> String {
-    let mut res: String = "\"".to_owned();
+    let mut res: String = String::new();
     for i in string.chars() {
         res += &match i {
             '\r' => vec!['\\', 'r'],
@@ -497,16 +497,16 @@ fn repr(string: &str) -> String {
     return res;
 }
 fn urepr(string: &str) -> String {
-    let mut res: String = "".to_owned();
+    let mut res: String = String::new();
     let mut ind: isize = -1;
-    while {ind+=1;ind} < string.len()as isize {
+    while {ind+=1;ind} < string.len() as isize {
         let i: char = match string.chars().nth(ind as usize) {
             Some(x) => x,
             None => break,
         };
         res += &match i {
             '\\' => {
-                res += &vec![match match string.chars().nth((ind+1)as usize) {
+                res += &vec![match match string.chars().nth((ind+1) as usize) {
                     Some(x) => x,
                     _ => panic!("Escape character not found"),
                 }{
@@ -517,7 +517,7 @@ fn urepr(string: &str) -> String {
                 '\'' => '\'',
                 '\"' => '\"',
                 _ => {
-                    panic!("Unknown escaping character: \'{}\'", vec![i, string.chars().nth((ind+1)as usize).unwrap()].iter().collect::<String>());
+                    panic!("Unknown escaping character: \'{}\'", vec![i, string.chars().nth((ind+1) as usize).unwrap()].iter().collect::<String>());
                 },
             }].iter().collect::<String>();
                 ind += 1;
@@ -684,7 +684,7 @@ use crate::Quotes::*;
         return EMPTY;
     }
     let mut res: Vec<Tok> = vec![];
-    let mut tmp: String = "".to_owned();
+    let mut tmp: String = String::new();
     let mut ploc: Loc = Loc(1, 1);
     let mut loc:  Loc = Loc(1, 1);
     let mut quotes: Quotes = Quotes::NO;
@@ -698,7 +698,7 @@ use crate::Quotes::*;
                 Quotes::IN => Quotes::POSTF,
                 Quotes::POSTF => {
                     res.push(Tok(ploc, tmp.to_owned()));
-                    tmp = "".to_owned();
+                    tmp = String::new();
                     ploc = loc.clone();
                     Quotes::NO
                 },
@@ -721,7 +721,7 @@ use crate::Quotes::*;
                 if i == '\n' || i == ' ' {
                     quotes = NO;
                     res.push(Tok(ploc, tmp.to_owned()));
-                    tmp = "".to_owned();
+                    tmp = String::new();
                     ploc = loc.clone();
                 } else {
                     tmp.push(i);
@@ -741,7 +741,7 @@ use crate::Quotes::*;
         if i == '\n' || i == ':' || i == '(' || i == ')'{
             res.push(Tok(ploc, tmp.to_owned()));
             res.push(Tok(loc, String::from(i)));
-            tmp = "".to_owned();
+            tmp = String::new();
             ploc = loc.clone();
             continue;
         }
@@ -749,7 +749,7 @@ use crate::Quotes::*;
         if i == ' ' || i == '\t' {
             if tmp.len() > 0 {
                 res.push(Tok(ploc, tmp.to_owned()));
-                tmp = "".to_owned();
+                tmp = String::new();
             }
             ploc = loc.clone();
             continue;
@@ -961,7 +961,7 @@ use crate::Op::*;
     //access modifiers for every element of labels array
     let mut labmod: Vec<Mod> = Vec::new();
     let mut ind: isize = -1;
-    while {ind+=1;ind} < pr.len()as isize{
+    while {ind+=1;ind} < pr.len() as isize{
         let i: &mut Tok = &mut pr[ind as usize];
         let mut val: &mut String = &mut i.1;
         let loc: &Loc = &i.0;
@@ -1031,7 +1031,7 @@ use crate::Op::*;
                 let mut res: Vec<i64> = Vec::new();
                 let mut jnd: isize = -1;
                 let mut j: char = ' ';
-                while {jnd+=1;jnd} < val[1..].len()as isize {
+                while {jnd+=1;jnd} < val[1..].len() as isize {
                     j = match val[1..].chars().nth(jnd as usize) {
                         Some(x) => x,
                         None => {
@@ -1136,14 +1136,14 @@ use crate::Op::*;
                         state = State::DBGMSG;
                         continue;
                     },
-                    "addr" => Push(res.len()as i64),
+                    "addr" => Push(res.len() as i64),
                     "paddr" => {
                         println!("paddr: {}", res.len());
                         continue;
                     },
                     "paddre" => {
                         println!("paddre: {}", res.len());
-                        ind = res.len()as isize;
+                        ind = res.len() as isize;
                         continue;
                     },
                     "dump" => DUMP,
@@ -1169,10 +1169,10 @@ use crate::Callmode::*;
                                 
                             },
                             WITH_ADDRESS_LEFT => {
-                                res.insert(insertion_index, (Ok(Push((res.len()+2+result.len())as i64)), *loc));
+                                res.insert(insertion_index, (Ok(Push((res.len()+2+result.len()) as i64)), *loc));
                             },
                             WITH_ADDRESS_RIGHT => {
-                                res.push((Ok(Push((res.len()+1)as i64)), *loc));
+                                res.push((Ok(Push((res.len()+1) as i64)), *loc));
                             },
                         }
                         callmode = unsafe { CALLMODE_DEFAULT };
@@ -1210,7 +1210,7 @@ use crate::Callmode::*;
                                 
                             },
                             WITH_ADDRESS_LEFT|WITH_ADDRESS_RIGHT => {
-                                res.push((Ok(Push((result.len()+res.len()+1)as i64)), *loc));
+                                res.push((Ok(Push((result.len()+res.len()+1) as i64)), *loc));
                             },
                         }
                         callmode = unsafe { CALLMODE_DEFAULT };
@@ -1233,7 +1233,7 @@ use crate::Callmode::*;
                             curmod = unsafe { CURMOD_DEFAULT };
                         }
                         if let "main" = &*val.as_str() {
-                            main = Some(res.len()as usize);
+                            main = Some(res.len() as usize);
                         }
                         labels.push((val.to_string(), None, scope_id.clone()));
                         labmod.push(curmod);
@@ -1252,15 +1252,15 @@ use crate::Callmode::*;
                                     curmod = unsafe { CURMOD_DEFAULT };
                                 }
                                 if let "main" = &*val.as_str() {
-                                    main = Some((res.len()+result.len())as usize);
+                                    main = Some((res.len()+result.len()) as usize);
                                 }
-                                labels.push((val.to_string(), Some((result.len()+res.len())as i64), scope_id.clone()));
+                                labels.push((val.to_string(), Some((result.len()+res.len()) as i64), scope_id.clone()));
                                 labmod.push(curmod);
                                 state = State::NONE;
                                 continue;
                             }
                         };
-                        labels[pos].1 = Some(res.len()as i64);
+                        labels[pos].1 = Some(res.len() as i64);
                         if !matches!(curmod, Mod::UNK) {
                             parsewarn!(("access modifier does not need to be in definition of declared already function"));
                             curmod = Mod::UNK;
@@ -1431,7 +1431,7 @@ fn link<'a>(filename: &String,
                         ret += 1;
                     }
                 }
-                if ret >= labels.len()as i64 - 1 {
+                if ret >= labels.len() as i64 - 1 {
                     parseerrmsg!(lin, index, filename,
                                  (Formatstr::from("label not found: {0}").unwrap()
                                   .format(&repr(&x.0)).unwrap()
@@ -1521,7 +1521,7 @@ use crate::Op::*;
         },
     };
     let mut ind: i64 = main - 1;
-    while ind != pr.len()as i64 {
+    while ind != pr.len() as i64 {
         ind += 1;
         let i: &Op = &pr[{let tmp: usize = ind as usize; if tmp >= pr.len() {break;} else {tmp}}].0;
         let loc: &Loc = &pr[ind as usize].1;
@@ -1538,10 +1538,10 @@ use crate::Op::*;
             PRINT|EPRINT => {
                 match output_to_file {
                     Some(_) => {
-                        _ = f.as_ref().unwrap().write(&[stack.pop().unwrap()as u8]);
+                        _ = f.as_ref().unwrap().write(&[stack.pop().unwrap() as u8]);
                     },
                     None => {
-                        let chr: char = char::from_u32(stack.pop().unwrap()as u32).unwrap();
+                        let chr: char = char::from_u32(stack.pop().unwrap() as u32).unwrap();
                         match i {
                             PRINT => print!("{}", chr),
                             EPRINT => eprint!("{}", chr),
@@ -1594,7 +1594,7 @@ use crate::Op::*;
 use std::io::stdin;
                 _ = stdin().read_line(&mut input);
                 stack.append(&mut from(&input).iter().rev().map(|x| *x).collect::<Vec<i64>>());
-                stack.push(input.len()as i64);
+                stack.push(input.len() as i64);
             },
             PLUS => {
                 let a: i64 = match stack.pop() {
@@ -1680,8 +1680,13 @@ use std::io::stdin;
                 ind = addr as i64;
             },
             PUSHNTH => {
-                let a: i64 = stack.pop().unwrap();
-                if a >= stack.len()as i64 {
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for PUSHNTH intrinsic not found".to_string());
+                    },
+                };
+                if a >= stack.len() as i64 {
                     return errs(Formatstr::from("pushnth overflow: operand `a` is {0}, len is {1}").unwrap()
                                 .format(&a.to_string()).unwrap()
                                 .format(&stack.len().to_string()).unwrap()
@@ -1691,66 +1696,129 @@ use std::io::stdin;
                 stack.push(b);
             },
             DROPNTH => {
-                let a: i64 = stack.pop().unwrap();
-                if a >= stack.len()as i64 {
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for DROPNTH intrinsic not found".to_string());
+                    },
+                };
+                if a >= stack.len() as i64 {
                     return errs("dropnth overflow".to_string());
                 }
                 stack.remove(stack.len()-1-a as usize);
             },
             NBROT => {
-                let l: i64 = stack.pop().unwrap();
-                let a: i64 = stack.pop().unwrap();
+                let l: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `l` for NBROT intrinsic not found".to_string());
+                    },
+                };
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for NBROT intrinsic not found".to_string());
+                    },
+                };
                 stack.insert(stack.len()-0-l as usize, a);
             },
             LT => {
-                let a: i64 = stack.pop().unwrap();
-                let b: i64 = stack.pop().unwrap();
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for LT intrinsic not found".to_string());
+                    },
+                };
+                let b: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `b` for LT intrinsic not found".to_string());
+                    },
+                };
                 stack.push((b < a) as i64);
             },
             EQ => {
-                let a: i64 = stack.pop().unwrap();
-                let b: i64 = stack.pop().unwrap();
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for EQ intrinsic not found".to_string());
+                    },
+                };
+                let b: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `b` for EQ intrinsic not found".to_string());
+                    },
+                };
                 stack.push((b == a) as i64);
             },
             NOT => {
-                let a: i64 = stack.pop().unwrap();
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for NOT intrinsic not found".to_string());
+                    },
+                };
                 stack.push((a == 0) as i64);
             },
             OR => {
-                let a: i64 = stack.pop().unwrap();
-                let b: i64 = stack.pop().unwrap();
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for OR intrinsic not found".to_string());
+                    },
+                };
+                let b: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `b` for OR intrinsic not found".to_string());
+                    },
+                };
                 stack.push(((a != 0) || (b != 0)) as i64);
             },
             EXIT => {
                 println!();
-                let a: i64 = stack.pop().unwrap();
-                return ok(a as i32);
+                let errorcode: i32 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `errorcode` for EXIT intrinsic not found".to_string());
+                    },
+                } as i32;
+                return ok(errorcode);
             },
             PSTK => {
+                //debugging with `??#` and `???` is not important when every step is already debugged
                 if !unsafe { SIM_DEBUG } {
                     println!("{}:{}: pstk  {:?}", lin, index, stack);
                 }
             },
             PSTKE => {
+                //see PSTK
                 if !unsafe { SIM_DEBUG } {
                     println!("{}:{}: pstke {:?}", lin, index, stack);
                 }
                 return err;
             },
             DUMP => {
-                println!("dump: {}", match stack.pop() {
+                let a: i64 = match stack.pop() {
                     Some(x) => x,
                     None => {
-                        return errs("Operand for DUMP intrinsic not found".to_owned());
+                        return errs("Operand `a` for DUMP intrinsic not found".to_owned());
                     },
-                });
+                };
+                println!("dump: {}", a);
             },
             ARGC => {
                 stack.push(argv.len() as i64);
             },
             ARGV => {
-                let a: i64 = stack.pop().unwrap();
-                if a >= argv.len()as i64 {
+                let a: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `a` for ARGV intrinsic not found".to_owned());
+                    },
+                };
+                if a >= argv.len() as i64 {
                     return errs("Argv overflow".to_owned());
                 }
                 if a < 0 {
@@ -1762,8 +1830,13 @@ use std::io::stdin;
                 stack.push(argv[a as usize].len() as i64);
             },
             READ => {
-                let mut filename: String = "".to_owned();
-                let filename_len = stack.pop().unwrap() as usize;
+                let mut filename: String = String::new();
+                let filename_len: usize = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `filename_len` for READ intrinsic not found".to_owned());
+                    },
+                } as usize;
                 let mut ind: usize = 0;
                 while {ind+=1;ind} < filename_len+1 {
                     let i: i64 = stack.pop().unwrap();
