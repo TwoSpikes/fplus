@@ -1,5 +1,6 @@
 include std.tspl
 
 pub fn main
-  :veccpy('A 'B 'C 3)
-  ???
+  "ABC" :->str()
+  puts
+  0 exit

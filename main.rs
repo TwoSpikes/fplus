@@ -48,6 +48,8 @@ static mut CALLMODE_DEFAULT: Callmode = Callmode::WITH_ADDRESS_LEFT;
 static mut CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
 //access modifier without any operators ("pub" and "pri")
 static mut CURMOD_DEFAULT: Mod = Mod::PRI;
+//enable colors
+static mut ENABLE_COLORS: bool = false;
 
 // -- SIMULATION --
 //disable simulation for smaller executable file (saves ~33K)
@@ -206,7 +208,15 @@ enum Callmode {
     WITH_ADDRESS_RIGHT, //save address before arguments
 }
 
-fn parselexget(filename: &String, include_level: usize, scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
+fn parselexget(filename: &String,
+               include_level: usize,
+               scope_id: Vec<usize>) ->
+                   Option<(Vec<(String,
+                                Option<i64>,
+                                Vec<usize>)>,
+                            Vec<(Op, Loc)>,
+                            Vec<usize>,
+                            Box<Vec<i64>>)> {
     match parse(&mut {
 use crate::Retlex::*;
         match lex(&filename, &match get(&filename) {
@@ -239,7 +249,7 @@ use crate::Retlex::*;
             if unsafe { PARSE_DEBUG_SUCCED } {
                 eprintln!("[Parsing succed]");
             }
-            return Some((x.0, x.1, x.2));
+            return Some((x.0, x.1, x.2, x.3));
         },
         None => {
             eprintln!("[Parsing failed]");
@@ -248,13 +258,18 @@ use crate::Retlex::*;
     }
 }
 
-fn matchlink(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
-    match link(&filename, &res, &labels, &main, include_level) {
+fn matchlink<'a>(filename: &String,
+             res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>,
+             labels: &Vec<(String, Option<i64>, Vec<usize>)>,
+             main: &Option<usize>,
+             data: &'a mut Vec<i64>,
+             include_level: usize) -> Option<(Vec<(Op, Loc)>, &'a mut Vec<i64>)> {
+    match link(&filename, &res, &labels, &main, data, include_level) {
         Some(x) => {
             if unsafe {LINK_DEBUG_SUCCED} {
                 eprintln!("[linking succed]");
             }
-            Some(x)
+            Some((x.0, data))
         },
         None => {
             eprintln!("[linking failed]");
@@ -283,7 +298,7 @@ fn for_each_arg(args: &Vec<String>,
     {
         let mut ind: isize = 1;
         let mut isargs: bool = false;
-        while {ind+=1;ind} < args.len().try_into().unwrap() {
+        while {ind+=1;ind} < args.len() as isize {
             let i = args[ind as usize].clone();
 
             match output_to_file.clone() {
@@ -414,6 +429,12 @@ fn for_each_arg(args: &Vec<String>,
                             state = Argsstate::MAX_INCLUDE_LEVEL;
                             continue;
                         },
+                        "--enable-colors"|"-enable-colors" => {
+                            unsafe {
+                                ENABLE_COLORS = !ENABLE_COLORS;
+                            }
+                            continue;
+                        },
                         &_ => {},
                     }
                 },
@@ -429,7 +450,7 @@ fn for_each_arg(args: &Vec<String>,
         }
     }
     let mut ind: isize = -1;
-    while {ind+=1;ind}<argv.len().try_into().unwrap() {
+    while {ind+=1;ind}<argv.len() as isize {
         let i: String = argv[ind as usize].clone();
         fargs.insert(0, args[0].clone());
         func(&i, ind, &argv, &fargs, &args, match output_to_file {
@@ -549,14 +570,15 @@ OPTION (insensitive to register):
 {--sim-debug -sim-debug}        show debug information during simulation
 {--sim-debug-puts -sim-debuf...}show debug information debore printing
 {--max-include-level -max-include-level} NUMBER
-                                set max include level (now is {0})").unwrap()
+                                set max include level (now is {0})
+{--enable-colors -enable-colors}enable terminal colors").unwrap()
 .format(&unsafe { MAX_INCLUDE_LEVEL }.to_string()).unwrap()
 .to_string());
 }
 fn version() {
     println!("F+, a stack-based interpreting programming language
 written on Rust v.{}
-version: 0.1.0-4
+version: 0.1.0-5
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes", unsafe { CARGO_VERSION });
 }
@@ -853,6 +875,7 @@ enum Op {
     ARGV,   //command line arguments: get element by index
     READ,   //read file to string
     GETTIME,//returns u128 with number of nanoseconds
+    DEREF,  //dereference the pointer
     EMPTY,  //does nothing
 }
 impl fmt::Display for Op {
@@ -893,7 +916,18 @@ macro_rules! parsewarnmsg {
     };
 }
 //////////////////////////////////////////////////////////////////////
-fn parse(pr: &mut Vec<Tok>, filename: &String, include_level: usize, mut scope_id: Vec<usize>) -> Option<(Vec<(String, Option<i64>, Vec<usize>)>, Vec<(Op, Loc)>, Vec<usize>)> {
+fn parse(pr: &mut Vec<Tok>,
+         filename: &String,
+         include_level: usize,
+         mut scope_id: Vec<usize>) -> Option<(
+             Vec<(String,
+                  Option<i64>,
+                  Vec<usize>)>,
+             Vec<(Op, Loc)>,
+             Vec<usize>,
+             Box<Vec<i64>>,
+         )> {
+    let mut data: Vec<i64> = Vec::new();
 use crate::Op::*;
     if include_level > unsafe { MAX_INCLUDE_LEVEL } {
         eprintln!("exceeded max include level: {}", unsafe { MAX_INCLUDE_LEVEL });
@@ -1014,13 +1048,11 @@ use crate::Op::*;
             };
             let tmpStr: String = urepr(tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>().as_str());
             let _tmpstr: &str = tmpStr.as_str();
-            let mut tmpres: Vec<(Result<Op, (String, Vec<usize>)>, Loc)> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| (Ok(Op::Push(x as i64)), Loc(-1,-1))).collect();
+            let mut tmpres: Vec<i64> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| x as i64).collect();
             match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
-                "" => tmpres.push((Ok(Op::Push((tmpStr.len()).try_into().unwrap())), Loc(-1,-1))),
-                // FIXME: '\n' symbol must be at the left
+                "" => tmpres.push(tmpStr.len() as i64),
                 "r" => {},
-                // FIXME: string length must be at the left
-                "c" => tmpres.push((Ok(Op::Push(0)), Loc(-1,-1))),
+                "c" => tmpres.push('\0' as i64),
                 _ => {
                     eprintln!("custom string postfixes are not implemented yet: {}", tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
                     return None;
@@ -1029,7 +1061,8 @@ use crate::Op::*;
             if unsafe { PARSE_DEBUG_STRING } {
                 eprintln!("tmpres={:?}", tmpres);
             }
-            tmpres
+            data.append(&mut tmpres);
+            vec![(Ok(Op::Push(data.len() as i64 - 1)), Loc(-1,-1))]
         } else {
             let check_for_hash = || -> Option<(String, Callmode)> {
                 if val.chars().nth(0) == Some('#') {
@@ -1159,7 +1192,6 @@ use crate::Callmode::*;
                     "argc" => ARGC,
                     "argv" => ARGV,
                     "read" => READ,
-                    "empty_op" => EMPTY,
                     "{" => {
                         scope_id.push(0);
                         continue;
@@ -1169,6 +1201,8 @@ use crate::Callmode::*;
                         continue;
                     },
                     "gettime" => GETTIME,
+                    "->" => DEREF,
+                    "empty_op" => EMPTY,
                     _ => {
 use crate::Callmode::*;
                         match callmode {
@@ -1282,7 +1316,6 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::DBGMSG => {
-                        println!("{}, {}, {}", repr(val.as_str()), val, urepr(val.as_str()));
                         res.push((Ok(Op::DBGMSG(if val.chars().nth(0) == Some('\"') {
                             urepr(&val[1..val.len()-1])
                         } else {
@@ -1322,8 +1355,13 @@ use crate::Callmode::*;
         (Ok(EXIT), Loc(-2,-2)),
     ]);
 
-    result.append(&mut match matchlink(&filename, &res, &labels, &main, include_level) {
-        Some(x) => x,
+    result.append(&mut match matchlink(&filename,
+                                       &res,
+                                       &labels,
+                                       &main,
+                                       &mut data,
+                                       include_level) {
+        Some(x) => x.0,
         None => return None,
     });
 
@@ -1343,9 +1381,17 @@ use crate::Callmode::*;
         }
     }
 
-    return Some((labels, result, scope_id));
+    return Some((labels,
+                 result,
+                 scope_id,
+                 Box::new(data)));
 }
-fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, labels: &Vec<(String, Option<i64>, Vec<usize>)>, main: &Option<usize>, include_level: usize) -> Option<Vec<(Op, Loc)>> {
+fn link<'a>(filename: &String,
+        res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>,
+        labels: &Vec<(String, Option<i64>, Vec<usize>)>,
+        main: &Option<usize>,
+        data: &'a mut Vec<i64>,
+        include_level: usize) -> Option<(Vec<(Op, Loc)>, &'a mut Vec<i64>)> {
     eprintln!("[linking {}...[recursion_level: {}]]",
               repr(filename), include_level);
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
@@ -1378,8 +1424,8 @@ fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, l
                                 }
                             }
                         } else {
-                            eprintln!("{}:{}:{}: Error: label is private", filename, lin, index);
-                            return None;
+                            eprintln!("{}:{}:{}: Warning: label is private", filename, lin, index);
+                            //return None;
                         }
                     } else {
                         ret += 1;
@@ -1401,7 +1447,7 @@ fn link(filename: &String, res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>, l
             None => 0,
         }), Loc(-2,-2)));
     }
-    return Some(linkres);
+    return Some((linkres, data));
 }
 
 #[derive(Debug)]
@@ -1412,8 +1458,9 @@ enum simResult {
     stopped,
 }
 fn sim(pr: &mut Vec<(Op, Loc)>,
-       _filename: &String,
+       filename: &String,
        argv: Vec<String>,
+       data: Box<Vec<i64>>,
        output_to_file: Option<String>) -> simResult {
 use simResult::*;
 use std::fs::{File, OpenOptions};
@@ -1481,7 +1528,8 @@ use crate::Op::*;
         let lin: i64 = loc.0;
         let index: i64 = loc.1;
         if unsafe { SIM_DEBUG } {
-            eprintln!("---- {}. {}:{}:{:?} ----\n{:?}", ind, lin, index, i, stack);
+            eprintln!("\x1b[93m------------ {}. {}:{}:{}:{:?}\x1b[0m\n{:?}",
+                      ind, repr(&filename), lin, index, i, stack);
         }
         match i {
             Push(x) => {
@@ -1506,15 +1554,16 @@ use crate::Op::*;
                 if unsafe { SIM_DEBUG_PUTS } && !unsafe { SIM_DEBUG } {
                     eprintln!("debug: puts: {:?}", stack);
                 }
-                let strlen: usize = stack.pop().unwrap()as usize;
-                if stack.len() < strlen {
+                let strptr: usize = stack.pop().unwrap() as usize;
+                let strlen: usize = data[strptr] as usize;
+                if data.len() < strlen {
                     return errs("puts underflow".to_owned());
                 }
-                let mut string: String = "".to_owned();
+                let mut string: String = String::new();
                 {
                     let mut ind2: usize = 0;
-                    while ind2 < strlen {
-                        let chr = char::from_u32(stack.pop().unwrap()as u32).unwrap();
+                    while ind2 <= strlen {
+                        let chr = char::from_u32(data[strptr-ind2] as u32).unwrap();
                         string.push(chr);
                         ind2 += 1;
                     }
@@ -1618,7 +1667,7 @@ use std::io::stdin;
                     },
                 };
                 if cond != 0 {
-                    ind = addr.try_into().unwrap();
+                    ind = addr as i64;
                 }
             },
             G => {
@@ -1628,12 +1677,15 @@ use std::io::stdin;
                         return errs("Operand `addr` for G intrinsic not found".to_string());
                     },
                 };
-                ind = addr.try_into().unwrap();
+                ind = addr as i64;
             },
             PUSHNTH => {
                 let a: i64 = stack.pop().unwrap();
                 if a >= stack.len()as i64 {
-                    return errs("pushnth overflow".to_owned());
+                    return errs(Formatstr::from("pushnth overflow: operand `a` is {0}, len is {1}").unwrap()
+                                .format(&a.to_string()).unwrap()
+                                .format(&stack.len().to_string()).unwrap()
+                                .to_string());
                 }
                 let b: i64 = stack[stack.len()-1-a as usize];
                 stack.push(b);
@@ -1653,26 +1705,26 @@ use std::io::stdin;
             LT => {
                 let a: i64 = stack.pop().unwrap();
                 let b: i64 = stack.pop().unwrap();
-                stack.push((b < a).try_into().unwrap());
+                stack.push((b < a) as i64);
             },
             EQ => {
                 let a: i64 = stack.pop().unwrap();
                 let b: i64 = stack.pop().unwrap();
-                stack.push((b == a).try_into().unwrap());
+                stack.push((b == a) as i64);
             },
             NOT => {
                 let a: i64 = stack.pop().unwrap();
-                stack.push((a == 0).try_into().unwrap());
+                stack.push((a == 0) as i64);
             },
             OR => {
                 let a: i64 = stack.pop().unwrap();
                 let b: i64 = stack.pop().unwrap();
-                stack.push(((a != 0) || (b != 0)).try_into().unwrap());
+                stack.push(((a != 0) || (b != 0)) as i64);
             },
             EXIT => {
                 println!();
                 let a: i64 = stack.pop().unwrap();
-                return ok(a.try_into().unwrap());
+                return ok(a as i32);
             },
             PSTK => {
                 if !unsafe { SIM_DEBUG } {
@@ -1694,7 +1746,7 @@ use std::io::stdin;
                 });
             },
             ARGC => {
-                stack.push(argv.len().try_into().unwrap());
+                stack.push(argv.len() as i64);
             },
             ARGV => {
                 let a: i64 = stack.pop().unwrap();
@@ -1707,11 +1759,11 @@ use std::io::stdin;
                 for j in argv[a as usize].chars().rev() {
                     stack.push(j as i64);
                 }
-                stack.push(argv[a as usize].len().try_into().unwrap());
+                stack.push(argv[a as usize].len() as i64);
             },
             READ => {
                 let mut filename: String = "".to_owned();
-                let filename_len: usize  = stack.pop().unwrap().try_into().unwrap();
+                let filename_len = stack.pop().unwrap() as usize;
                 let mut ind: usize = 0;
                 while {ind+=1;ind} < filename_len+1 {
                     let i: i64 = stack.pop().unwrap();
@@ -1725,7 +1777,7 @@ use std::io::stdin;
                     },
                 };
                 stack.append(&mut file.chars().map(|x| x as i64).collect::<Vec<i64>>());
-                stack.push(file.len().try_into().unwrap());
+                stack.push(file.len() as i64);
             },
             GETTIME => {
 use std::time::{
@@ -1739,9 +1791,16 @@ use std::time::{
             DBGMSG(x) => {
                 println!("dbgmsg: {}", repr(x));
             },
-            EMPTY => {
-
+            DEREF => {
+                let ptr: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return errs("Operand `ptr` for DEREF intrinsic not found".to_string());
+                    },
+                };
+                stack.push(data[ptr as usize]);
             },
+            EMPTY => {},
             _ => {
                 return errs(Formatstr::from("Unknown op: {0}").unwrap()
                             .format(&i.to_string()).unwrap()
@@ -1759,23 +1818,28 @@ fn clah(args: &Vec<String>) {
             eprintln!("[command line arguments reading succed]");
             match mode {
                 Mode::SIM => {
-                    for_each_arg(&args, |i: &String,
-                                        ind: isize,
-                                        argv: &Vec<String>,
-                                        fargs: &Vec<String>,
-                                        args: &Vec<String>,
-                                        output_to_file: Option<String>| {
+                    for_each_arg(&args,
+                                 |i: &String,
+                                 ind: isize,
+                                 argv: &Vec<String>,
+                                 fargs: &Vec<String>,
+                                 args: &Vec<String>,
+                                 output_to_file: Option<String>| {
 use simResult::*;
+                        let mut data: Option<Box<Vec<i64>>> = None;
                         let error: simResult = sim(&mut match parselexget(&i, 0, vec![0,]) {
-                            Some(x) => x.1,
+                            Some(x) => {
+                                data = Some(x.3);
+                                x.1
+                            },
                             None => return,
-                        }, &i, if ind==(argv.len()-1).try_into().unwrap() {
+                        }, &i, if ind==(argv.len()-1) as isize {
                             fargs.clone()
                         } else {
                             vec![
                                 args[0].clone(),
                             ]
-                        }, output_to_file);
+                        }, data.unwrap(), output_to_file);
                         match error {
                             ok(x) => {
                                 if x == 0 {

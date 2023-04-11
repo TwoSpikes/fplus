@@ -123,6 +123,7 @@ OPTION (insensitive to register):
 {--sim-debug-puts -sim-debuf...}show debug information debore printing
 {--max-include-level -max-include-level} NUMBER
                                 set max include level (now is 500)
+{--enable-colors -enable-colors}enable terminal colors
 ```
 
 While building, you must be in `fplus` directory (it is important)
@@ -131,7 +132,7 @@ While building, you must be in `fplus` directory (it is important)
 ```
 F+, a stack-based interpreting programming language
 written on Rust v.1.68.2
-version: 0.1.0-4
+version: 0.1.0-5
 download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes
 ```
@@ -141,12 +142,6 @@ This message will be shown with `error` (or `e`) subcommand:
 ```console
 errorcodes:
 E0                    Cannot open file
-```
-
-## OPTIONS:
-```
--o --output [FILE]            save output to program
--c --compiler [OPTION]        provide option to compiler (not implemented yet)
 ```
 
 ## EXAMPLES:
