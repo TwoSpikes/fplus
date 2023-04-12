@@ -68,6 +68,15 @@ const RED_COLOR: &str = "\x1b[91m";
 const GREEN_COLOR: &str = "\x1b[92m";
 const YELLOW_COLOR: &str = "\x1b[93m";
 
+//get string from token
+fn getstrfromtok(x: &String) -> Box<String> {
+    return Box::new(if x.chars().nth(0) == Some('\"') {
+        urepr(&x[1..x.len()-1])
+    } else {
+        x.to_string()
+    });
+}
+
 #[derive(Clone)]
 struct Formatstr {
     string: String,
@@ -165,14 +174,17 @@ impl Formatstr {
     }
     fn to_string(&self) -> String {
         let mut result: String = self.string.clone();
-        let mut index: usize = 0;
         let mut ind: usize = 0;
         let mut already_inserted: usize = 0;
         while ind < self.formatnums.len() {
             let string: &String = &self.formatters[self.formatnums[ind]];
             let mut ind2: usize = 0;
             while ind2 < string.len() {
-                result.insert(self.position[ind]+ind2+already_inserted-ind, string.chars().nth(ind2).unwrap());
+                result.insert(self.position[ind]
+                               +ind2
+                               +already_inserted
+                               -ind,
+                              string.chars().nth(ind2).unwrap());
                 ind2 += 1;
             }
             already_inserted += ind2;
@@ -211,6 +223,7 @@ enum Callmode {
                         //or jmp operator in asm
     WITH_ADDRESS_LEFT,  //save address in the top of the stack
                         //to jump there in the end of function
+    #[allow(dead_code)]
     WITH_ADDRESS_RIGHT, //save address before arguments
 }
 
@@ -225,6 +238,7 @@ fn parselexget(filename: &String,
                             Box<Vec<i64>>)> {
     match parse(&mut {
 use crate::Retlex::*;
+        #[allow(unreachable_patterns)]
         match lex(&filename, &match get(&filename) {
         Some(x) => x,
         None => {
@@ -476,6 +490,7 @@ fn for_each_arg(args: &Vec<String>,
     }
 }
 
+#[allow(dead_code)]
 fn strcat(a: &str, b: &str) -> String {
     let mut res: String = String::new();
     for i in a.chars() {
@@ -603,7 +618,6 @@ enum Mode {
     NONE,
     SIM,
     DUMP,
-    ERRCODES,
 }
 fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     let mut err: i32 = 0;
@@ -614,7 +628,7 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     }
     match args[1].to_lowercase().as_str() {
         "sim"|"s" => {
-            if unsafe { SIM_ENABLE } {
+            if SIM_ENABLE {
                 if args.len() <= 2 {
                     eprintln!("No source file provided");
                     usage();
@@ -700,14 +714,19 @@ use crate::Quotes::*;
         //" then remember it
         if i == '"' {
             tmp.push(i);
-            quotes = match quotes {
-                Quotes::NO => Quotes::IN,
-                Quotes::IN => Quotes::POSTF,
+            #[allow(unreachable_patterns)]
+            match quotes {
+                Quotes::NO => {
+                    quotes = Quotes::IN;
+                },
+                Quotes::IN => {
+                    quotes = Quotes::POSTF;
+                },
                 Quotes::POSTF => {
                     res.push(Tok(ploc, tmp.to_owned()));
                     tmp = String::new();
                     ploc = loc.clone();
-                    Quotes::NO
+                    quotes = Quotes::NO;
                 },
                 _ => {
                     eprintln!("lex: unknown quotes: {:?}", quotes);
@@ -716,10 +735,9 @@ use crate::Quotes::*;
             };
             continue;
         }
+        #[allow(unreachable_patterns)]
         match quotes {
-            NO => {
-                
-            },
+            NO => {},
             IN => {
                 tmp.push(i);
                 continue;
@@ -829,7 +847,6 @@ fn strtoi64_signed(x: &String) -> Option<i64> {
 }
 fn strtoi64_unsigned(x: &String) -> Option<i64> {
     let mut res: u64 = 0;
-    let mut wasdigit: bool = false;
     for i in x.chars() {
         res = res*10 + match i {
             '0' => 0,
@@ -876,7 +893,7 @@ enum Op {
     EXIT,   //exit the program
     PSTK,   //print stack
     PSTKE,  //print stack & exit
-    DBGMSG(Box<str>), //print debug message
+    DBGMSG(Box<String>), //print debug message
     DUMP,   //print stack top
     ARGC,   //command line arguments: get length
     ARGV,   //command line arguments: get element by index
@@ -982,7 +999,7 @@ use crate::Op::*;
     let mut ind: isize = -1;
     while {ind+=1;ind} < pr.len() as isize{
         let i: &mut Tok = &mut pr[ind as usize];
-        let mut val: &mut String = &mut i.1;
+        let val: &mut String = &mut i.1;
         let loc: &Loc = &i.0;
         let lin: &i64 = &loc.0;
         let index: &i64 = &loc.1;
@@ -1049,9 +1066,8 @@ use crate::Op::*;
             let tmp: Vec<i64> = {
                 let mut res: Vec<i64> = Vec::new();
                 let mut jnd: isize = -1;
-                let mut j: char = ' ';
                 while {jnd+=1;jnd} < val[1..].len() as isize {
-                    j = match val[1..].chars().nth(jnd as usize) {
+                    let j: char = match val[1..].chars().nth(jnd as usize) {
                         Some(x) => x,
                         None => {
                             break;
@@ -1065,15 +1081,15 @@ use crate::Op::*;
                 }
                 res
             };
-            let tmpStr: String = urepr(tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>().as_str());
-            let _tmpstr: &str = tmpStr.as_str();
-            let mut tmpres: Vec<i64> = tmpStr.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| x as i64).collect();
-            match tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
-                "" => tmpres.push(tmpStr.len() as i64),
+            let tmp_str: String = urepr(tmp.iter().map(|x| char::from(*x as u8)).collect::<Vec<char>>().iter().collect::<String>().as_str());
+            let _tmpstr: &str = tmp_str.as_str();
+            let mut tmpres: Vec<i64> = tmp_str.chars().take(postfix.unwrap()).collect::<String>().chars().rev().collect::<String>().chars().map(|x| x as i64).collect();
+            match tmp_str.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>().as_str() {
+                "" => tmpres.push(tmp_str.len() as i64),
                 "r" => {},
                 "c" => tmpres.push('\0' as i64),
                 _ => {
-                    eprintln!("custom string postfixes are not implemented yet: {}", tmpStr.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
+                    eprintln!("custom string postfixes are not implemented yet: {}", tmp_str.chars().rev().collect::<String>().chars().take(tmp.len()-postfix.unwrap()-0).collect::<String>());
                     return None;
                 },
             }
@@ -1098,6 +1114,7 @@ use crate::Op::*;
                 continue;
             },
             None => {
+                #[allow(unreachable_patterns)]
                 match state {
                     State::NONE => {
                 let matchresult: Op = match val.as_str() {
@@ -1291,12 +1308,7 @@ use crate::Callmode::*;
                         if unsafe { PARSE_DEBUG_INCLUDE } {
                             eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(&val));
                         }
-                        let mut tokens = match parselexget(&(if val.chars().nth(0) == Some('\"') {
-                            let cut_string: &str = &val[1..][..val.len()-2];
-                            cut_string.to_owned()
-                        } else {
-                            val.to_string()
-                        }), include_level+1, scope_id.clone()) {
+                        let mut tokens = match parselexget(&(getstrfromtok(val)), include_level+1, scope_id.clone()) {
                             Some(x) => x,
                             None => {
                                 return None;
@@ -1335,11 +1347,7 @@ use crate::Callmode::*;
                         continue;
                     },
                     State::DBGMSG => {
-                        res.push((Ok(Op::DBGMSG(if val.chars().nth(0) == Some('\"') {
-                            urepr(&val[1..val.len()-1])
-                        } else {
-                            val.to_string()
-                        }.into())), *loc));
+                        res.push((Ok(Op::DBGMSG(getstrfromtok(val))), *loc));
                         state = State::NONE;
                         continue;
                     },
@@ -1416,6 +1424,7 @@ fn link<'a>(filename: &String,
     eprintln!("[linking {}...[recursion_level: {}]]",
               repr(filename), include_level);
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
+    #[allow(unused_variables)]
     let mut ind: i64 = -1;
     for i in res {
         ind += 1;
@@ -1560,6 +1569,7 @@ use crate::Op::*;
                       RESET_COLOR,
                       stack);
         }
+        #[allow(unreachable_patterns)]
         match i {
             Push(x) => {
                 stack.push(*x);
@@ -1918,6 +1928,7 @@ fn clah(args: &Vec<String>) {
     match cla(args) {
         Ok(mode) => {
             eprintln!("[command line arguments reading succed]");
+            #[allow(unreachable_patterns)]
             match mode {
                 Mode::SIM => {
                     for_each_arg(&args,
@@ -1928,6 +1939,7 @@ fn clah(args: &Vec<String>) {
                                  args: &Vec<String>,
                                  output_to_file: Option<String>| {
 use simResult::*;
+                        #[allow(unused_assignments)]
                         let mut data: Option<Box<Vec<i64>>> = None;
                         let error: simResult = sim(&mut match parselexget(&i, 0, vec![0,]) {
                             Some(x) => {
@@ -1942,6 +1954,7 @@ use simResult::*;
                                 args[0].clone(),
                             ]
                         }, data.unwrap(), output_to_file);
+                        #[allow(unreachable_patterns)]
                         match error {
                             ok(x) => {
                                 if x == 0 {
@@ -2006,6 +2019,7 @@ use std::fs::{File, OpenOptions};
                                 }
     	                        let mut f = match OpenOptions::new().append(true).open(x) {
                                     Ok(y) => y,
+                                    #[allow(unused_variables)]
                                     Err(e) => {
                                         todo!();
                                     },
