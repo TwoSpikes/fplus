@@ -2,7 +2,6 @@
 
 use std:: {
     io::Write,
-    convert::TryInto,
     fmt,
 };
 
@@ -62,6 +61,12 @@ static mut SIM_DEBUG_PUTS: bool = false;
 // -- MAX LEVELS --
 //maximum level of include recursion
 static mut MAX_INCLUDE_LEVEL: usize = 500;
+
+// -- COLOR CONSTANTS --
+const RESET_COLOR: &str = "\x1b[0m";
+const RED_COLOR: &str = "\x1b[91m";
+const GREEN_COLOR: &str = "\x1b[92m";
+const YELLOW_COLOR: &str = "\x1b[93m";
 
 #[derive(Clone)]
 struct Formatstr {
@@ -200,6 +205,7 @@ fn covariant_right<T: std::cmp::PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(non_camel_case_types)]
 enum Callmode {
     WITHOUT_ADDRESS,    //like goto operator in C
                         //or jmp operator in asm
@@ -286,6 +292,7 @@ fn for_each_arg(args: &Vec<String>,
                          fargs: &Vec<String>,
                          args: &Vec<String>,
                          output_to_file: Option<String>) -> ()) {
+    #[allow(non_camel_case_types)]
     enum Argsstate {
         NONE,
         MAX_INCLUDE_LEVEL,
@@ -894,9 +901,9 @@ macro_rules! parsemsg_loop {
     () => {
         eprintln!();
     };
-    ($head:expr, $($tail:expr),*) => {
+    ($head:expr, $($tail:expr,)*) => {
         eprint!("{}", $head);
-        parsemsg_loop!($($tail),*);
+        parsemsg_loop!($($tail,)*);
     };
 }
 macro_rules! parsemsg {
@@ -907,12 +914,24 @@ macro_rules! parsemsg {
 }
 macro_rules! parseerrmsg {
     ($lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
-        parsemsg!("\x1b[91mError\x1b[0m", $lin, $index, $filename, $($tail),*);
+        parsemsg!("{}Error{}",
+                  RED_COLOR,
+                  $lin,
+                  $index,
+                  $filename,
+                  $($tail),*,
+                  RESET_COLOR);
     };
 }
 macro_rules! parsewarnmsg {
     ($lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
-        parsemsg!("\x1b[93mWarning\x1b[0m", $lin, $index, $filename, $($tail),*);
+        parsemsg!("{}Warning{}",
+                  YELLOW_COLOR,
+                  $lin,
+                  $index,
+                  $filename,
+                  $($tail),*,
+                  RESET_COLOR);
     };
 }
 //////////////////////////////////////////////////////////////////////
@@ -1333,11 +1352,13 @@ use crate::Callmode::*;
             }
         }
     );}
+    #[allow(unused_macros)]
     macro_rules! parseerr {
         ($($tail:expr),*) => {
             parseerrmsg!("EOF", "EOF", filename, $($tail),*);
         }
     }
+    #[allow(unused_macros)]
     macro_rules! parsewarn {
         ($($tail:expr),*) => {
             parsewarnmsg!("EOF", "EOF", filename, $($tail),*);
@@ -1451,6 +1472,7 @@ fn link<'a>(filename: &String,
 }
 
 #[derive(Debug)]
+#[allow(non_camel_case_types)]
 enum simResult {
     ok(i32),
     err,
@@ -1528,8 +1550,15 @@ use crate::Op::*;
         let lin: i64 = loc.0;
         let index: i64 = loc.1;
         if unsafe { SIM_DEBUG } {
-            eprintln!("\x1b[93m------------ {}. {}:{}:{}:{:?}\x1b[0m\n{:?}",
-                      ind, repr(&filename), lin, index, i, stack);
+            eprintln!("{}------------ {}. {}:{}:{}:{:?}{}\n{:?}",
+                      YELLOW_COLOR,
+                      ind,
+                      repr(&filename),
+                      lin,
+                      index,
+                      i,
+                      RESET_COLOR,
+                      stack);
         }
         match i {
             Push(x) => {
@@ -1916,21 +1945,27 @@ use simResult::*;
                         match error {
                             ok(x) => {
                                 if x == 0 {
-                                eprintln!("{}", Formatstr::from("[Simulation of {0} \x1b[92msucced\x1b[0m]").unwrap()
+                                eprintln!("{}", Formatstr::from("[Simulation of {0} {1}succed{2}]").unwrap()
                                           .format(&repr(&i)).unwrap()
+                                          .format(GREEN_COLOR).unwrap()
+                                          .format(RESET_COLOR).unwrap()
                                           .to_string());
                                 } else {
                                     eprintln!("[Simulation of {} was finished with exit code {}]", repr(&i), x);
                                 }
                             },
                             err => {
-                                eprintln!("{}", Formatstr::from("[Simulation of {0} \x1b[91mfailed\x1b[0m]").unwrap()
+                                eprintln!("{}", Formatstr::from("[Simulation of {0} {1}failed{2}]").unwrap()
                                           .format(&repr(&i)).unwrap()
+                                          .format(RED_COLOR).unwrap()
+                                          .format(RESET_COLOR).unwrap()
                                           .to_string());
                             },
                             errs(x) => {
-                                eprintln!("{}", Formatstr::from("[Simulation of {0} \x1b[91mfailed\x1b[0m due to this error: {1}]").unwrap()
+                                eprintln!("{}", Formatstr::from("[Simulation of {0} {1}failed{2} due to this error: {3}]").unwrap()
                                           .format(&repr(&i)).unwrap()
+                                          .format(RED_COLOR).unwrap()
+                                          .format(RESET_COLOR).unwrap()
                                           .format(&repr(&x)).unwrap()
                                           .to_string());
                             },
