@@ -1,4 +1,4 @@
-#!./run.sh
+#!./run.sh --in-main-rs
 
 #[allow(non_camel_case_types)]
 
