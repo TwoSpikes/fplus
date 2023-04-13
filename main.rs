@@ -1118,7 +1118,7 @@ use crate::Op::*;
                 match state {
                     State::NONE => {
                 let matchresult: Op = match val.as_str() {
-                    ""|"\n" => continue,
+                    ""|"\n"|"\t"|"\r" => continue,
                     "pri" => {
                         curmod = Mod::PRI;
                         continue;
