@@ -3,4 +3,4 @@
 set -e
 
 make install
-fplus ${@:2}
+fplus ${@:1}
