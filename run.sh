@@ -1,6 +1,6 @@
 #!/bin/env bash
 
-set -xe
+set -e
 
 make install
 fplus ${@:2}
