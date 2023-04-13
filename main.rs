@@ -1176,7 +1176,7 @@ use crate::Op::*;
                     },
                     "addr" => Push(res.len() as i64),
                     "paddr" => {
-                        println!("paddr: {}", res.len());
+                        println!("paddr: {}", res.len()+result.len());
                         continue;
                     },
                     "paddre" => {
@@ -1248,7 +1248,7 @@ use crate::Callmode::*;
                                 
                             },
                             WITH_ADDRESS_LEFT|WITH_ADDRESS_RIGHT => {
-                                res.push((Ok(Push((result.len()+res.len()+1) as i64)), *loc));
+                                res.push((Ok(Push((result.len()+res.len()+3) as i64)), *loc));
                             },
                         }
                         callmode = unsafe { CALLMODE_DEFAULT };

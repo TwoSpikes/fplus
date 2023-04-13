@@ -1,6 +1,5 @@
 include std.tspl
 
 pub fn main
-  "ABC" :->str()
-  puts
-  0 exit
+  "ABC" ->str
+  puts 0 exit
