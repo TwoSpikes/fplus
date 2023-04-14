@@ -2052,7 +2052,16 @@ use std::fs::{File, OpenOptions};
             }
         },
         Err(x) => {
-            eprint!("[command line arguments reading failed due to {} previous error", x);
+            eprint!("[command line arguments reading {}failed{} due to{} previous error",
+                    RED_COLOR,
+                    RESET_COLOR,
+                    if x == 1 {
+                        String::new()
+                    } else {
+                        let mut temp_string = String::new();
+                        temp_string.push_str(&mut x.to_string());
+                        temp_string
+                    });
             if x >= 2 {
                 eprint!("s");
             }
