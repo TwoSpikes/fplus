@@ -1340,6 +1340,7 @@ use crate::Callmode::*;
                         }
                         result.append(&mut tokens.1);
                         labels.append(&mut tokens.0);
+                        data.append(&mut tokens.3);
                         if unsafe { PARSE_DEBUG_INCLUDE_SUCCED } {
                             eprintln!("{}:{}:{}: succed include {}", filename, lin, index, repr(&val));
                         }
