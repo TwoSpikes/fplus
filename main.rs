@@ -1493,7 +1493,7 @@ enum simResult {
 fn sim(pr: &mut Vec<(Op, Loc)>,
        filename: &String,
        argv: Vec<String>,
-       data: Box<Vec<i64>>,
+       mut data: Box<Vec<i64>>,
        output_to_file: Option<String>) -> simResult {
 use simResult::*;
 use std::fs::{File, OpenOptions};
@@ -1634,8 +1634,9 @@ use crate::Op::*;
                 let mut input: String = String::new();
 use std::io::stdin;
                 _ = stdin().read_line(&mut input);
-                stack.append(&mut from(&input).iter().rev().map(|x| *x).collect::<Vec<i64>>());
-                stack.push(input.len() as i64);
+                data.append(&mut from(&input).iter().rev().map(|x| *x).collect::<Vec<i64>>());
+                data.push(input.len() as i64);
+                stack.push(data.len() as i64 - 1);
             },
             PLUS => {
                 let a: i64 = match stack.pop() {
