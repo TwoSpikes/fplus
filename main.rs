@@ -506,6 +506,7 @@ fn strcat(a: &str, b: &str) -> String {
 
 fn repr(string: &str) -> String {
     let mut res: String = String::new();
+    res.push('\"');
     for i in string.chars() {
         res += &match i {
             '\r' => vec!['\\', 'r'],
@@ -933,24 +934,28 @@ macro_rules! parsemsg {
 }
 macro_rules! parseerrmsg {
     ($lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
-        parsemsg!("{}Error{}",
-                  RED_COLOR,
+        parsemsg!(Formatstr::from("{0}Error{1}").unwrap()
+                  .format(RED_COLOR).unwrap()
+                  .format(RESET_COLOR).unwrap()
+                  .to_string(),
                   $lin,
                   $index,
                   $filename,
-                  $($tail),*,
-                  RESET_COLOR);
+                  $($tail),*
+        );
     };
 }
 macro_rules! parsewarnmsg {
     ($lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
-        parsemsg!("{}Warning{}",
-                  YELLOW_COLOR,
+        parsemsg!(Formatstr::from("{0}Warning{1}").unwrap()
+                  .format(YELLOW_COLOR).unwrap()
+                  .format(RESET_COLOR).unwrap()
+                  .to_string(),
                   $lin,
                   $index,
                   $filename,
-                  $($tail),*,
-                  RESET_COLOR);
+                  $($tail),*
+        );
     };
 }
 //////////////////////////////////////////////////////////////////////
@@ -1243,6 +1248,13 @@ use crate::Callmode::*;
                     "empty_op" => EMPTY,
                     _ => {
 use crate::Callmode::*;
+                        match check_for_hash() {
+                            Some(x) => {
+                                *val = x.0;
+                                callmode = x.1;
+                            },
+                            None => {},
+                        }
                         match callmode {
                             WITHOUT_ADDRESS => {
                                 
