@@ -1,3 +1,4 @@
-fn main
+/* garbage code that does not work */
+pub fn main
   pushnth dropnth nbrot 2 * +
   dump puts 6969 putc

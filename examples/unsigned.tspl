@@ -1,4 +1,4 @@
-include std.tspl
+include std.tsplh
 
 fn main
   0u   dump

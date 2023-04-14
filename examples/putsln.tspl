@@ -1,4 +1,4 @@
-fn main
+pub fn main
   "Hello, " puts flush
   "World!" putsln
   "Fuck " eputs eflush

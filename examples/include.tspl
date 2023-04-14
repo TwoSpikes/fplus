@@ -1,6 +1,6 @@
-include examples/include-file.tspl
+include examples/include-file.tsplh
 
 fn main
-  :a#()
-  "unreachable" puts
+  #a
+  "unreachable" putsln
   1 exit

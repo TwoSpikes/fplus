@@ -1,3 +1,0 @@
-fn a
-  "fn a" puts
-  0 exit

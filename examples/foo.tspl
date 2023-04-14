@@ -1,9 +1,7 @@
 fn foo
-  ??# /* print stack */
+  ??#
   dbgmsg "foo called"
   0 exit
 
 fn main
-  :#foo()
-
-  bar /* colored error */
+  #foo

@@ -1,4 +1,4 @@
-include std.tspl
+include std.tsplh
 
 pub fn main
   "ABC" ->str

@@ -1,2 +1,2 @@
-fn main
-  "Hello, world!\n" puts
+pub fn main
+  "Hello, world!" putsln

@@ -1,10 +1,10 @@
-include std.tspl
+include std.tsplh
 
 fn main
   0
   #loop
-
 fn loop {
+  0 pushnth dump
   1 +
   0 pushnth 100 < ! :loop_end if
   #loop

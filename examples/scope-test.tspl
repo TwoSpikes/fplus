@@ -11,5 +11,5 @@ fn 2. {
   fn 2.1
 }
 
-fn main
+pub fn main
   :2.0
