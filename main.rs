@@ -1610,7 +1610,10 @@ use crate::Op::*;
                 let strptr: usize = stack.pop().unwrap() as usize;
                 let strlen: usize = data[strptr] as usize;
                 if data.len() < strlen {
-                    return errs("puts underflow".to_owned());
+                    return errs(Formatstr::from("puts underflow: the len is {0} but the index is {1}").unwrap()
+                                .format(&data.len().to_string()).unwrap()
+                                .format(&strlen.to_string()).unwrap()
+                                .to_string());
                 }
                 let mut string: String = String::new();
                 {
@@ -1879,9 +1882,10 @@ use std::io::stdin;
                     return errs("Argv underflow".to_owned());
                 }
                 for j in argv[a as usize].chars().rev() {
-                    stack.push(j as i64);
+                    data.push(j as i64);
                 }
-                stack.push(argv[a as usize].len() as i64);
+                data.push(argv[a as usize].len() as i64);
+                stack.push(data.len() as i64 - 1);
             },
             READ => {
                 let mut filename: String = String::new();
