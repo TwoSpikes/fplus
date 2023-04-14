@@ -5,7 +5,7 @@ set -e
 make install
 
 if [[ $1 == --in-main-rs ]] then
-	fplus ${@:2};
+	fplus ${@:3};
 else
 	fplus ${@:1};
 fi
