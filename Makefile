@@ -1,8 +1,12 @@
-install: fplus
-			install ./target/release/fplus ${PREFIX}/bin
+install: $(compiled)
+	install ./target/release/fplus ${PREFIX}/bin
 fplus: main.rs
-			cargo build --release
+	$(eval compiled = ./target/release/fplus)
+	cargo build --release
+debug: main.rs
+	$(eval compiled = ./target/debug/fplus)
+	cargo build
 uninstall:
-			rm -rf /usr/bin/fplus
+	rm -rf /usr/bin/fplus
 clean:
-			rm -rf ./Cargo.lock ./target/
+	rm -rf ./Cargo.lock ./target/

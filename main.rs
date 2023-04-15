@@ -64,11 +64,24 @@ static mut SIM_DEBUG_PUTS: bool = false;
 //maximum level of include recursion
 static mut MAX_INCLUDE_LEVEL: usize = 500;
 
-// -- COLOR CONSTANTS --
-const RESET_COLOR: &str = "\x1b[0m";
-const RED_COLOR: &str = "\x1b[91m";
-const GREEN_COLOR: &str = "\x1b[92m";
-const YELLOW_COLOR: &str = "\x1b[93m";
+// -- ANSI CONSTANTS --
+#[allow(dead_code)] const RESET_COLOR: &str = "\x1b[0m";
+#[allow(dead_code)] const GRAY_COLOR: &str = "\x1b[90m";
+#[allow(dead_code)] const RED_COLOR: &str = "\x1b[91m";
+#[allow(dead_code)] const GREEN_COLOR: &str = "\x1b[92m";
+#[allow(dead_code)] const YELLOW_COLOR: &str = "\x1b[93m";
+#[allow(dead_code)] const BLUE_COLOR: &str = "\x1b[94m";
+#[allow(dead_code)] const VIOLET_COLOR: &str = "\x1b[95m";
+#[allow(dead_code)] const LIGHT_BLUE_COLOR: &str = "\x1b[96m";
+#[allow(dead_code)] const WHITE_COLOR: &str = "\x1b[97m";
+#[allow(dead_code)] const GRAY_BACK_COLOR: &str = "\x1b[100m";
+#[allow(dead_code)] const RED_BACK_COLOR: &str = "\x1b[101m";
+#[allow(dead_code)] const GREEN_BACK_COLOR: &str = "\x1b[102m";
+#[allow(dead_code)] const YELLOW_BACK_COLOR: &str = "\x1b[103m";
+#[allow(dead_code)] const BLUE_BACK_COLOR: &str = "\x1b[104m";
+#[allow(dead_code)] const VIOLET_BACK_COLOR: &str = "\x1b[105m";
+#[allow(dead_code)] const LIGHT_BLUE_BACK_COLOR: &str = "\x1b[106m";
+#[allow(dead_code)] const WHITE_BACK_COLOR: &str = "\x1b[107m";
 
 //get string from token
 fn getstrfromtok(x: &String) -> Box<String> {
@@ -259,7 +272,11 @@ use crate::Retlex::*;
                 x
             },
             STOPPED => {
-                eprintln!("[lexing stopped]");
+                eprintln!("{}[linking {}stopped{}]{}",
+                          GRAY_COLOR,
+                          YELLOW_COLOR,
+                          GRAY_COLOR,
+                          RESET_COLOR);
                 return None;
             },
             _ => {
@@ -269,12 +286,20 @@ use crate::Retlex::*;
     }}, &filename, include_level, scope_id) {
         Some(x) => {
             if unsafe { PARSE_DEBUG_SUCCED } {
-                eprintln!("[Parsing succed]");
+                eprintln!("{}[parsing {}succed{}]{}",
+                          GRAY_COLOR,
+                          GREEN_COLOR,
+                          GRAY_COLOR,
+                          RESET_COLOR);
             }
             return Some((x.0, x.1, x.2, x.3));
         },
         None => {
-            eprintln!("[Parsing failed]");
+            eprintln!("{}[parsing {}failed{}]{}",
+                      GRAY_COLOR,
+                      RED_COLOR,
+                      GRAY_COLOR,
+                      RESET_COLOR);
             return None;
         },
     }
@@ -289,7 +314,11 @@ fn matchlink<'a>(filename: &String,
     match link(&filename, &res, &labels, &main, data, include_level) {
         Some(x) => {
             if unsafe {LINK_DEBUG_SUCCED} {
-                eprintln!("[linking succed]");
+                eprintln!("{}[linking {}succed{}]{}",
+                          GRAY_COLOR,
+                          GREEN_COLOR,
+                          GRAY_COLOR,
+                          RESET_COLOR);
             }
             Some((x.0, data))
         },
@@ -1436,8 +1465,13 @@ fn link<'a>(filename: &String,
         main: &Option<usize>,
         data: &'a mut Vec<i64>,
         include_level: usize) -> Option<(Vec<(Op, Loc)>, &'a mut Vec<i64>)> {
-    eprintln!("[linking {}...[recursion_level: {}]]",
-              repr(filename), include_level);
+    eprintln!("{}[linking {}{}{}... (recursion level: {})]{}",
+              GRAY_COLOR,
+              LIGHT_BLUE_COLOR,
+              repr(filename),
+              GRAY_COLOR,
+              include_level,
+              RESET_COLOR);
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     #[allow(unused_variables)]
     let mut ind: i64 = -1;
