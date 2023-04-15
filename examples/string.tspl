@@ -1,4 +1,4 @@
 include std.tsplh
 
-fn main
+pub fn main
   "Hello, world!\n" puts

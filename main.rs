@@ -7,7 +7,7 @@ use std:: {
     fmt,
 };
 
-static mut CARGO_VERSION: &str = "1.68.2";
+const CARGO_VERSION: &str = "1.68.2";
 
 // -- LEXER --
 //Show resulting token array
@@ -593,7 +593,7 @@ fn from(u: &String) -> Vec<i64> {
 }
 
 fn usage() {
-    println!("{}", Formatstr::from("Usage:
+    eprintln!("{}", Formatstr::from("Usage:
 $ fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
 
 SUBCOMMAND (insensitive to register):
@@ -629,12 +629,18 @@ OPTION (insensitive to register):
 .format(&unsafe { MAX_INCLUDE_LEVEL }.to_string()).unwrap()
 .to_string());
 }
+fn to_usage() {
+    eprintln!("
+To see usage of the program, write:
+$ fplus usage
+");
+}
 fn version() {
     println!("F+, a stack-based interpreting programming language
 written on Rust v.{}
 version: 0.1.0-5
 download: https://github.com/TwoSpikes/fplus
-2022-2023 @ TwoSpikes", unsafe { CARGO_VERSION });
+2022-2023 @ TwoSpikes", CARGO_VERSION);
 }
 fn errorcodes() {
     println!("errorcodes:
@@ -642,7 +648,9 @@ E0                    Cannot open file");
 }
 
 fn compile_insructions() {
-    println!("\nDownload source code from https://github.com/TwoSpikes/fplus/#/main.rs and recompile it using Cargo v.{}", unsafe { CARGO_VERSION });
+    println!("\nDownload source code with this command:
+$ git clone https://github.com/TwoSpikes/fplus
+and recompile it (with the given instructions) using Cargo v.{}", CARGO_VERSION);
 }
 
 #[derive(Debug)]
@@ -651,24 +659,41 @@ enum Mode {
     SIM,
     DUMP,
 }
+macro_rules! error_loop {
+    () => {
+        eprintln!();
+    };
+    ($head:expr, $($tail:expr,)*) => {
+        eprint!("{}", $head);
+        error_loop!($($tail,)*);
+    };
+}
+macro_rules! error {
+    ($($tail:expr),*) => {
+        eprint!("{}Error{}: ",
+               RED_COLOR,
+               RESET_COLOR);
+        error_loop!($($tail,)*);
+    };
+}
 fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     let mut err: i32 = 0;
     if args.len() <= 1 {
-        eprintln!("No subcommand provided");
-        usage();
+        error!("No subcommand provided");
+        to_usage();
         return Err({err += 1; err});
     }
     match args[1].to_lowercase().as_str() {
         "sim"|"s" => {
             if SIM_ENABLE {
                 if args.len() <= 2 {
-                    eprintln!("No source file provided");
-                    usage();
+                    error!("No source file provided");
+                    to_usage();
                     return Err({err+=1; err});
                 }
                 return Ok(Mode::SIM);
             } else {
-                eprintln!("Simulation is disabled.");
+                error!("Simulation is disabled.");
                 compile_insructions();
                 Ok(Mode::NONE)
             }
@@ -689,8 +714,8 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
             return Ok(Mode::NONE);
         },
         _ => {
-            eprintln!("Unknown subcommand: \"{}\"", args[1]);
-            usage();
+            error!("Unknown subcommand: ", repr(&args[1]));
+            to_usage();
             return Err({err+=1; err});
         },
     }
@@ -700,7 +725,7 @@ fn get(name: &String) -> Option<String> {
     match std::fs::read_to_string(name) {
         Ok(x) => Some(x),
         Err(_) => {
-            eprintln!("Cannot read file {}", repr(name));
+            error!("Cannot read file ", repr(name));
             return None;
         },
     }
@@ -1981,7 +2006,6 @@ use std::time::{
 fn clah(args: &Vec<String>) {
     match cla(args) {
         Ok(mode) => {
-            eprintln!("[command line arguments reading succed]");
             #[allow(unreachable_patterns)]
             match mode {
                 Mode::SIM => {
@@ -2104,9 +2128,10 @@ use std::fs::{File, OpenOptions};
             }
         },
         Err(x) => {
-            eprint!("[command line arguments reading {}failed{} due to{} previous error",
+            eprint!("{}[command line arguments reading {}failed{} due to{} previous error",
+                    GRAY_COLOR,
                     RED_COLOR,
-                    RESET_COLOR,
+                    GRAY_COLOR,
                     if x == 1 {
                         String::new()
                     } else {
@@ -2117,7 +2142,8 @@ use std::fs::{File, OpenOptions};
             if x >= 2 {
                 eprint!("s");
             }
-            eprintln!("]");
+            eprintln!("]{}",
+                      RESET_COLOR);
         }
     }
 }
