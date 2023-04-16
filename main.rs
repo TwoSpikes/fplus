@@ -83,6 +83,24 @@ static mut MAX_INCLUDE_LEVEL: usize = 500;
 #[allow(dead_code)] const LIGHT_BLUE_BACK_COLOR: &str = "\x1b[106m";
 #[allow(dead_code)] const WHITE_BACK_COLOR: &str = "\x1b[107m";
 
+macro_rules! error_loop {
+    () => {
+        eprintln!();
+    };
+    ($head:expr, $($tail:expr,)*) => {
+        eprint!("{}", $head);
+        error_loop!($($tail,)*);
+    };
+}
+macro_rules! error {
+    ($($tail:expr),*) => {
+        eprint!("{}Error{}: ",
+               RED_COLOR,
+               RESET_COLOR);
+        error_loop!($($tail,)*);
+    };
+}
+
 //get string from token
 fn getstrfromtok(x: &String) -> Box<String> {
     return Box::new(if x.chars().nth(0) == Some('\"') {
@@ -242,7 +260,7 @@ enum Callmode {
     WITH_ADDRESS_RIGHT, //save address before arguments
 }
 
-fn parselexget(filename: &String,
+fn parselexget(filename: Box<String>,
                include_level: usize,
                scope_id: Vec<usize>) ->
                    Option<(Vec<(String,
@@ -250,16 +268,22 @@ fn parselexget(filename: &String,
                                 Vec<usize>)>,
                             Vec<(Op, Loc)>,
                             Vec<usize>,
-                            Box<Vec<i64>>)> {
+                            Box<Vec<i64>>,
+                            Box<String>)> {
+    #[allow(unused_assignments)]
+    let mut lex_filename: Option<Box<String>> = None;
     match parse(&mut {
 use crate::Retlex::*;
+        let get_result = match get(filename) {
+            Some(x) => x,
+            None => {
+                return None;
+            },
+        };
+        let lex_result = lex(get_result.0, &get_result.1);
+        lex_filename = Some(lex_result.1);
         #[allow(unreachable_patterns)]
-        match lex(&filename, &match get(&filename) {
-        Some(x) => x,
-        None => {
-            return None;
-        },
-    }) {
+        match lex_result.0 {
             EMPTY => {
                 eprintln!("[empty file]");
                 return None;
@@ -283,7 +307,7 @@ use crate::Retlex::*;
                 eprintln!("Unknown lexing return state");
                 return None;
             },
-    }}, &filename, include_level, scope_id) {
+    }}, lex_filename.unwrap(), include_level, scope_id) {
         Some(x) => {
             if unsafe { PARSE_DEBUG_SUCCED } {
                 eprintln!("{}[parsing {}succed{}]{}",
@@ -292,7 +316,7 @@ use crate::Retlex::*;
                           GRAY_COLOR,
                           RESET_COLOR);
             }
-            return Some((x.0, x.1, x.2, x.3));
+            return Some((x.0, x.1, x.2, x.3, x.4));
         },
         None => {
             eprintln!("{}[parsing {}failed{}]{}",
@@ -305,13 +329,14 @@ use crate::Retlex::*;
     }
 }
 
-fn matchlink<'a>(filename: &String,
+fn matchlink<'a>(filename: Box<String>,
              res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>,
              labels: &Vec<(String, Option<i64>, Vec<usize>)>,
              main: &Option<usize>,
              data: &'a mut Vec<i64>,
-             include_level: usize) -> Option<(Vec<(Op, Loc)>, &'a mut Vec<i64>)> {
-    match link(&filename, &res, &labels, &main, data, include_level) {
+             include_level: usize) -> Option<(Vec<(Op, Loc)>, &'a mut Vec<i64>, Box<String>)> {
+    #[allow(unused_assignments)]
+    match link(filename, &res, &labels, &main, data, include_level) {
         Some(x) => {
             if unsafe {LINK_DEBUG_SUCCED} {
                 eprintln!("{}[linking {}succed{}]{}",
@@ -320,7 +345,8 @@ fn matchlink<'a>(filename: &String,
                           GRAY_COLOR,
                           RESET_COLOR);
             }
-            Some((x.0, data))
+            let link_filename: Box<String> = x.2;
+            Some((x.0, data, link_filename))
         },
         None => {
             eprintln!("[linking failed]");
@@ -331,7 +357,7 @@ fn matchlink<'a>(filename: &String,
 
 
 fn for_each_arg(args: &Vec<String>,
-                func: fn(i: &String,
+                func: fn(i: Box<String>,
                          ind: isize,
                          argv: &Vec<String>,
                          fargs: &Vec<String>,
@@ -505,19 +531,24 @@ fn for_each_arg(args: &Vec<String>,
     while {ind+=1;ind}<argv.len() as isize {
         let i: String = argv[ind as usize].clone();
         fargs.insert(0, args[0].clone());
-        func(&i, ind, &argv, &fargs, &args, match output_to_file {
-            Some(ref x) => {
-                match x {
-                    Some(y) => Some(y.to_string()),
-                    None => {
-                        eprintln!("No argument for \"-o\" option was provided");
-                        usage();
-                        break;
-                    },
-                }
-            },
-            None => None,
-        });
+        func(Box::new(i),
+             ind,
+             &argv,
+             &fargs,
+             &args,
+             match output_to_file {
+                Some(ref x) => {
+                    match x {
+                        Some(y) => Some(y.to_string()),
+                        None => {
+                            error!("No argument for \"-o\" option was provided");
+                            to_usage();
+                            break;
+                        },
+                    }
+                },
+                None => None,
+            });
     }
 }
 
@@ -659,23 +690,6 @@ enum Mode {
     SIM,
     DUMP,
 }
-macro_rules! error_loop {
-    () => {
-        eprintln!();
-    };
-    ($head:expr, $($tail:expr,)*) => {
-        eprint!("{}", $head);
-        error_loop!($($tail,)*);
-    };
-}
-macro_rules! error {
-    ($($tail:expr),*) => {
-        eprint!("{}Error{}: ",
-               RED_COLOR,
-               RESET_COLOR);
-        error_loop!($($tail,)*);
-    };
-}
 fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     let mut err: i32 = 0;
     if args.len() <= 1 {
@@ -721,18 +735,22 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     }
 }
 
-fn get(name: &String) -> Option<String> {
-    match std::fs::read_to_string(name) {
-        Ok(x) => Some(x),
+fn get(name: Box<String>) -> Option<(Box<String>, String)> {
+    match std::fs::read_to_string(&*name) {
+        Ok(x) => Some((name, x)),
         Err(_) => {
-            error!("Cannot read file ", repr(name));
+            error!("Cannot read file ", repr(&name));
             return None;
         },
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Loc (i64, i64);
+#[derive(Debug, Clone)]
+struct Loc {
+    filename: Box<String>,
+    lin: i64,
+    ind: i64,
+}
 #[derive(Debug)]
 struct Tok (Loc, String);
 
@@ -755,19 +773,19 @@ enum Quotes {
 /*
  * Warning!: Legacy code warning.
  */
-fn lex(filename: &String, file: &String) -> Retlex {
+fn lex(filename: Box<String>, file: &String) -> (Retlex, Box<String>) {
 use crate::Retlex::*;
 use crate::Quotes::*;
     if file.len() == 0 {
-        return EMPTY;
+        return (EMPTY, filename);
     }
     let mut res: Vec<Tok> = vec![];
     let mut tmp: String = String::new();
-    let mut ploc: Loc = Loc(1, 1);
-    let mut loc:  Loc = Loc(1, 1);
+    let mut ploc: Loc = Loc { filename: filename.clone(), lin: 1, ind: 1 };
+    let mut loc:  Loc = Loc { filename: filename.clone(), lin: 1, ind: 1 };
     let mut quotes: Quotes = Quotes::NO;
     for i in file.chars() {
-        loc.1 += 1;
+        loc.ind += 1;
         //" then remember it
         if i == '"' {
             tmp.push(i);
@@ -787,7 +805,7 @@ use crate::Quotes::*;
                 },
                 _ => {
                     eprintln!("lex: unknown quotes: {:?}", quotes);
-                    return E;
+                    return (E, filename);
                 },
             };
             continue;
@@ -812,17 +830,17 @@ use crate::Quotes::*;
             },
             _ => {
                 eprintln!("lex: unknown quotes: {:?}", quotes);
-                return E;
+                return (E, filename);
             },
         }
         if i == '\n' {
-            loc.1 = 1;
-            loc.0 += 1;
+            loc.ind = 1;
+            loc.lin += 1;
         }
         //push special symbols as special symbols
         if i == '\n' || i == ':' || i == '(' || i == ')'{
             res.push(Tok(ploc, tmp.to_owned()));
-            res.push(Tok(loc, String::from(i)));
+            res.push(Tok(loc.clone(), String::from(i)));
             tmp = String::new();
             ploc = loc.clone();
             continue;
@@ -845,15 +863,18 @@ use crate::Quotes::*;
     if unsafe { LEX_DEBUG } {
         eprintln!("{}: Lexing result: [", filename);
         for i in &res {
-            eprintln!("  {}:{}: {:?}", i.0.0, i.0.1, i.1);
+            eprintln!("  {}:{}: {:?}",
+                      i.0.lin,
+                      i.0.ind,
+                      i.1);
         }
         eprintln!("]");
     }
     if unsafe { ONLY_LEX } {
-        return STOPPED;
+        return (STOPPED, filename);
     }
 
-    return N(res);
+    return (N(res), filename);
 }
 
 fn strtoi64(x: &String) -> Option<i64> {
@@ -957,6 +978,7 @@ enum Op {
     READ,   //read file to string
     GETTIME,//returns u128 with number of nanoseconds
     DEREF,  //dereference the pointer
+    REF,    //reference element
     EMPTY,  //does nothing
 }
 impl fmt::Display for Op {
@@ -1014,7 +1036,7 @@ macro_rules! parsewarnmsg {
 }
 //////////////////////////////////////////////////////////////////////
 fn parse(pr: &mut Vec<Tok>,
-         filename: &String,
+         filename: Box<String>,
          include_level: usize,
          mut scope_id: Vec<usize>) -> Option<(
              Vec<(String,
@@ -1023,6 +1045,7 @@ fn parse(pr: &mut Vec<Tok>,
              Vec<(Op, Loc)>,
              Vec<usize>,
              Box<Vec<i64>>,
+             Box<String>,
          )> {
     let mut data: Vec<i64> = Vec::new();
 use crate::Op::*;
@@ -1030,7 +1053,7 @@ use crate::Op::*;
         eprintln!("exceeded max include level: {}", unsafe { MAX_INCLUDE_LEVEL });
     }
     if false {
-        eprintln!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.0, x.0.1]), pr.iter().map(|x| x.1.clone()));
+        eprintln!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.lin, x.0.ind]), pr.iter().map(|x| x.1.clone()));
     } else {
         eprintln!("[parsing...]");
     }
@@ -1062,8 +1085,8 @@ use crate::Op::*;
         let i: &mut Tok = &mut pr[ind as usize];
         let val: &mut String = &mut i.1;
         let loc: &Loc = &i.0;
-        let lin: &i64 = &loc.0;
-        let index: &i64 = &loc.1;
+        let lin: &i64 = &loc.lin;
+        let index: &i64 = &loc.ind;
         macro_rules! parseerr {
             ($($tail:expr),*) => {
                 parseerrmsg!(lin, index, filename, $($tail),*);
@@ -1120,7 +1143,7 @@ use crate::Op::*;
                         }
                         repred_string.chars().nth(0).unwrap()
                     },
-                } as i64)), *loc),
+                } as i64)), loc.clone()),
             ]
         } else if val.chars().nth(0) == Some('\"') && matches!(state, State::NONE) {
             let mut postfix: Option<usize> = None;
@@ -1158,7 +1181,7 @@ use crate::Op::*;
                 eprintln!("tmpres={:?}", tmpres);
             }
             data.append(&mut tmpres);
-            vec![(Ok(Op::Push(data.len() as i64 - 1)), Loc(-1,-1))]
+            vec![(Ok(Op::Push(data.len() as i64 - 1)), Loc { filename: filename.clone(), lin: -1, ind: -1 })]
         } else {
             let check_for_hash = || -> Option<(String, Callmode)> {
                 if val.chars().nth(0) == Some('#') {
@@ -1169,7 +1192,7 @@ use crate::Op::*;
             match strtoi64(&val) {
             Some(x) => {
                 res.append(&mut vec![
-                    (Ok(Op::Push(x)), *loc),
+                    (Ok(Op::Push(x)), loc.clone()),
                 ]);
                 stksim.push(res.len());
                 continue;
@@ -1266,10 +1289,10 @@ use crate::Callmode::*;
                                 
                             },
                             WITH_ADDRESS_LEFT => {
-                                res.insert(insertion_index, (Ok(Push((res.len()+2+result.len()) as i64)), *loc));
+                                res.insert(insertion_index, (Ok(Push((res.len()+2+result.len()) as i64)), loc.clone()));
                             },
                             WITH_ADDRESS_RIGHT => {
-                                res.push((Ok(Push((res.len()+1) as i64)), *loc));
+                                res.push((Ok(Push((res.len()+1) as i64)), loc.clone()));
                             },
                         }
                         callmode = unsafe { CALLMODE_DEFAULT };
@@ -1279,7 +1302,7 @@ use crate::Callmode::*;
                         //push it to the top
                         res.push(element);
 
-                        res.push((Ok(G), *loc));
+                        res.push((Ok(G), loc.clone()));
                         continue;
                     },
                     "#" => {
@@ -1299,6 +1322,7 @@ use crate::Callmode::*;
                     },
                     "gettime" => GETTIME,
                     "->" => DEREF,
+                    "<-" => REF,
                     "empty_op" => EMPTY,
                     _ => {
 use crate::Callmode::*;
@@ -1314,21 +1338,21 @@ use crate::Callmode::*;
                                 
                             },
                             WITH_ADDRESS_LEFT|WITH_ADDRESS_RIGHT => {
-                                res.push((Ok(Push((result.len()+res.len()+3) as i64)), *loc));
+                                res.push((Ok(Push((result.len()+res.len()+3) as i64)), loc.clone()));
                             },
                         }
                         callmode = unsafe { CALLMODE_DEFAULT };
 
                         res.append(&mut vec![
-                            (Err((val.to_string(), scope_id.clone())), *loc),
-                            (Ok(G), *loc),
+                            (Err((val.to_string(), scope_id.clone())), loc.clone()),
+                            (Ok(G), loc.clone()),
                         ]);
 
                         continue;
                     },
                 };
                 res.append(&mut vec![
-                    (Ok(matchresult), *loc),
+                    (Ok(matchresult), loc.clone()),
                 ]);
                 continue;
                     },
@@ -1376,7 +1400,7 @@ use crate::Callmode::*;
                         if unsafe { PARSE_DEBUG_INCLUDE } {
                             eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(&val));
                         }
-                        let mut tokens = match parselexget(&(getstrfromtok(val)), include_level+1, scope_id.clone()) {
+                        let mut tokens = match parselexget(getstrfromtok(val), include_level+1, scope_id.clone()) {
                             Some(x) => x,
                             None => {
                                 return None;
@@ -1410,13 +1434,13 @@ use crate::Callmode::*;
                             None => {},
                         }
                         res.append(&mut vec![
-                            (Err((val.to_string(), scope_id.clone())), *loc),
+                            (Err((val.to_string(), scope_id.clone())), loc.clone()),
                         ]);
                         state = State::NONE;
                         continue;
                     },
                     State::DBGMSG => {
-                        res.push((Ok(Op::DBGMSG(getstrfromtok(val))), *loc));
+                        res.push((Ok(Op::DBGMSG(getstrfromtok(val))), loc.clone()));
                         state = State::NONE;
                         continue;
                     },
@@ -1449,24 +1473,36 @@ use crate::Callmode::*;
     }
 
     res.append(&mut vec![
-        (Ok(Push(0)), Loc(-2,-2)),
-        (Ok(EXIT), Loc(-2,-2)),
+        (Ok(Push(0)), Loc { filename: filename.clone(), lin: -2, ind: -2 }),
+        (Ok(EXIT), Loc { filename: filename.clone(), lin: -2, ind: -2 }),
     ]);
 
-    result.append(&mut match matchlink(&filename,
+    #[allow(unused_assignments)]
+    let mut matchlink_filename: Option<Box<String>> = None;
+    result.append(&mut match matchlink(filename,
                                        &res,
                                        &labels,
                                        &main,
                                        &mut data,
                                        include_level) {
-        Some(x) => x.0,
+        Some(x) => {
+            matchlink_filename = Some(x.2);
+            x.0
+        },
         None => return None,
     });
 
     {
         if labels.len() != labmod.len() {
-            eprintln!("{}: lengths are not the same: {} and {}:\n   {:?}\n  {:?}", filename, labels.len(), labmod.len(), labels, labmod);
-            todo!();
+            eprintln!("{}: lengths are not the same: {} and {}:
+    labels:{:?}
+    labmod:{:?}",
+                      matchlink_filename.unwrap(),
+                      labels.len(),
+                      labmod.len(),
+                      labels,
+                      labmod);
+            return None;
         }
         let mut ind: usize = 0;
         while ind < labels.len() {
@@ -1482,18 +1518,19 @@ use crate::Callmode::*;
     return Some((labels,
                  result,
                  scope_id,
-                 Box::new(data)));
+                 Box::new(data),
+                 matchlink_filename.unwrap()));
 }
-fn link<'a>(filename: &String,
+fn link<'a>(filename: Box<String>,
         res: &Vec<(Result<Op, (String, Vec<usize>)>, Loc)>,
         labels: &Vec<(String, Option<i64>, Vec<usize>)>,
         main: &Option<usize>,
         data: &'a mut Vec<i64>,
-        include_level: usize) -> Option<(Vec<(Op, Loc)>, &'a mut Vec<i64>)> {
+        include_level: usize) -> Option<(Vec<(Op, Loc)>, &'a mut Vec<i64>, Box<String>)> {
     eprintln!("{}[linking {}{}{}... (recursion level: {})]{}",
               GRAY_COLOR,
               LIGHT_BLUE_COLOR,
-              repr(filename),
+              repr(&filename),
               GRAY_COLOR,
               include_level,
               RESET_COLOR);
@@ -1502,12 +1539,12 @@ fn link<'a>(filename: &String,
     let mut ind: i64 = -1;
     for i in res {
         ind += 1;
-        let loc: Loc = i.1;
-        let lin: i64 = loc.0;
-        let index: i64 = loc.1;
+        let loc: &Loc = &i.1;
+        let lin: i64 = loc.lin;
+        let index: i64 = loc.ind;
         match &i.0 {
             //simple operation
-            Ok(x) => linkres.push((x.clone(), i.1)),
+            Ok(x) => linkres.push((x.clone(), i.1.clone())),
             //found label call
             Err(x) => {
                 let mut ret: i64 = -1;
@@ -1519,7 +1556,7 @@ fn link<'a>(filename: &String,
                             match j.1 {
                                 //found definition
                                 Some(def) => {
-                                    linkres.push((Op::Push(def), loc));
+                                    linkres.push((Op::Push(def), loc.clone()));
                                 },
                                 //not found definition
                                 None => {
@@ -1549,25 +1586,25 @@ fn link<'a>(filename: &String,
         linkres.push((Op::Push(match main {
             Some(x) => *x as i64,
             None => 0,
-        }), Loc(-2,-2)));
+        }), Loc { filename: filename.clone(), lin: -2, ind: -2 } ));
     }
-    return Some((linkres, data));
+    return Some((linkres, data, filename));
 }
 
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
-enum simResult {
+enum Sim_Result {
     ok(i32),
     err,
     errs(String),
     stopped,
 }
 fn sim(pr: &mut Vec<(Op, Loc)>,
-       filename: &String,
+       global_filename: Box<String>,
        argv: Vec<String>,
        mut data: Box<Vec<i64>>,
-       output_to_file: Option<String>) -> simResult {
-use simResult::*;
+       output_to_file: Option<String>) -> (Sim_Result, Box<String>) {
+use Sim_Result::*;
 use std::fs::{File, OpenOptions};
 use crate::Op::*;
     if !unsafe { LINK_DEBUG } {
@@ -1577,13 +1614,13 @@ use crate::Op::*;
         let mut ind: usize = 0;
         for i in &mut *pr {
             eprintln!("  {}  {}:{}:{:?}",
-                      ind, i.1.0, i.1.1, i.0);
+                      ind, i.1.lin, i.1.ind, i.0);
             ind += 1;
         }
         eprintln!("]");
     }
     if unsafe { ONLY_LINK } {
-        return stopped;
+        return (stopped, global_filename);
     }
     let mut stack: Vec<i64> = vec![];
     let main: i64 = match pr.pop() {
@@ -1593,10 +1630,10 @@ use crate::Op::*;
                 y
             },
             _ => {
-                return errs("main label not found".to_owned());
+                return (errs("main label not found".to_owned()), global_filename);
             }
         },
-        None => return ok(0),
+        None => return (ok(0), global_filename),
     };
     let f: Option<File> = match output_to_file {
         Some(ref x) => {
@@ -1606,7 +1643,7 @@ use crate::Op::*;
                     Ok(y) => y,
                     Err(e) => {
                         eprintln!("cannot open file \"{}\" to write in: {}", repr(x), e);
-                        return errs("E0".to_string());
+                        return (errs("E0".to_string()), global_filename);
                     },
                 };
                 _ = File::create(x);
@@ -1617,7 +1654,7 @@ use crate::Op::*;
                 Ok(y) => y,
                 Err(e) => {
                     eprintln!("cannot open file \"{}\" to append in: {}", repr(x), e);
-                    return errs("E0".to_string());
+                    return (errs("E0".to_string()), global_filename);
                 },
             })
         },
@@ -1630,8 +1667,9 @@ use crate::Op::*;
         ind += 1;
         let i: &Op = &pr[{let tmp: usize = ind as usize; if tmp >= pr.len() {break;} else {tmp}}].0;
         let loc: &Loc = &pr[ind as usize].1;
-        let lin: i64 = loc.0;
-        let index: i64 = loc.1;
+        let filename: &Box<String> = &loc.filename;
+        let lin: i64 = loc.lin;
+        let index: i64 = loc.ind;
         if unsafe { SIM_DEBUG } {
             eprintln!("{}------------ {}. {}:{}:{}:{:?}{}\n{:?}",
                       YELLOW_COLOR,
@@ -1642,6 +1680,19 @@ use crate::Op::*;
                       i,
                       RESET_COLOR,
                       stack);
+        }
+        macro_rules! operand_for_not_found {
+            ($operand_name:ident, $for_what_intrinsic:ident) => {
+                let $operand_name: i64 = match stack.pop() {
+                    Some(x) => x,
+                    None => {
+                        return (errs(Formatstr::from("Operand `{0}` for `{1}` intrinsic not found").unwrap()
+                                     .format(stringify!($operand_name)).unwrap()
+                                     .format(stringify!($for_what_intrinsic)).unwrap()
+                                     .to_string()), filename.clone());
+                    },
+                };
+            };
         }
         #[allow(unreachable_patterns)]
         match i {
@@ -1670,10 +1721,10 @@ use crate::Op::*;
                 let strptr: usize = stack.pop().unwrap() as usize;
                 let strlen: usize = data[strptr] as usize;
                 if data.len() < strlen {
-                    return errs(Formatstr::from("puts underflow: the len is {0} but the index is {1}").unwrap()
+                    return (errs(Formatstr::from("puts underflow: the len is {0} but the index is {1}").unwrap()
                                 .format(&data.len().to_string()).unwrap()
                                 .format(&strlen.to_string()).unwrap()
-                                .to_string());
+                                .to_string()), filename.clone());
                 }
                 let mut string: String = String::new();
                 {
@@ -1714,194 +1765,84 @@ use std::io::stdin;
                 stack.push(data.len() as i64 - 1);
             },
             PLUS => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for PLUS intrinsic not found".to_string());
-                    },
-                };
-                let b: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `b` for PLUS intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, PLUS);
+                operand_for_not_found!(b, PLUS);
                 stack.push(a + b)
             },
             INVERT => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for INVERT intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, INVERT);
                 stack.push(-a);
             },
             MUL => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for MUL intrinsic not found".to_string());
-                    },
-                };
-                let b: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `b` for MUL intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, MUL);
+                operand_for_not_found!(b, MUL);
                 stack.push(a * b)
             },
             DIV => {
-                let b: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `b` for DIV intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(b, DIV);
                 if b == 0 {
-                    return errs("Cannot divide by zero (0)".to_string());
+                    return (errs("Cannot divide by zero (0)".to_string()), filename.clone());
                 }
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for DIV intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, DIV);
                 stack.push(a/b);
             },
             GIF => {
-                let addr: i64 = match stack.pop() {
-                    Some(x) => x-1,
-                    None => {
-                        return errs("Operand `addr` for GIF intrinsic not found".to_string());
-                    },
-                };
-                let cond: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `cond` for GIF intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(addr, GIF);
+                operand_for_not_found!(cond, GIF);
                 if cond != 0 {
                     ind = addr as i64;
                 }
             },
             G => {
-                let addr: i64 = match stack.pop() {
-                    Some(x) => x-1,
-                    None => {
-                        return errs("Operand `addr` for G intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(addr, G);
                 ind = addr as i64;
             },
             PUSHNTH => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for PUSHNTH intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, PUSHNTH);
                 if a >= stack.len() as i64 {
-                    return errs(Formatstr::from("pushnth overflow: operand `a` is {0}, len is {1}").unwrap()
+                    return (errs(Formatstr::from("pushnth overflow: operand `a` is {0}, len is {1}").unwrap()
                                 .format(&a.to_string()).unwrap()
                                 .format(&stack.len().to_string()).unwrap()
-                                .to_string());
+                                .to_string()), filename.clone());
                 }
                 let b: i64 = stack[stack.len()-1-a as usize];
                 stack.push(b);
             },
             DROPNTH => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for DROPNTH intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, DROPNTH);
                 if a >= stack.len() as i64 {
-                    return errs("dropnth overflow".to_string());
+                    return (errs("dropnth overflow".to_string()), filename.clone());
                 }
                 stack.remove(stack.len()-1-a as usize);
             },
             NBROT => {
-                let l: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `l` for NBROT intrinsic not found".to_string());
-                    },
-                };
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for NBROT intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(l, NBROT);
+                operand_for_not_found!(a, NBROT);
                 stack.insert(stack.len()-0-l as usize, a);
             },
             LT => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for LT intrinsic not found".to_string());
-                    },
-                };
-                let b: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `b` for LT intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, LT);
+                operand_for_not_found!(b, LT);
                 stack.push((b < a) as i64);
             },
             EQ => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for EQ intrinsic not found".to_string());
-                    },
-                };
-                let b: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `b` for EQ intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, EQ);
+                operand_for_not_found!(b, EQ);
                 stack.push((b == a) as i64);
             },
             NOT => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for NOT intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, NOT);
                 stack.push((a == 0) as i64);
             },
             OR => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for OR intrinsic not found".to_string());
-                    },
-                };
-                let b: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `b` for OR intrinsic not found".to_string());
-                    },
-                };
+                operand_for_not_found!(a, OR);
+                operand_for_not_found!(b, OR);
                 stack.push(((a != 0) || (b != 0)) as i64);
             },
             EXIT => {
                 println!();
-                let errorcode: i32 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `errorcode` for EXIT intrinsic not found".to_string());
-                    },
-                } as i32;
-                return ok(errorcode);
+                operand_for_not_found!(errorcode, EXIT);
+                return (ok(errorcode as i32), filename.clone());
             },
             PSTK => {
                 //debugging with `??#` and `???` is not important when every step is already debugged
@@ -1914,32 +1855,22 @@ use std::io::stdin;
                 if !unsafe { SIM_DEBUG } {
                     println!("{}:{}: pstke {:?}", lin, index, stack);
                 }
-                return err;
+                return (stopped, filename.clone());
             },
             DUMP => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for DUMP intrinsic not found".to_owned());
-                    },
-                };
+                operand_for_not_found!(a, DUMP);
                 println!("dump: {}", a);
             },
             ARGC => {
                 stack.push(argv.len() as i64);
             },
             ARGV => {
-                let a: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `a` for ARGV intrinsic not found".to_owned());
-                    },
-                };
+                operand_for_not_found!(a, ARGV);
                 if a >= argv.len() as i64 {
-                    return errs("Argv overflow".to_owned());
+                    return (errs("Argv overflow".to_owned()), filename.clone());
                 }
                 if a < 0 {
-                    return errs("Argv underflow".to_owned());
+                    return (errs("Argv underflow".to_owned()), filename.clone());
                 }
                 for j in argv[a as usize].chars().rev() {
                     data.push(j as i64);
@@ -1949,14 +1880,9 @@ use std::io::stdin;
             },
             READ => {
                 let mut filename: String = String::new();
-                let filename_len: usize = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `filename_len` for READ intrinsic not found".to_owned());
-                    },
-                } as usize;
+                operand_for_not_found!(filename_len, READ);
                 let mut ind: usize = 0;
-                while {ind+=1;ind} < filename_len+1 {
+                while ({ind+=1;ind} as i64) < filename_len+1 {
                     let i: i64 = stack.pop().unwrap();
                     filename.push(i as u8 as char);
                 }
@@ -1983,24 +1909,25 @@ use std::time::{
                 println!("dbgmsg: {}", repr(x));
             },
             DEREF => {
-                let ptr: i64 = match stack.pop() {
-                    Some(x) => x,
-                    None => {
-                        return errs("Operand `ptr` for DEREF intrinsic not found".to_string());
-                    },
-                };
-                stack.push(data[ptr as usize]);
+                operand_for_not_found!(ptr, DEREF);
+                let element: i64 = data.remove(ptr as usize);
+                stack.push(element);
+            },
+            REF => {
+                operand_for_not_found!(element, REF);
+                data.push(element);
+                stack.push(data.len() as i64 - 1);
             },
             EMPTY => {},
             _ => {
-                return errs(Formatstr::from("Unknown op: {0}").unwrap()
+                return (errs(Formatstr::from("Unknown op: {0}").unwrap()
                             .format(&i.to_string()).unwrap()
-                            .to_string());
+                            .to_string()), filename.clone());
             },
         }
     }
     println!();
-    return ok(0);
+    return (ok(0), global_filename);
 }
 
 fn clah(args: &Vec<String>) {
@@ -2010,73 +1937,95 @@ fn clah(args: &Vec<String>) {
             match mode {
                 Mode::SIM => {
                     for_each_arg(&args,
-                                 |i: &String,
+                                 |i: Box<String>,
                                  ind: isize,
                                  argv: &Vec<String>,
                                  fargs: &Vec<String>,
                                  args: &Vec<String>,
                                  output_to_file: Option<String>| {
-use simResult::*;
+use Sim_Result::*;
                         #[allow(unused_assignments)]
                         let mut data: Option<Box<Vec<i64>>> = None;
-                        let error: simResult = sim(&mut match parselexget(&i, 0, vec![0,]) {
+                        #[allow(unused_assignments)]
+                        let mut parselexget_filename: Option<Box<String>> = None;
+                        let sim_result = sim(&mut match parselexget(i, 0, vec![0,]) {
                             Some(x) => {
                                 data = Some(x.3);
+                                parselexget_filename = Some(x.4);
                                 x.1
                             },
                             None => return,
-                        }, &i, if ind==(argv.len()-1) as isize {
+                        }, parselexget_filename.unwrap(), if ind==(argv.len()-1) as isize {
                             fargs.clone()
                         } else {
                             vec![
                                 args[0].clone(),
                             ]
                         }, data.unwrap(), output_to_file);
+                        let error = sim_result.0;
+                        let sim_filename = sim_result.1;
                         #[allow(unreachable_patterns)]
                         match error {
                             ok(x) => {
                                 if x == 0 {
                                 eprintln!("{}", Formatstr::from("[Simulation of {0} {1}succed{2}]").unwrap()
-                                          .format(&repr(&i)).unwrap()
+                                          .format(&repr(&sim_filename)).unwrap()
                                           .format(GREEN_COLOR).unwrap()
                                           .format(RESET_COLOR).unwrap()
                                           .to_string());
                                 } else {
-                                    eprintln!("[Simulation of {} was finished with exit code {}]", repr(&i), x);
+                                    eprintln!("{}[Simulation of {} was {}finished{} with exit code {}]{}",
+                                              GRAY_COLOR,
+                                              repr(&sim_filename),
+                                              GREEN_COLOR,
+                                              GRAY_COLOR,
+                                              x,
+                                              RESET_COLOR);
                                 }
                             },
                             err => {
                                 eprintln!("{}", Formatstr::from("[Simulation of {0} {1}failed{2}]").unwrap()
-                                          .format(&repr(&i)).unwrap()
+                                          .format(&repr(&sim_filename)).unwrap()
                                           .format(RED_COLOR).unwrap()
                                           .format(RESET_COLOR).unwrap()
                                           .to_string());
                             },
                             errs(x) => {
                                 eprintln!("{}", Formatstr::from("[Simulation of {0} {1}failed{2} due to this error: {3}]").unwrap()
-                                          .format(&repr(&i)).unwrap()
+                                          .format(&repr(&sim_filename)).unwrap()
                                           .format(RED_COLOR).unwrap()
                                           .format(RESET_COLOR).unwrap()
                                           .format(&repr(&x)).unwrap()
                                           .to_string());
                             },
                             stopped => {
-                                eprintln!("[Simulation of {} stopped]", repr(&i));
+                                eprintln!("{}[Simulation of {} {}stopped{}]{}",
+                                          GRAY_COLOR,
+                                          repr(&sim_filename),
+                                          YELLOW_COLOR,
+                                          GRAY_COLOR,
+                                          RESET_COLOR);
                             },
                             _ => {
-                                eprintln!("[Simulation of {}: Internal error: Unknown  state: {:?}]", repr(&i), err);
+                                eprintln!("{}[Simulation of {} {}failed{} due to this nternal error: Unknown state: {:?}]{}",
+                                          GRAY_COLOR,
+                                          repr(&sim_filename),
+                                          RED_COLOR,
+                                          GRAY_COLOR,
+                                          err,
+                                          RESET_COLOR);
                             },
                         }
                     });
                 },
                 Mode::DUMP => {
-                    for_each_arg(&args, |i: &String,
+                    for_each_arg(&args, |i: Box<String>,
                                         _ind: isize,
                                         _argv: &Vec<String>,
                                         _fargs: &Vec<String>,
                                         _args: &Vec<String>,
                                         output_to_file: Option<String>| {
-                        let tokens: Vec<(Op, Loc)> = match parselexget(&i, 0, vec![0,]) { 
+                        let tokens: Vec<(Op, Loc)> = match parselexget(i, 0, vec![0,]) { 
                             Some(x) => x.1,
                             None => return,
                         };
@@ -2103,9 +2052,9 @@ use std::fs::{File, OpenOptions};
                                     },
                                 };
                                 for i in &tokens {
-                                    f.write(i.1.0.to_string().as_bytes()).unwrap();
+                                    f.write(i.1.lin.to_string().as_bytes()).unwrap();
                                     f.write(b":").unwrap();
-                                    f.write(i.1.1.to_string().as_bytes()).unwrap();
+                                    f.write(i.1.ind.to_string().as_bytes()).unwrap();
                                     f.write(b":").unwrap();
                                     f.write(i.0.to_string().as_bytes()).unwrap();
                                     f.write(b"\n").unwrap();
@@ -2113,7 +2062,10 @@ use std::fs::{File, OpenOptions};
                             },
                             None => {
                                 for i in &tokens {
-                                    println!("{}:{}:{:?}", i.1.0, i.1.1, i.0);
+                                    println!("{}:{}:{:?}",
+                                             i.1.lin,
+                                             i.1.ind,
+                                             i.0);
                                 }
                             },
                         }
