@@ -1,5 +1,5 @@
 include std.tsplh
 
 pub fn main
-  "ABC" ->str
+  "ABC" ->vec
   puts 0 exit

@@ -65,23 +65,25 @@ static mut SIM_DEBUG_PUTS: bool = false;
 static mut MAX_INCLUDE_LEVEL: usize = 500;
 
 // -- ANSI CONSTANTS --
-#[allow(dead_code)] const RESET_COLOR: &str = "\x1b[0m";
-#[allow(dead_code)] const GRAY_COLOR: &str = "\x1b[90m";
-#[allow(dead_code)] const RED_COLOR: &str = "\x1b[91m";
-#[allow(dead_code)] const GREEN_COLOR: &str = "\x1b[92m";
-#[allow(dead_code)] const YELLOW_COLOR: &str = "\x1b[93m";
-#[allow(dead_code)] const BLUE_COLOR: &str = "\x1b[94m";
-#[allow(dead_code)] const VIOLET_COLOR: &str = "\x1b[95m";
-#[allow(dead_code)] const LIGHT_BLUE_COLOR: &str = "\x1b[96m";
-#[allow(dead_code)] const WHITE_COLOR: &str = "\x1b[97m";
-#[allow(dead_code)] const GRAY_BACK_COLOR: &str = "\x1b[100m";
-#[allow(dead_code)] const RED_BACK_COLOR: &str = "\x1b[101m";
-#[allow(dead_code)] const GREEN_BACK_COLOR: &str = "\x1b[102m";
-#[allow(dead_code)] const YELLOW_BACK_COLOR: &str = "\x1b[103m";
-#[allow(dead_code)] const BLUE_BACK_COLOR: &str = "\x1b[104m";
-#[allow(dead_code)] const VIOLET_BACK_COLOR: &str = "\x1b[105m";
-#[allow(dead_code)] const LIGHT_BLUE_BACK_COLOR: &str = "\x1b[106m";
-#[allow(dead_code)] const WHITE_BACK_COLOR: &str = "\x1b[107m";
+#[allow(dead_code)] static mut RESET_COLOR: &str = "\x1b[0m";
+#[allow(dead_code)] static mut GRAY_COLOR: &str = "\x1b[90m";
+#[allow(dead_code)] static mut RED_COLOR: &str = "\x1b[91m";
+#[allow(dead_code)] static mut GREEN_COLOR: &str = "\x1b[92m";
+#[allow(dead_code)] static mut YELLOW_COLOR: &str = "\x1b[93m";
+#[allow(dead_code)] static mut BLUE_COLOR: &str = "\x1b[94m";
+#[allow(dead_code)] static mut VIOLET_COLOR: &str = "\x1b[95m";
+#[allow(dead_code)] static mut LIGHT_BLUE_COLOR: &str = "\x1b[96m";
+#[allow(dead_code)] static mut WHITE_COLOR: &str = "\x1b[97m";
+#[allow(dead_code)] static mut GRAY_BACK_COLOR: &str = "\x1b[100m";
+#[allow(dead_code)] static mut RED_BACK_COLOR: &str = "\x1b[101m";
+#[allow(dead_code)] static mut GREEN_BACK_COLOR: &str = "\x1b[102m";
+#[allow(dead_code)] static mut YELLOW_BACK_COLOR: &str = "\x1b[103m";
+#[allow(dead_code)] static mut BLUE_BACK_COLOR: &str = "\x1b[104m";
+#[allow(dead_code)] static mut VIOLET_BACK_COLOR: &str = "\x1b[105m";
+#[allow(dead_code)] static mut LIGHT_BLUE_BACK_COLOR: &str = "\x1b[106m";
+#[allow(dead_code)] static mut WHITE_BACK_COLOR: &str = "\x1b[107m";
+#[allow(dead_code)] static mut BOLD_COLOR: &str = "\x1b[01m";
+#[allow(dead_code)] static mut NON_BOLD_COLOR: &str = "\x1b[22m";
 
 macro_rules! error_loop {
     () => {
@@ -95,8 +97,8 @@ macro_rules! error_loop {
 macro_rules! error {
     ($($tail:expr),*) => {
         eprint!("{}Error{}: ",
-               RED_COLOR,
-               RESET_COLOR);
+               unsafe { RED_COLOR },
+               unsafe { RESET_COLOR });
         error_loop!($($tail,)*);
     };
 }
@@ -297,10 +299,10 @@ use crate::Retlex::*;
             },
             STOPPED => {
                 eprintln!("{}[linking {}stopped{}]{}",
-                          GRAY_COLOR,
-                          YELLOW_COLOR,
-                          GRAY_COLOR,
-                          RESET_COLOR);
+                          unsafe { GRAY_COLOR },
+                          unsafe { YELLOW_COLOR },
+                          unsafe { GRAY_COLOR },
+                          unsafe { RESET_COLOR });
                 return None;
             },
             _ => {
@@ -311,19 +313,19 @@ use crate::Retlex::*;
         Some(x) => {
             if unsafe { PARSE_DEBUG_SUCCED } {
                 eprintln!("{}[parsing {}succed{}]{}",
-                          GRAY_COLOR,
-                          GREEN_COLOR,
-                          GRAY_COLOR,
-                          RESET_COLOR);
+                          unsafe { GRAY_COLOR },
+                          unsafe { GREEN_COLOR },
+                          unsafe { GRAY_COLOR },
+                          unsafe { RESET_COLOR });
             }
             return Some((x.0, x.1, x.2, x.3, x.4));
         },
         None => {
             eprintln!("{}[parsing {}failed{}]{}",
-                      GRAY_COLOR,
-                      RED_COLOR,
-                      GRAY_COLOR,
-                      RESET_COLOR);
+                      unsafe { GRAY_COLOR },
+                      unsafe { RED_COLOR },
+                      unsafe { GRAY_COLOR },
+                      unsafe { RESET_COLOR });
             return None;
         },
     }
@@ -340,10 +342,10 @@ fn matchlink<'a>(filename: Box<String>,
         Some(x) => {
             if unsafe {LINK_DEBUG_SUCCED} {
                 eprintln!("{}[linking {}succed{}]{}",
-                          GRAY_COLOR,
-                          GREEN_COLOR,
-                          GRAY_COLOR,
-                          RESET_COLOR);
+                          unsafe { GRAY_COLOR },
+                          unsafe { GREEN_COLOR },
+                          unsafe { GRAY_COLOR },
+                          unsafe { RESET_COLOR });
             }
             let link_filename: Box<String> = x.2;
             Some((x.0, data, link_filename))
@@ -1011,8 +1013,8 @@ macro_rules! parsemsg {
 macro_rules! parseerrmsg {
     ($lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
         parsemsg!(Formatstr::from("{0}Error{1}").unwrap()
-                  .format(RED_COLOR).unwrap()
-                  .format(RESET_COLOR).unwrap()
+                  .format(unsafe { RED_COLOR }).unwrap()
+                  .format(unsafe { RESET_COLOR }).unwrap()
                   .to_string(),
                   $lin,
                   $index,
@@ -1024,8 +1026,8 @@ macro_rules! parseerrmsg {
 macro_rules! parsewarnmsg {
     ($lin:expr, $index:expr, $filename:expr, $($tail:expr),*) => {
         parsemsg!(Formatstr::from("{0}Warning{1}").unwrap()
-                  .format(YELLOW_COLOR).unwrap()
-                  .format(RESET_COLOR).unwrap()
+                  .format(unsafe { YELLOW_COLOR }).unwrap()
+                  .format(unsafe { RESET_COLOR }).unwrap()
                   .to_string(),
                   $lin,
                   $index,
@@ -1052,11 +1054,17 @@ use crate::Op::*;
     if include_level > unsafe { MAX_INCLUDE_LEVEL } {
         eprintln!("exceeded max include level: {}", unsafe { MAX_INCLUDE_LEVEL });
     }
-    if false {
-        eprintln!("[parsing loc={:?} val={:?}]", pr.iter().map(|x| vec![x.0.lin, x.0.ind]), pr.iter().map(|x| x.1.clone()));
-    } else {
-        eprintln!("[parsing...]");
-    }
+    eprintln!("{}[{}parsing{} {}{}{}... ({}include level{}: {})]{}",
+              unsafe { GRAY_COLOR },
+              unsafe { BOLD_COLOR },
+              unsafe { NON_BOLD_COLOR },
+              unsafe { LIGHT_BLUE_COLOR },
+              repr(&filename),
+              unsafe { GRAY_COLOR },
+              unsafe { BOLD_COLOR },
+              unsafe { NON_BOLD_COLOR },
+              include_level,
+              unsafe { RESET_COLOR });
     let mut result: Vec<(Op, Loc)> = Vec::new();
     let mut res: Vec<(Result<Op, (String, Vec<usize>)>, Loc)> = Vec::new();
     #[derive(Debug)]
@@ -1183,12 +1191,14 @@ use crate::Op::*;
             data.append(&mut tmpres);
             vec![(Ok(Op::Push(data.len() as i64 - 1)), Loc { filename: filename.clone(), lin: -1, ind: -1 })]
         } else {
-            let check_for_hash = || -> Option<(String, Callmode)> {
-                if val.chars().nth(0) == Some('#') {
-                    return Some((val[1..].to_string(), unsafe { CALLMODE_ON_OPERATOR }));
-                }
-                return None;
-            };
+            macro_rules! check_for_hash {
+                () => {
+                    if val.chars().nth(0) == Some('#') {
+                        *val = val[1..].to_string();
+                        callmode = unsafe { CALLMODE_ON_OPERATOR };
+                    }
+                };
+            }
             match strtoi64(&val) {
             Some(x) => {
                 res.append(&mut vec![
@@ -1326,13 +1336,7 @@ use crate::Callmode::*;
                     "empty_op" => EMPTY,
                     _ => {
 use crate::Callmode::*;
-                        match check_for_hash() {
-                            Some(x) => {
-                                *val = x.0;
-                                callmode = x.1;
-                            },
-                            None => {},
-                        }
+                        check_for_hash!();
                         match callmode {
                             WITHOUT_ADDRESS => {
                                 
@@ -1398,7 +1402,27 @@ use crate::Callmode::*;
                     },
                     State::INCLUDE => {
                         if unsafe { PARSE_DEBUG_INCLUDE } {
-                            eprintln!("{}:{}:{}: including {}...", filename, lin, index, repr(&val));
+                            eprintln!("{}{}{}{}:{}{}{}{}{}:{}{}{}{}{}: including {}{}{}",
+                                      unsafe { VIOLET_COLOR },
+                                      repr(&filename),
+                                      unsafe { BOLD_COLOR },
+                                      unsafe { GRAY_COLOR },
+
+                                      unsafe { NON_BOLD_COLOR },
+                                      unsafe { YELLOW_COLOR },
+                                      lin,
+                                      unsafe { BOLD_COLOR },
+                                      unsafe { GRAY_COLOR },
+
+                                      unsafe { NON_BOLD_COLOR },
+                                      unsafe { GREEN_COLOR },
+                                      index,
+                                      unsafe { NON_BOLD_COLOR },
+                                      unsafe { GRAY_COLOR },
+
+                                      unsafe { WHITE_COLOR },
+                                      repr(&val),
+                                      unsafe { RESET_COLOR });
                         }
                         let mut tokens = match parselexget(getstrfromtok(val), include_level+1, scope_id.clone()) {
                             Some(x) => x,
@@ -1420,19 +1444,36 @@ use crate::Callmode::*;
                         labels.append(&mut tokens.0);
                         data.append(&mut tokens.3);
                         if unsafe { PARSE_DEBUG_INCLUDE_SUCCED } {
-                            eprintln!("{}:{}:{}: succed include {}", filename, lin, index, repr(&val));
+                            eprintln!("{}{}{}{}:{}{}{}{}{}:{}{}{}{}{}: {}succes{}fully included {}{}{}",
+                                      unsafe { VIOLET_COLOR },
+                                      repr(&filename),
+                                      unsafe { BOLD_COLOR },
+                                      unsafe { GRAY_COLOR },
+
+                                      unsafe { NON_BOLD_COLOR },
+                                      unsafe { YELLOW_COLOR },
+                                      lin,
+                                      unsafe { BOLD_COLOR },
+                                      unsafe { GRAY_COLOR },
+
+                                      unsafe { NON_BOLD_COLOR },
+                                      unsafe { GREEN_COLOR },
+                                      index,
+                                      unsafe { NON_BOLD_COLOR },
+                                      unsafe { GRAY_COLOR },
+
+                                      unsafe { GREEN_COLOR },
+                                      unsafe { GRAY_COLOR },
+
+                                      unsafe { WHITE_COLOR },
+                                      repr(&val),
+                                      unsafe { RESET_COLOR });
                         }
                         state = State::NONE;
                         continue;
                     },
                     State::FNADDR => {
-                        match check_for_hash() {
-                            Some(x) => {
-                                *val = x.0;
-                                callmode = x.1;
-                            },
-                            None => {},
-                        }
+                        check_for_hash!();
                         res.append(&mut vec![
                             (Err((val.to_string(), scope_id.clone())), loc.clone()),
                         ]);
@@ -1527,13 +1568,17 @@ fn link<'a>(filename: Box<String>,
         main: &Option<usize>,
         data: &'a mut Vec<i64>,
         include_level: usize) -> Option<(Vec<(Op, Loc)>, &'a mut Vec<i64>, Box<String>)> {
-    eprintln!("{}[linking {}{}{}... (recursion level: {})]{}",
-              GRAY_COLOR,
-              LIGHT_BLUE_COLOR,
+    eprintln!("{}[{}linking{} {}{}{}... ({}recursion level{}: {})]{}",
+              unsafe { GRAY_COLOR },
+              unsafe { BOLD_COLOR },
+              unsafe { NON_BOLD_COLOR },
+              unsafe { LIGHT_BLUE_COLOR },
               repr(&filename),
-              GRAY_COLOR,
+              unsafe { GRAY_COLOR },
+              unsafe { BOLD_COLOR },
+              unsafe { NON_BOLD_COLOR },
               include_level,
-              RESET_COLOR);
+              unsafe { RESET_COLOR });
     let mut linkres: Vec<(Op, Loc)> = Vec::new();
     #[allow(unused_variables)]
     let mut ind: i64 = -1;
@@ -1552,10 +1597,11 @@ fn link<'a>(filename: Box<String>,
                 for j in &*labels {
                     //if (Label)(j.name) = (Op)(x.Err.String)
                     if String::from(j.0.clone()).eq(&String::from(x.0.clone())) {
-                        if covariant_right(&j.2, &x.1) {
+                        if covariant_right(&j.2, &x.1) || true {
                             match j.1 {
                                 //found definition
                                 Some(def) => {
+                                    eprintln!("found defenition: def={}, loc={:?} j.0={}", def, loc, j.0);
                                     linkres.push((Op::Push(def), loc.clone()));
                                 },
                                 //not found definition
@@ -1671,15 +1717,41 @@ use crate::Op::*;
         let lin: i64 = loc.lin;
         let index: i64 = loc.ind;
         if unsafe { SIM_DEBUG } {
-            eprintln!("{}------------ {}. {}:{}:{}:{:?}{}\n{:?}",
-                      YELLOW_COLOR,
+            eprintln!("{}{}------------ {}{}{}{}{}. {}{}{}{}{}:{}{}{}{}{}:{}{}{}{}{}:{}{}{:?}{}",
+                      unsafe { BOLD_COLOR },
+                      unsafe { GRAY_COLOR },
+                      unsafe { YELLOW_COLOR },
+                      unsafe { NON_BOLD_COLOR },
                       ind,
+                      unsafe { BOLD_COLOR },
+                      unsafe { GRAY_COLOR },
+                      unsafe { NON_BOLD_COLOR },
+                      unsafe { VIOLET_COLOR },
                       repr(&filename),
+                      unsafe { BOLD_COLOR },
+                      unsafe { GRAY_COLOR },
+                      unsafe { NON_BOLD_COLOR },
+                      unsafe { YELLOW_COLOR },
                       lin,
+                      unsafe { BOLD_COLOR },
+                      unsafe { GRAY_COLOR },
+                      unsafe { NON_BOLD_COLOR },
+                      unsafe { GREEN_COLOR },
                       index,
+                      unsafe { BOLD_COLOR },
+                      unsafe { GRAY_COLOR },
+                      unsafe { NON_BOLD_COLOR },
+                      unsafe { WHITE_COLOR },
                       i,
-                      RESET_COLOR,
-                      stack);
+                      unsafe { RESET_COLOR });
+            eprintln!("{}{:?}{}",
+                      unsafe { LIGHT_BLUE_COLOR },
+                      data,
+                      unsafe { RESET_COLOR });
+            eprintln!("{}{:?}{}",
+                      unsafe { YELLOW_COLOR },
+                      stack,
+                      unsafe { RESET_COLOR });
         }
         macro_rules! operand_for_not_found {
             ($operand_name:ident, $for_what_intrinsic:ident) => {
@@ -1744,8 +1816,7 @@ use crate::Op::*;
                             PUTS => { print!("{}", string); },
                             EPUTS => { eprint!("{}", string); },
                             PUTSLN => { println!("{}", string); },
-                            EPUTSLN => { eprintln!("{}", string); },
-                            _ => todo!(),
+                            EPUTSLN => { eprintln!("{}", string); }   _ => todo!(),
                         }
                     },
                 }
@@ -1790,12 +1861,12 @@ use std::io::stdin;
                 operand_for_not_found!(addr, GIF);
                 operand_for_not_found!(cond, GIF);
                 if cond != 0 {
-                    ind = addr as i64;
+                    ind = addr as i64 - 1;
                 }
             },
             G => {
                 operand_for_not_found!(addr, G);
-                ind = addr as i64;
+                ind = addr as i64 - 1;
             },
             PUSHNTH => {
                 operand_for_not_found!(a, PUSHNTH);
@@ -1910,6 +1981,12 @@ use std::time::{
             },
             DEREF => {
                 operand_for_not_found!(ptr, DEREF);
+                if ptr >= data.len() as i64 {
+                    return (errs(Formatstr::from("deref overflow: operand `ptr` is {0}, len is {1}").unwrap()
+                                .format(&ptr.to_string()).unwrap()
+                                .format(&data.len().to_string()).unwrap()
+                                .to_string()), filename.clone());
+                }
                 let element: i64 = data.remove(ptr as usize);
                 stack.push(element);
             },
@@ -1968,52 +2045,72 @@ use Sim_Result::*;
                         match error {
                             ok(x) => {
                                 if x == 0 {
-                                eprintln!("{}", Formatstr::from("[Simulation of {0} {1}succed{2}]").unwrap()
-                                          .format(&repr(&sim_filename)).unwrap()
-                                          .format(GREEN_COLOR).unwrap()
-                                          .format(RESET_COLOR).unwrap()
-                                          .to_string());
-                                } else {
-                                    eprintln!("{}[Simulation of {} was {}finished{} with exit code {}]{}",
-                                              GRAY_COLOR,
+                                    eprintln!("{}[{}simulation{} of {}{} {}succed{}]{}",
+                                              unsafe { GRAY_COLOR },
+                                              unsafe { BOLD_COLOR },
+                                              unsafe { NON_BOLD_COLOR },
+                                              unsafe { WHITE_COLOR },
                                               repr(&sim_filename),
-                                              GREEN_COLOR,
-                                              GRAY_COLOR,
+                                              unsafe { GREEN_COLOR },
+                                              unsafe { GRAY_COLOR },
+                                              unsafe { RESET_COLOR });
+                                } else {
+                                    eprintln!("{}[{}simulation{} of {} was {}finished{} with exit code {}]{}",
+                                              unsafe { GRAY_COLOR },
+                                              unsafe { BOLD_COLOR },
+                                              unsafe { NON_BOLD_COLOR },
+                                              repr(&sim_filename),
+                                              unsafe { GREEN_COLOR },
+                                              unsafe { GRAY_COLOR },
                                               x,
-                                              RESET_COLOR);
+                                              unsafe { RESET_COLOR });
                                 }
                             },
                             err => {
-                                eprintln!("{}", Formatstr::from("[Simulation of {0} {1}failed{2}]").unwrap()
-                                          .format(&repr(&sim_filename)).unwrap()
-                                          .format(RED_COLOR).unwrap()
-                                          .format(RESET_COLOR).unwrap()
-                                          .to_string());
+                                    eprintln!("{}[{}simulation{} of {}{} {}failed{}]{}",
+                                              unsafe { GRAY_COLOR },
+                                              unsafe { BOLD_COLOR },
+                                              unsafe { NON_BOLD_COLOR },
+                                              unsafe { WHITE_COLOR },
+                                              repr(&sim_filename),
+                                              unsafe { RED_COLOR },
+                                              unsafe { GRAY_COLOR },
+                                              unsafe { RESET_COLOR });
                             },
                             errs(x) => {
-                                eprintln!("{}", Formatstr::from("[Simulation of {0} {1}failed{2} due to this error: {3}]").unwrap()
-                                          .format(&repr(&sim_filename)).unwrap()
-                                          .format(RED_COLOR).unwrap()
-                                          .format(RESET_COLOR).unwrap()
-                                          .format(&repr(&x)).unwrap()
-                                          .to_string());
+                                    eprintln!("{}[{}simulation{} of {}{} {}failed{} due to this error: {}{}{}]{}",
+                                              unsafe { GRAY_COLOR },
+                                              unsafe { BOLD_COLOR },
+                                              unsafe { NON_BOLD_COLOR },
+                                              unsafe { WHITE_COLOR },
+                                              repr(&sim_filename),
+                                              unsafe { RED_COLOR },
+                                              unsafe { GRAY_COLOR },
+                                              unsafe { WHITE_COLOR },
+                                              repr(&x),
+                                              unsafe { GRAY_COLOR },
+                                              unsafe { RESET_COLOR });
                             },
                             stopped => {
-                                eprintln!("{}[Simulation of {} {}stopped{}]{}",
-                                          GRAY_COLOR,
+                                eprintln!("{}[{}simulation{} of {} {}stopped{}]{}",
+                                          unsafe { GRAY_COLOR },
+                                          unsafe { BOLD_COLOR },
+                                          unsafe { NON_BOLD_COLOR },
                                           repr(&sim_filename),
-                                          YELLOW_COLOR,
-                                          GRAY_COLOR,
-                                          RESET_COLOR);
+                                          unsafe { YELLOW_COLOR },
+                                          unsafe { GRAY_COLOR },
+                                          unsafe { RESET_COLOR });
                             },
                             _ => {
-                                eprintln!("{}[Simulation of {} {}failed{} due to this nternal error: Unknown state: {:?}]{}",
-                                          GRAY_COLOR,
+                                eprintln!("{}[{}simulation{} of {} {}failed{} due to this nternal error: Unknown state: {:?}]{}",
+                                          unsafe { GRAY_COLOR },
+                                          unsafe { BOLD_COLOR },
+                                          unsafe { NON_BOLD_COLOR },
                                           repr(&sim_filename),
-                                          RED_COLOR,
-                                          GRAY_COLOR,
+                                          unsafe { RED_COLOR },
+                                          unsafe { GRAY_COLOR },
                                           err,
-                                          RESET_COLOR);
+                                          unsafe { RESET_COLOR });
                             },
                         }
                     });
@@ -2081,9 +2178,9 @@ use std::fs::{File, OpenOptions};
         },
         Err(x) => {
             eprint!("{}[command line arguments reading {}failed{} due to{} previous error",
-                    GRAY_COLOR,
-                    RED_COLOR,
-                    GRAY_COLOR,
+                    unsafe { GRAY_COLOR },
+                    unsafe { RED_COLOR },
+                    unsafe { GRAY_COLOR },
                     if x == 1 {
                         String::new()
                     } else {
@@ -2095,7 +2192,7 @@ use std::fs::{File, OpenOptions};
                 eprint!("s");
             }
             eprintln!("]{}",
-                      RESET_COLOR);
+                      unsafe { RESET_COLOR });
         }
     }
 }

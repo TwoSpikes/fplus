@@ -74,7 +74,7 @@ Supported compilation modes:
 
 # Compiler
 
-#### Installing (Building):
+### Installing (Building):
 ```console
 $ make
 ```
@@ -89,7 +89,7 @@ Dependences:
 * Cargo
 * make (unneccesary)
 
-#### Usage:
+### Usage:
 ```console
 Usage:
 $ fplus SUBCOMMAND [OPTION]... [SOURCE]... -- [ARG]...
@@ -128,7 +128,7 @@ OPTION (insensitive to register):
 
 While building, you must be in `fplus` directory (it is important)
 
-#### VERSION:
+### VERSION:
 ```
 F+, a stack-based interpreting programming language
 written on Rust v.1.68.2
@@ -137,7 +137,7 @@ download: https://github.com/TwoSpikes/fplus
 2022-2023 @ TwoSpikes
 ```
 
-#### Error codes:
+### Error codes:
 This message will be shown with `error` (or `e`) subcommand:
 ```console
 errorcodes:
@@ -146,7 +146,7 @@ E0                    Cannot open file
 
 ## EXAMPLES:
 
-#### `sim` subcommand examples:
+### `sim` subcommand examples:
 ```console
 $ fplus sim main.tspol
 
@@ -160,7 +160,7 @@ F+ will simulate ./main.tspol file
 $ fplus sim main.tspol -- a b c
 ```
 F+ will simulate ./main.tspol file with `a b c` command line arguments
-#### `dump` subcommand examples:
+### `dump` subcommand examples:
 
 ```console
 $ fplus dump subc-dump.tspl -o subc-dump-file.txt
@@ -182,7 +182,7 @@ It will translate F+ code to tokens and write this to subc-dump-file.txt:
 ```
 If you will not provide `-o` option, tokens will dump on the stdout instead (with debug information).
 
-#### `-o` option examples:
+### `-o` option examples:
 ```console
 $ fplus sim hello-world.tspl -o hello-world-output.txt
 ```
@@ -201,7 +201,7 @@ If you will not provide `-o` option, Hello, World! will be printed to the stdout
 
 Stack is a dynamic array of 64-bit integer numbers (from -9223372036854775808 (-2^63) to 9223372036854775807 (2^63-1)).
 
-#### Pushing numbers
+### Pushing numbers
 
 ```fplus
 34 36
@@ -209,7 +209,7 @@ Stack is a dynamic array of 64-bit integer numbers (from -9223372036854775808 (-
 This program will push 34 and 36 on the stack.\
 Stack: [34, 36]
 
-#### Copying elements (numbers) — `pushnth`
+### Copying elements (numbers) — `pushnth`
 
 Pushnth takes one argument: `(I64) a`\
 First, provide this argument, and second, write `pushnth`
@@ -233,7 +233,7 @@ Stack: [34, 36, 36]
 
 ## Arithmetic
 
-#### Plus `+`
+### Plus `+`
 
 Consumes 2 arguments: `(I64) a, (I64) b`\
 Returns: `(I64)(a + b)`
@@ -255,7 +255,7 @@ To substract, use [Negative numbers](#Negative-numbers):
 ```
 Stack: [48]
 
-#### Multiply `*`
+### Multiply `*`
 
 Consumes 2 arguments: `(I64) a, (I64) b`\
 Returns: `(I64)(a * b)`
@@ -270,7 +270,7 @@ Stack: [6]
 ```
 Stack: [-98]
 
-#### Division `/`
+### Division `/`
 
 Consumes 2 arguments: `(I64) a, (I64) b`\
 Returns: `(I64)(a / b)`
@@ -285,7 +285,7 @@ Stack: [0]
 ```
 Stack: [-24]
 
-#### Less than `<`
+### Less than `<`
 
 Consumes 2 arguments: `(I64) a, (I64) b`\
 Returns: `(boolean)(a < b)`
@@ -305,7 +305,7 @@ Stack: [0] because (35 < 34 <=> false)
 ```
 Stack: [0] because (34 < 34 <=> false)
 
-#### Equals `=`
+### Equals `=`
 
 Consumes 2 arguments: `(I64) a, (I64) b`\
 Returns: `(boolean)(a = b)`
@@ -322,7 +322,7 @@ Stack: [0] because (35 = 34 <=> false)
 
 ## Boolean
 
-#### Not `!`
+### Not `!`
 
 Consumes one argument: `(boolean) a`\
 Returns: `(boolean) !a`
@@ -354,7 +354,7 @@ Stack: [1] because
 1. !69 <=> 0
 2. !Ans <=> 1
 
-#### Or `|`
+### Or `|`
 
 Consumes 2 arguments: `(boolean) a, (boolean) b`\
 Returns: `(boolean)(a | b)`
@@ -378,7 +378,7 @@ Same will happen if all 1's will change to bigger numbers because `Or` anyways w
 
 ## Command line arguments
 
-#### Providing
+### Providing
 ```console
 $ ./target/release/fplus sim main.tspl -- a b c
 ```
@@ -386,7 +386,7 @@ $ ./target/release/fplus sim main.tspl -- a b c
 This option will provide `main.tspl`, `a`, `b` and `c` command line arguments.
 This is how to get access to him:
 
-#### Argc `argc`
+### Argc `argc`
 
 Consumes 0 arguments.\
 Returns number of provided command line arguments.
@@ -396,7 +396,7 @@ argc
 ```
 Stack: [4]
 
-#### Argv `argv`
+### Argv `argv`
 
 Consumes 1 argument: `(I64) a`\
 Returns [String](#String) with a-th command line argument.
@@ -410,7 +410,7 @@ All this programs will work like that only if you provide `a`, `b` and `c` comma
 
 ## Files
 
-#### Reading `read`
+### Reading `read`
 
 Consumes 1 [String](#String).\
 Return 1 [String](#String): file's content with given name.
@@ -422,11 +422,11 @@ Stack: [108, 112, 115, 116, 46, 110, 105, 97, 109, 9, 16] or '"main.tspl" read'
 
 ## Special
 
-#### Empty op `empty_op`
+### Empty op `empty_op`
 
 Does nothing. Just need for debugging purposes.
 
-#### Dump `dump`
+### Dump `dump`
 
 Consumes 1 argument: `(I64) a`\
 Print `a` without converting it from ASCII to string.\
@@ -438,7 +438,7 @@ Need for debugging purposes.
 Stdout is empty.\
 Stderr: "69"
 
-#### Exit `exit`
+### Exit `exit`
 
 Exit the program
 
@@ -457,7 +457,7 @@ Stderr: '[Simulation of "main.tspl" finished with exit code 1]'
 
 ## Input, Output (I/O)
 
-#### Print char `putc`
+### Print char `putc`
 
 Consumes 1 argument: `(I64) chr`\
 Returns nothing.\
@@ -468,29 +468,39 @@ Prints chr as ASCII to stdout ([printing to stderr](#stderr printing) is not imp
 ```
 Stdout: "E"
 
-#### Print string `puts`
+### Print string `puts`
 
 I will write how to make [String](#String) later.
 
 ```fplus
-65 66 67 3 args
+65 66 67 3 putsln
 ```
 Stdout: "abc"
 
 ```fplus
-"Hello, World!" puts
+"Hello, World!" putsln
 ```
 Stdout: "Hello, World!"
 
 ## Literals
 
-#### String
+### String
 
-Strings are like:
+String is a [pointer](#pointers) to a `data` variable that contains the bytes (i64) and the string length at the end.
+
 ```fplus
 "Hello, World!"
 ```
-Stack: [33, 100, 108, 114, 111, 87, 32, 44, 111, 108, 108, 101, 72, 13]
+Stack: [13]
+
+You can [dereference](#dereference) it like this:
+```fplus
+include std.tsplh
+
+pub fn main
+  "Hello, world!" ->vec ???
+```
+Stdout: [72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100, 33, 13]
 
 You can use simple escaping like in C like this:
 
@@ -502,6 +512,7 @@ You can use simple escaping like in C like this:
 | '\\\\'                    | backslash                   |
 | '\\''                     | quote                       |
 | '\\"'                     | double quote                |
+| '\\x{val}' (val is 00-FF) | byte (for ANSI commands)    |
 
 Strings are inverted at the stack and has its length at the end.
 
@@ -513,7 +524,7 @@ Stack: [0]
 
 ## Functions and calls
 
-#### Function
+### Function
 
 First, you need to create a function
 
@@ -526,7 +537,7 @@ fn `{function name}`
 fn foo
 ```
 
-#### Main function
+### Main function
 
 `main` function is the start of the program
 
@@ -547,7 +558,7 @@ fn foo
 fn main
 ```
 
-#### Function calling
+### Function calling
 
 You can call your function by just writing its name:
 ```fplus
@@ -570,7 +581,7 @@ fn main
 Let's print string as indicator that we called it:
 ```fplus
 fn foo
-  "foo called" puts
+  "foo called" putsln
   1 exit
 
 fn main
@@ -584,7 +595,7 @@ Actually you called it and save your next operation address to jump to it at the
 Let's check:
 ```fplus
 fn foo
-  "foo called" puts
+  "foo called" putsln
   dump
   1 exit
 
@@ -599,7 +610,7 @@ Every char is the 1 operation (and the length of string too).
 We do not need it now so I will show how to not do that:
 ```fplus
 fn foo
-  "foo called" puts
+  "foo called" putsln
   1 exit
 
 fn main
@@ -608,7 +619,7 @@ fn main
 
 Yeah, you just need to put `#` sign before function name
 
-#### Get function address
+### Get function address
 
 You can get function addresses by pushing `:` character before its name
 
@@ -616,7 +627,7 @@ Let's get address of `foo` function
 
 ```fplus
 fn foo
-  "foo called" puts
+  "foo called" putsln
   1 exit
 
 fn main
@@ -624,7 +635,7 @@ fn main
 ```
 Stack: [0] because `foo` starts at first operation
 
-#### Scopes
+### Scopes
 
 You cannot access fns outside of its scope.
 
@@ -640,9 +651,11 @@ fn main
   :a.1 /* Error: label is private */
 ```
 
+They are have some bug so do not use it before this message disappear.
+
 ## Function arguments
 
-#### Old way
+### Old way
 
 You can provide arguments to function, placing them before calling:
 ```fplus
@@ -655,7 +668,7 @@ fn main
 ```
 Stdout: "3\n2\n1\n"
 
-#### New way
+### New way
 
 ```fplus
 fn foo
@@ -663,13 +676,13 @@ fn foo
   0 exit
 
 fn main
-  #foo(1 2 3)
+  :#foo(1 2 3)
 ```
 Stdout: "3\n2\n1\n"
 
 ## Comments
 
-#### Multi-line
+### Multi-line
 
 ```fplus
 /* this is a comment */
@@ -679,4 +692,68 @@ Stdout: "3\n2\n1\n"
 */
 ```
 
-Yes, space (or new line or tab) before and after `/*` is neccesary
+Yes, the space before and after `/*` is neccesary
+
+### One-line (not implenented yet because idc)
+
+```fplus
+// this is the one-line comment
+// // nested
+// //nested even w/o space
+// /* multi-line in one-line */
+// /*w/o space again*/
+```
+
+Yes, the space before and after `//` is neccesary
+
+## Pointers
+
+### Dereference (`->`)
+
+```fplus
+"abc"
+```
+Stack: [3]
+
+It is pointing to the last `data` array element (where the length of the string is located. It is equal to the length of the string now because there is only one string in the program for now)
+
+```fplus
+"abc" ->
+```
+Stack: [3]
+
+Bc they are equal
+
+```fplus
+"abc" -1 + ->
+```
+Stack: [97] because 'a' is 97
+
+#### Dereference a string (`->vec`)
+
+Located in std.tsplh.\
+Places a whole string to the stack.
+
+```fplus
+include std.tsplh
+
+"abc" ->vec
+```
+Stack: [95, 96, 97, 3]
+
+## Arrays (not implemented yet)
+
+### One-dimensional (1D) (not implemented yet)
+
+```fplus
+['a 'b 'c]
+```
+Stack: [3]
+
+You can dereference it by [`->vec`](#Dereference a string)`
+
+```fplus
+include std.tsplh
+
+['a 'b 'c] ->vec
+```

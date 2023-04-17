@@ -39,17 +39,21 @@ fn veccpy_end
   #()
 }
 
-pub fn ->str /* *p */ {
+/* dereference a pointer and keep it in data */
+pub fn ->> 1 nbrot
+  -> 0 pushnth <- 0 dropnth
+1 nbrot #()
+
+pub fn ->vec /* *p */ {
   1 nbrot
-  0 pushnth ->
+  0 pushnth :->>()
   0
-  #:->str_loop()
-fn ->str_loop 1 +
-  2 pushnth 1 pushnth -- + ->
-  3 nbrot
-  0 pushnth 2 pushnth < ! :->str_end if
-  :#->str_loop()
-fn ->str_end
+  #:->vec_loop()
+fn ->vec_loop 1 +
+  2 pushnth -> 3 nbrot
+  0 pushnth 2 pushnth < ! :->vec_end if
+  :#->vec_loop()
+fn ->vec_end
   0 dropnth
   1 dropnth
   0 pushnth 1 + pushnth
