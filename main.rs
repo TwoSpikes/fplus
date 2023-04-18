@@ -312,8 +312,10 @@ use crate::Retlex::*;
     }}, lex_filename.unwrap(), include_level, scope_id) {
         Some(x) => {
             if unsafe { PARSE_DEBUG_SUCCED } {
-                eprintln!("{}[parsing {}succed{}]{}",
+                eprintln!("{}[{}parsing{} {}succed{}]{}",
                           unsafe { GRAY_COLOR },
+                          unsafe { BOLD_COLOR },
+                          unsafe { NON_BOLD_COLOR },
                           unsafe { GREEN_COLOR },
                           unsafe { GRAY_COLOR },
                           unsafe { RESET_COLOR });
@@ -321,8 +323,10 @@ use crate::Retlex::*;
             return Some((x.0, x.1, x.2, x.3, x.4));
         },
         None => {
-            eprintln!("{}[parsing {}failed{}]{}",
+            eprintln!("{}[{}parsing{} {}failed{}]{}",
                       unsafe { GRAY_COLOR },
+                      unsafe { BOLD_COLOR },
+                      unsafe { NON_BOLD_COLOR },
                       unsafe { RED_COLOR },
                       unsafe { GRAY_COLOR },
                       unsafe { RESET_COLOR });
@@ -341,8 +345,10 @@ fn matchlink<'a>(filename: Box<String>,
     match link(filename, &res, &labels, &main, data, include_level) {
         Some(x) => {
             if unsafe {LINK_DEBUG_SUCCED} {
-                eprintln!("{}[linking {}succed{}]{}",
+                eprintln!("{}[{}linking{}{} succed{}]{}",
                           unsafe { GRAY_COLOR },
+                          unsafe { BOLD_COLOR },
+                          unsafe { NON_BOLD_COLOR },
                           unsafe { GREEN_COLOR },
                           unsafe { GRAY_COLOR },
                           unsafe { RESET_COLOR });
@@ -695,7 +701,7 @@ enum Mode {
 fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     let mut err: i32 = 0;
     if args.len() <= 1 {
-        error!("No subcommand provided");
+        error!("Stdin reader is not implemented yet");
         to_usage();
         return Err({err += 1; err});
     }
@@ -1420,7 +1426,7 @@ use crate::Callmode::*;
                                       unsafe { NON_BOLD_COLOR },
                                       unsafe { GRAY_COLOR },
 
-                                      unsafe { WHITE_COLOR },
+                                      unsafe { VIOLET_COLOR },
                                       repr(&val),
                                       unsafe { RESET_COLOR });
                         }
@@ -1444,7 +1450,7 @@ use crate::Callmode::*;
                         labels.append(&mut tokens.0);
                         data.append(&mut tokens.3);
                         if unsafe { PARSE_DEBUG_INCLUDE_SUCCED } {
-                            eprintln!("{}{}{}{}:{}{}{}{}{}:{}{}{}{}{}: {}succes{}fully included {}{}{}",
+                            eprintln!("{}{}{}{}:{}{}{}{}{}:{}{}{}{}{}: {}succesfully{} included {}{}{}",
                                       unsafe { VIOLET_COLOR },
                                       repr(&filename),
                                       unsafe { BOLD_COLOR },
@@ -1465,7 +1471,7 @@ use crate::Callmode::*;
                                       unsafe { GREEN_COLOR },
                                       unsafe { GRAY_COLOR },
 
-                                      unsafe { WHITE_COLOR },
+                                      unsafe { VIOLET_COLOR },
                                       repr(&val),
                                       unsafe { RESET_COLOR });
                         }
@@ -1601,7 +1607,6 @@ fn link<'a>(filename: Box<String>,
                             match j.1 {
                                 //found definition
                                 Some(def) => {
-                                    eprintln!("found defenition: def={}, loc={:?} j.0={}", def, loc, j.0);
                                     linkres.push((Op::Push(def), loc.clone()));
                                 },
                                 //not found definition
@@ -1654,7 +1659,16 @@ use Sim_Result::*;
 use std::fs::{File, OpenOptions};
 use crate::Op::*;
     if !unsafe { LINK_DEBUG } {
-        eprintln!("[simulation...]");
+        eprintln!("{}[{}simulation of {}{}{}{}{}...{}]{}",
+                  unsafe { GRAY_COLOR },
+                  unsafe { BOLD_COLOR },
+                  unsafe { NON_BOLD_COLOR },
+                  unsafe { VIOLET_COLOR },
+                  repr(&global_filename),
+                  unsafe { BOLD_COLOR },
+                  unsafe { GRAY_COLOR },
+                  unsafe { NON_BOLD_COLOR },
+                  unsafe { RESET_COLOR });
     } else {
         eprintln!("[simulation:");
         let mut ind: usize = 0;
@@ -1790,8 +1804,16 @@ use crate::Op::*;
                 if unsafe { SIM_DEBUG_PUTS } && !unsafe { SIM_DEBUG } {
                     eprintln!("debug: puts: {:?}", stack);
                 }
-                let strptr: usize = stack.pop().unwrap() as usize;
-                let strlen: usize = data[strptr] as usize;
+
+                operand_for_not_found!(strptr, PUTS);
+
+                if strptr >= data.len() as i64 {
+                    return (errs(Formatstr::from("puts underflow: the pointer is {0} but the index of data is {1}").unwrap()
+                                .format(&data.len().to_string()).unwrap()
+                                .format(&strptr.to_string()).unwrap()
+                                .to_string()), filename.clone());
+                }
+                let strlen: usize = data[strptr as usize] as usize;
                 if data.len() < strlen {
                     return (errs(Formatstr::from("puts underflow: the len is {0} but the index is {1}").unwrap()
                                 .format(&data.len().to_string()).unwrap()
@@ -1802,7 +1824,7 @@ use crate::Op::*;
                 {
                     let mut ind2: usize = 0;
                     while ind2 <= strlen {
-                        let chr = char::from_u32(data[strptr-ind2] as u32).unwrap();
+                        let chr = char::from_u32(data[strptr as usize-ind2] as u32).unwrap();
                         string.push(chr);
                         ind2 += 1;
                     }

@@ -1,5 +1,0 @@
-include std.tsplh
-
-pub fn main
-  "ABC" ->vec
-  puts 0 exit

@@ -729,7 +729,7 @@ Bc they are equal
 ```
 Stack: [97] because 'a' is 97
 
-#### Dereference a string (`->vec`)
+### Dereference a string (`->vec`)
 
 Located in std.tsplh.\
 Places a whole string to the stack.

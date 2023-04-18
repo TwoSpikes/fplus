@@ -39,24 +39,67 @@ fn veccpy_end
   #()
 }
 
-/* dereference a pointer and keep it in data */
+/*
+ * dereference a pointer and keep it in data
+ * Example:
+ *  "abc" ->>
+ * Stack:
+ *  {length}
+ * Data:
+ *  {string} {length}
+ */
 pub fn ->> 1 nbrot
   -> 0 pushnth <- 0 dropnth
 1 nbrot #()
 
-pub fn ->vec /* *p */ {
-  1 nbrot
-  0 pushnth :->>()
-  0
-  #:->vec_loop()
-fn ->vec_loop 1 +
-  2 pushnth -> 3 nbrot
+/* throw a string from a pointer */
+pub fn ->vec {
+  1 nbrot 0 pushnth -> 0
+  #->vec_loop
+fn ->vec_loop
+  1 +
+  2 pushnth 1 pushnth -- + -> 3 nbrot
   0 pushnth 2 pushnth < ! :->vec_end if
-  :#->vec_loop()
+  #->vec_loop
 fn ->vec_end
-  0 dropnth
-  1 dropnth
+  2 dropnth 0 dropnth
   0 pushnth 1 + pushnth
-  1 pushnth 2 + dropnth
-  #()
+  1 pushnth 2 + dropnth #()
+}
+
+/*
+ * reference a value to data and keep it in the stack
+ */
+pub fn <<- 1 nbrot
+  0 pushnth <- 2 pushnth 3 dropnth #()
+
+/* put a string from stack to data and reverse it (intrinsic) */
+pub fn <-rev_vec {
+  1 pushnth 1 + nbrot
+  0
+  #<-rev_vec_loop
+fn <-rev_vec_loop
+  1 +
+  1 pushnth 1 pushnth -- + 3 + 0 pushnth pushnth
+  1 nbrot dropnth
+  <- 0 dropnth
+  0 pushnth 2 pushnth < ! :<-rev_vec_end if
+  #<-rev_vec_loop
+fn <-rev_vec_end
+  0 dropnth <- 1 nbrot #()
+
+/* put a string from stack to data */
+pub fn <-vec {
+'Z <- 0 dropnth
+  1 pushnth 1 + nbrot
+  0
+  #<-vec_loop
+fn <-vec_loop
+  1 +
+  2 pushnth 3 dropnth
+  <- 0 dropnth
+  0 pushnth 2 pushnth < ! :<-vec_end if
+  #<-vec_loop
+fn <-vec_end
+  0 dropnth <- 1 nbrot #()
 }
