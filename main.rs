@@ -1087,6 +1087,8 @@ use crate::Op::*;
     let mut main: Option<usize> = None;
     //multi-line comment
     let mut mlc: u32 = 0;
+    //one-line comment
+    let mut olc: bool = false;
     let mut callstk: Vec<usize> = Vec::new();
     let mut stksim: Vec<usize> = Vec::new();
     let mut callmode: Callmode = unsafe { CALLMODE_DEFAULT };
@@ -1111,7 +1113,17 @@ use crate::Op::*;
                 parsewarnmsg!(lin, index, filename, $($tail),*);
             };
         }
+        if olc {
+            if val != "\n" {
+                continue;
+            }
+            olc = false;
+        }
         match val.as_str() {
+            "//" => {
+                olc = true;
+                continue;
+            },
             "/*" => {
                 mlc += 1;
             },

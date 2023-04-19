@@ -22,6 +22,7 @@ Done:
 - [x] Colored debug output (Error (red) and Warning (yellow))
 - [x] Variables that switch debug information on/off through file `debug.tsconf` or through command line options
 - [x] Unsigned 64-bit numbers (same type with signed numbers) (like `30u`)
+- [x] One-line comment support (`// comment`)
 
 In progress:
 
@@ -38,7 +39,6 @@ To do:
 - [ ] Raw file reading
 - [ ] File writing
 - [ ] Self-hosted compiler (this thing was abandoned, maybe forever)
-- [ ] One-line comment support (`// comment`)
 
 Standard library:
 - [x] max\_2\_I64 function ((b: I64, a: I64) -> I64)
@@ -64,9 +64,6 @@ Standard library:
 - [ ] F64ToD64 function ((val: F64) -> (D64))
 - [ ] D64ToF64 function ((val: D64) -> (F64))
 - [ ] veccpy function
-
-[\\]: # (TODO: print about functions and function calls)
-[\\]: # (TODO: remove that stderr printing is not implemented yet when it is implemented)
 
 Supported compilation modes:
 - Simulation (default)
@@ -461,7 +458,7 @@ Stderr: '[Simulation of "main.tspl" finished with exit code 1]'
 
 Consumes 1 argument: `(I64) chr`\
 Returns nothing.\
-Prints chr as ASCII to stdout ([printing to stderr](#stderr printing) is not implemented yet).
+Prints chr as ASCII to stdout.
 
 ```fplus
 69 putc
@@ -694,7 +691,7 @@ Stdout: "3\n2\n1\n"
 
 Yes, the space before and after `/*` is neccesary
 
-### One-line (not implenented yet because idc)
+### One-line
 
 ```fplus
 // this is the one-line comment
