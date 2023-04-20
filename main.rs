@@ -50,7 +50,7 @@ static mut CALLMODE_ON_OPERATOR: Callmode = Callmode::WITHOUT_ADDRESS;
 //access modifier without any operators ("pub" and "pri")
 static mut CURMOD_DEFAULT: Mod = Mod::PRI;
 //enable colors
-static mut ENABLE_COLORS: bool = false;
+static mut DISABLE_COLORS: bool = false;
 
 // -- SIMULATION --
 //disable simulation for smaller executable file (saves ~33K)
@@ -65,25 +65,25 @@ static mut SIM_DEBUG_PUTS: bool = false;
 static mut MAX_INCLUDE_LEVEL: usize = 500;
 
 // -- ANSI CONSTANTS --
-#[allow(dead_code)] static mut RESET_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[0m"} else {""};
-#[allow(dead_code)] static mut GRAY_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[90m"} else {""};
-#[allow(dead_code)] static mut RED_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[91m"} else {""};
-#[allow(dead_code)] static mut GREEN_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[92m"} else {""};
-#[allow(dead_code)] static mut YELLOW_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[93m"} else {""};
-#[allow(dead_code)] static mut BLUE_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[94m"} else {""};
-#[allow(dead_code)] static mut VIOLET_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[95m"} else {""};
-#[allow(dead_code)] static mut LIGHT_BLUE_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[96m"} else {""};
-#[allow(dead_code)] static mut WHITE_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[97m"} else {""};
-#[allow(dead_code)] static mut GRAY_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[100m"} else {""};
-#[allow(dead_code)] static mut RED_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[101m"} else {""};
-#[allow(dead_code)] static mut GREEN_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[102m"} else {""};
-#[allow(dead_code)] static mut YELLOW_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[103m"} else {""};
-#[allow(dead_code)] static mut BLUE_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[104m"} else {""};
-#[allow(dead_code)] static mut VIOLET_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[105m"} else {""};
-#[allow(dead_code)] static mut LIGHT_BLUE_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[106m"} else {""};
-#[allow(dead_code)] static mut WHITE_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[107m"} else {""};
-#[allow(dead_code)] static mut BOLD_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[01m"} else {""};
-#[allow(dead_code)] static mut NON_BOLD_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[22m"} else {""};
+#[allow(dead_code)] static mut RESET_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[0m"} else {""};
+#[allow(dead_code)] static mut GRAY_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[90m"} else {""};
+#[allow(dead_code)] static mut RED_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[91m"} else {""};
+#[allow(dead_code)] static mut GREEN_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[92m"} else {""};
+#[allow(dead_code)] static mut YELLOW_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[93m"} else {""};
+#[allow(dead_code)] static mut BLUE_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[94m"} else {""};
+#[allow(dead_code)] static mut VIOLET_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[95m"} else {""};
+#[allow(dead_code)] static mut LIGHT_BLUE_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[96m"} else {""};
+#[allow(dead_code)] static mut WHITE_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[97m"} else {""};
+#[allow(dead_code)] static mut GRAY_BACK_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[100m"} else {""};
+#[allow(dead_code)] static mut RED_BACK_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[101m"} else {""};
+#[allow(dead_code)] static mut GREEN_BACK_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[102m"} else {""};
+#[allow(dead_code)] static mut YELLOW_BACK_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[103m"} else {""};
+#[allow(dead_code)] static mut BLUE_BACK_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[104m"} else {""};
+#[allow(dead_code)] static mut VIOLET_BACK_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[105m"} else {""};
+#[allow(dead_code)] static mut LIGHT_BLUE_BACK_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[106m"} else {""};
+#[allow(dead_code)] static mut WHITE_BACK_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[107m"} else {""};
+#[allow(dead_code)] static mut BOLD_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[01m"} else {""};
+#[allow(dead_code)] static mut NON_BOLD_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[22m"} else {""};
 
 macro_rules! error_loop {
     () => {
@@ -515,9 +515,9 @@ fn for_each_arg(args: &Vec<String>,
                             state = Argsstate::MAX_INCLUDE_LEVEL;
                             continue;
                         },
-                        "--enable-colors"|"-enable-colors" => {
+                        "--disable-colors"|"-disable-colors" => {
                             unsafe {
-                                ENABLE_COLORS = !ENABLE_COLORS;
+                                DISABLE_COLORS = !DISABLE_COLORS;
                             }
                             continue;
                         },
@@ -534,6 +534,11 @@ fn for_each_arg(args: &Vec<String>,
             }
             argv.push(i);
         }
+    }
+    if argv.len() == 0 {
+        error!("No source files provided!");
+        to_usage();
+        return;
     }
     let mut ind: isize = -1;
     while {ind+=1;ind}<argv.len() as isize {
@@ -644,27 +649,25 @@ SUBCOMMAND (insensitive to register):
 {error e}               Print error code and information about them
 
 OPTION (insensitive to register):
-{-o --output -output} FILE      dump output to FILE
-{--lex-debug -lex-debug}        show debug information during lexing
-{--only-lex -only-lex}          stop on lexing (for debugging purposes)
-{--link-debug -link-debug}      show debug information during linking
-{--only-link -only-link}        stop on linking (for debugging purposes)
-{--link-debug-succed -link-d...}show [linking succed]
-{--parse-debug -parse-debug}    show debug information during parsing
-{--parse-debug-state --parse...}show State information during parsing
-{--parse-debug-id --parse-de...}show scope-id information during parsing
-{--parse-debug-call -parse-d...}show function calling information during parsing
-{--parse-debug-string -parse...}show string information during parsing
-{--parse-debug-include -pars...}show including information
-{--parse-debug-include-adding -parse-debug-include-adding}
-                                TODO
-{--parse-debug-include-succed -parse-debug-include-succed}
-                                TODO
-{--sim-debug -sim-debug}        show debug information during simulation
-{--sim-debug-puts -sim-debuf...}show debug information debore printing
-{--max-include-level -max-include-level} NUMBER
+{-o --output} FILE              dump output to FILE
+--lex-debug -lex-debug}         show debug information during lexing
+--only-lex -only-lex}           stop on lexing (for debugging purposes)
+--link-debug -link-debug}       show debug information during linking
+--only-link -only-link}         stop on linking (for debugging purposes)
+--link-debug-succed             show [linking succed]
+--parse-debug -parse-debug}     show debug information during parsing
+--parse-debug-state             show State information during parsing
+--parse-debug-id                show scope-id information during parsing
+--parse-debug-call              show function calling information during parsing
+--parse-debug-string            show string information during parsing
+--parse-debug-include           show including information
+--parse-debug-include-adding    TODO
+--parse-debug-include-succed    TODO
+--sim-debug                     show debug information during simulation
+--sim-debug-puts                show debug information debore printing
+--max-include-level NUMBER
                                 set max include level (now is {0})
-{--enable-colors -enable-colors}enable terminal colors").unwrap()
+--disable-colors                disable terminal colors").unwrap()
 .format(&unsafe { MAX_INCLUDE_LEVEL }.to_string()).unwrap()
 .to_string());
 }
@@ -708,11 +711,6 @@ fn cla(args: &Vec<String>) -> Result<Mode, i32> {
     match args[1].to_lowercase().as_str() {
         "sim"|"s" => {
             if SIM_ENABLE {
-                if args.len() <= 2 {
-                    error!("No source file provided");
-                    to_usage();
-                    return Err({err+=1; err});
-                }
                 return Ok(Mode::SIM);
             } else {
                 error!("Simulation is disabled.");
