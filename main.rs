@@ -65,25 +65,25 @@ static mut SIM_DEBUG_PUTS: bool = false;
 static mut MAX_INCLUDE_LEVEL: usize = 500;
 
 // -- ANSI CONSTANTS --
-#[allow(dead_code)] static mut RESET_COLOR: &str = "\x1b[0m";
-#[allow(dead_code)] static mut GRAY_COLOR: &str = "\x1b[90m";
-#[allow(dead_code)] static mut RED_COLOR: &str = "\x1b[91m";
-#[allow(dead_code)] static mut GREEN_COLOR: &str = "\x1b[92m";
-#[allow(dead_code)] static mut YELLOW_COLOR: &str = "\x1b[93m";
-#[allow(dead_code)] static mut BLUE_COLOR: &str = "\x1b[94m";
-#[allow(dead_code)] static mut VIOLET_COLOR: &str = "\x1b[95m";
-#[allow(dead_code)] static mut LIGHT_BLUE_COLOR: &str = "\x1b[96m";
-#[allow(dead_code)] static mut WHITE_COLOR: &str = "\x1b[97m";
-#[allow(dead_code)] static mut GRAY_BACK_COLOR: &str = "\x1b[100m";
-#[allow(dead_code)] static mut RED_BACK_COLOR: &str = "\x1b[101m";
-#[allow(dead_code)] static mut GREEN_BACK_COLOR: &str = "\x1b[102m";
-#[allow(dead_code)] static mut YELLOW_BACK_COLOR: &str = "\x1b[103m";
-#[allow(dead_code)] static mut BLUE_BACK_COLOR: &str = "\x1b[104m";
-#[allow(dead_code)] static mut VIOLET_BACK_COLOR: &str = "\x1b[105m";
-#[allow(dead_code)] static mut LIGHT_BLUE_BACK_COLOR: &str = "\x1b[106m";
-#[allow(dead_code)] static mut WHITE_BACK_COLOR: &str = "\x1b[107m";
-#[allow(dead_code)] static mut BOLD_COLOR: &str = "\x1b[01m";
-#[allow(dead_code)] static mut NON_BOLD_COLOR: &str = "\x1b[22m";
+#[allow(dead_code)] static mut RESET_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[0m"} else {""};
+#[allow(dead_code)] static mut GRAY_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[90m"} else {""};
+#[allow(dead_code)] static mut RED_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[91m"} else {""};
+#[allow(dead_code)] static mut GREEN_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[92m"} else {""};
+#[allow(dead_code)] static mut YELLOW_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[93m"} else {""};
+#[allow(dead_code)] static mut BLUE_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[94m"} else {""};
+#[allow(dead_code)] static mut VIOLET_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[95m"} else {""};
+#[allow(dead_code)] static mut LIGHT_BLUE_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[96m"} else {""};
+#[allow(dead_code)] static mut WHITE_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[97m"} else {""};
+#[allow(dead_code)] static mut GRAY_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[100m"} else {""};
+#[allow(dead_code)] static mut RED_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[101m"} else {""};
+#[allow(dead_code)] static mut GREEN_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[102m"} else {""};
+#[allow(dead_code)] static mut YELLOW_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[103m"} else {""};
+#[allow(dead_code)] static mut BLUE_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[104m"} else {""};
+#[allow(dead_code)] static mut VIOLET_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[105m"} else {""};
+#[allow(dead_code)] static mut LIGHT_BLUE_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[106m"} else {""};
+#[allow(dead_code)] static mut WHITE_BACK_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[107m"} else {""};
+#[allow(dead_code)] static mut BOLD_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[01m"} else {""};
+#[allow(dead_code)] static mut NON_BOLD_COLOR: &str = if unsafe { ENABLE_COLORS } {"\x1b[22m"} else {""};
 
 macro_rules! error_loop {
     () => {
