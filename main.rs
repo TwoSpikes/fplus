@@ -84,6 +84,9 @@ static mut MAX_INCLUDE_LEVEL: usize = 500;
 #[allow(dead_code)] static mut NON_BOLD_COLOR: &str = if unsafe { !DISABLE_COLORS } {"\x1b[22m"} else {""};
 #[allow(dead_code)] static mut CLEAR_SCREEN: &str = if unsafe { !DISABLE_COLORS } {"\x1b[2J\x1b[H"} else {""};
 
+// -- STRING CONSTANTS --
+const EOF: &str = "EOF (End of file)";
+
 #[allow(unused_macros)]
 macro_rules! clear_screen {
     () => {
@@ -97,17 +100,31 @@ macro_rules! error_loop {
         eprintln!();
     };
     ($head:expr, $($tail:expr,)*) => {
-        eprint!("{}", $head);
+        eprint!("{:?}", $head);
         error_loop!($($tail,)*);
     };
 }
 macro_rules! error {
     ($($tail:expr),*) => {
-        eprint!("{}Error{}: ",
+        eprint!("{}error{}: ",
                unsafe { RED_COLOR },
                unsafe { RESET_COLOR });
         error_loop!($($tail,)*);
     };
+}
+macro_rules! error_debug_loop {
+    () => {
+        println!();
+    };
+    ($head:expr, $($tail:expr,)*) => {
+        eprint!("{}", $head);
+        error_debug_loop!($($tail,)*);
+    };
+}
+macro_rules! error_debug {
+    ($($tail:expr),*) => {
+        error_debug_loop!($($tail,)*);
+    }
 }
 
 //get string from token
@@ -349,7 +366,7 @@ use crate::Retlex::*;
 }
 
 fn matchlink<'a>(filename: Box<String>,
-                 res: &Vec<(Result<Op, String>, Loc)>,
+                 res: &mut Vec<(Result<Op, String>, Loc)>,
                  labels: &Vec<(String, Option<i64>)>,
                  main: &Option<usize>,
                  data: &'a mut Vec<i64>,
@@ -366,7 +383,6 @@ fn matchlink<'a>(filename: Box<String>,
                           unsafe { GRAY_COLOR },
                           unsafe { RESET_COLOR });
             }
-            let link_filename: Box<String> = x.filename.clone();
             Some(x)
         },
         None => {
@@ -390,6 +406,7 @@ fn for_each_arg(args: &Vec<String>,
                          args: &Vec<String>,
                          output_to_file: Option<String>) -> ()) {
     #[allow(non_camel_case_types)]
+    #[derive(Debug, PartialEq)]
     enum Argsstate {
         NONE,
         MAX_INCLUDE_LEVEL,
@@ -551,9 +568,15 @@ fn for_each_arg(args: &Vec<String>,
             }
             argv.push(i);
         }
+        if state != Argsstate::NONE {
+            error!("expected ",
+                   state,
+                   " argument, found ",
+                   EOF);
+        }
     }
     if argv.len() == 0 {
-        error!("No source files provided!");
+        error!("no source files provided!");
         to_usage();
         return;
     }
@@ -644,6 +667,7 @@ fn urepr(string: &str) -> String {
     return res;
 }
 
+//String to vec of i64
 fn from(u: &String) -> Vec<i64> {
     let len: usize = u.len();
     let mut res: Vec<i64> = Vec::with_capacity(len);
@@ -672,7 +696,7 @@ OPTION (insensitive to register):
 --link-debug -link-debug        show debug information during linking
 --only-link -only-link          stop on linking (for debugging purposes)
 --link-debug-succed             show [linking succed]
---parse-debug -parse-debug}     show debug information during parsing
+--parse-debug -parse-debug      show debug information during parsing
 --parse-debug-state             show State information during parsing
 --parse-debug-call              show function calling information during parsing
 --parse-debug-string            show string information during parsing
@@ -1123,7 +1147,7 @@ use crate::Op::*;
     let mut callmode: Callmode = unsafe { CALLMODE_DEFAULT };
     //current access modifier
     let mut curmod: Mod = Mod::UNK;
-let remove_fuck = |labels: &mut Vec<(String, Option<i64>)>,
+let remove_private = |labels: &mut Vec<(String, Option<i64>)>,
                    labmod: &mut Vec<Mod>| {
     {
         let mut ind2: usize = 0;
@@ -1140,15 +1164,15 @@ let remove_fuck = |labels: &mut Vec<(String, Option<i64>)>,
 macro_rules! link_remained {
   ($labels:expr, $labmod:expr) => {
         tail.append(&mut match matchlink(filename.clone(),
-                                           &head,
-                                           &$labels,
-                                           &main,
-                                           &mut data,
-                                           include_level) {
+                                         &mut head,
+                                         &$labels,
+                                         &main,
+                                         &mut data,
+                                         include_level) {
             Some(x) => x.head,
             None => return None,
         });
-    remove_fuck($labels, $labmod);
+    remove_private($labels, $labmod);
     eprintln!("Goodbye!");
   };
 }
@@ -1296,14 +1320,14 @@ macro_rules! match_callmode {
                 head.insert(actual_insertion_index, (Ok(Push((
                     head.len()
                     +tail.len()
-                    +first_ind
+                    -2
                     +$valuel) as i64)), loc.clone()));
             },
             Callmode::WITH_ADDRESS_RIGHT => {
                 head.push((Ok(Push((
                     head.len()
                     +tail.len()
-                    +first_ind
+                    -2
                     +$valuer) as i64)), loc.clone()));
             },
         }
@@ -1371,32 +1395,33 @@ macro_rules! match_callmode {
                     "addr" => Push(
                         (head.len()
                         +tail.len()
-                        +first_ind) as i64),
+                        -2) as i64),
                     "paddr" => {
                         println!("paddr: {}",
                             head.len()
                             +tail.len()
-                            +first_ind);
+                            -2);
                         continue;
                     },
                     "paddre" => {
                         println!("paddr: {}",
                             head.len()
                             +tail.len()
-                            +first_ind);
+                            -2);
                         ind = head.len() as isize;
                         continue;
                     },
                     "dump" => DUMP,
                     "(" => {
-                        error!(
+                        error_debug!(
                             unsafe { BOLD_COLOR },
                             unsafe { GREEN_COLOR },
                             "CALLSTKPUSHING\n",
                             unsafe { RESET_COLOR });
                         callstk.push(
                             head.len()
-                            +tail.len());
+                            +tail.len()
+                            -2);
                         continue;
                     },
                     ")" => {
@@ -1427,18 +1452,30 @@ macro_rules! match_callmode {
                     "argv" => ARGV,
                     "read" => READ,
                     "{" => {
+                        //link fns before nested fn
+                        link_remained!(labels, &mut labmod);
+
                         let mut tokens = matchparse(
                             &mut pr[ind as usize+1..],
                             filename.clone(),
                             include_level+1,
                             first_ind+head.len()+tail.len(),
                             &mut labels.clone()).unwrap();
-                        link_remained!(labels, &mut labmod);
                         tail.append(&mut tokens.tail);
+                        data.append(&mut tokens.data);
+
                         ind += tokens.rshift as isize;
                         continue;
                     },
                     "}" => {
+                        eprintln!("On \"}}\":\nhead=\n{:?}\ntail=\n{:?}", head, tail);
+                        if let None = main {
+                            main = Some(
+                                //head.len()
+                                tail.len()
+                                +first_ind
+                                -3);
+                        };
                         link_remained!(labels, &mut labmod);
                         return Some(ParseResult {
                             head: (*labels).clone(),
@@ -1473,9 +1510,8 @@ macro_rules! match_callmode {
                         }
                         if let "main" = &*val.as_str() {
                             main = Some(
-                                head.len() as usize
-                                +tail.len()
-                                +first_ind);
+                                head.len()
+                                +tail.len());
                         }
                         labels.push((val.to_string(), None));
                         labmod.push(curmod);
@@ -1483,22 +1519,25 @@ macro_rules! match_callmode {
                         continue;
                     },
                     State::FN => {
+eprintln!("fnsucka: {}", val);
                         let pos: usize = match labels.iter().position(|x| String::from(x.0.clone()).eq(val)) {
                             Some(pos) => pos,
                             None => {
                                 if matches!(curmod, Mod::UNK) {
+eprintln!("fnsuckasucka2");
                                     curmod = unsafe { CURMOD_DEFAULT };
                                 }
                                 if let "main" = &*val.as_str() {
-                                    main = Some((
-                                        head.len()
-                                        +tail.len()
-                                        +first_ind) as usize);
+eprintln!("fnsuckasucka");
+                                    main = Some(
+                                        head.len() as usize
+                                        +tail.len());
+                                    dbg!(main);
                                 }
                                 labels.push((val.to_string(), Some((
                                     head.len()
                                     +tail.len()
-                                    +first_ind) as i64)));
+                                    +1) as i64)));
                                 eprintln!("{}with added{}: {:?}",
                                           unsafe { BOLD_COLOR },
                                           unsafe { NON_BOLD_COLOR },
@@ -1509,8 +1548,7 @@ macro_rules! match_callmode {
                             }
                         };
                         labels[pos].1 = Some((head.len()
-                                              +tail.len()
-                                              +first_ind) as i64);
+                                              +tail.len()) as i64);
                         if !matches!(curmod, Mod::UNK) {
                             parsewarn!(("access modifier does not need to be in definition of declared already function"));
                             curmod = Mod::UNK;
@@ -1646,9 +1684,16 @@ macro_rules! match_callmode {
         (Ok(EXIT), Loc { filename: filename.clone(), lin: -2, ind: -2 }),
     ]);
     link_remained!(labels, &mut labmod);
+    eprintln!("{}ending{}: labels=\n{:?}\nhead=\n{:?}\ntail=\n{:?}\ndata={:?}",
+              unsafe { BOLD_COLOR },
+              unsafe { NON_BOLD_COLOR },
+              labels,
+              head,
+              tail,
+              data);
     return Some(ParseResult {
         head: (*labels).clone(),
-        tail,
+        tail: tail,
         data: Box::new(data),
         filename,
         rshift: 0,
@@ -1660,11 +1705,11 @@ struct LinkResult<'a> {
     filename: Box<String>,
 }
 fn link<'a>(filename: Box<String>,
-        res: &Vec<(Result<Op, String>, Loc)>,
-        labels: &Vec<(String, Option<i64>)>,
-        main: &Option<usize>,
-        data: &'a mut Vec<i64>,
-        include_level: usize) -> Option<LinkResult<'a>> {
+            res: &mut Vec<(Result<Op, String>, Loc)>,
+            labels: &Vec<(String, Option<i64>)>,
+            main: &Option<usize>,
+            data: &'a mut Vec<i64>,
+            include_level: usize) -> Option<LinkResult<'a>> {
     eprintln!("{}[{}linking{} {}{}{}... ({}recursion level{}: {})]{}",
               unsafe { GRAY_COLOR },
               unsafe { BOLD_COLOR },
@@ -1679,14 +1724,17 @@ fn link<'a>(filename: Box<String>,
     let mut head: Vec<(Result<Op, String>, Loc)> = Vec::new();
     #[allow(unused_variables)]
     let mut ind: i64 = -1;
-    for i in res {
-        ind += 1;
+    while {ind += 1; ind} < res.len() as i64 {
+        let i = res[ind as usize].clone();
         let loc: &Loc = &i.1;
         let lin: i64 = loc.lin;
         let index: i64 = loc.ind;
         match &i.0 {
             //simple operation
-            Ok(x) => head.push((Ok(x.clone()), i.1.clone())),
+            Ok(x) => {
+                res[ind as usize] = (Ok(Op::EMPTY), loc.clone());
+                head.push((Ok(x.clone()), i.1.clone()));
+            }
             //found label call
             Err(x) => {
                 let mut ret: i64 = -1;
@@ -1714,17 +1762,16 @@ fn link<'a>(filename: Box<String>,
                 }
                 if ret >= labels.len() as i64 - 1 {
                     head.push((Err((*x.clone()).to_string()), loc.clone()));
-                    eprintln!("asderd: {:?}", head);
                 }
             },
         };
     }
-    if include_level == 0 {
-        head.push((Ok(Op::Push(match main {
-            Some(x) => *x as i64,
-            None => 0,
-        })), Loc { filename: filename.clone(), lin: -2, ind: -2 } ));
-    }
+    head.insert(0, (Ok(Op::Push(match main {
+        Some(x) => *x as i64,
+        None => 1,
+    })), Loc { lin: -2, ind: -2, filename: filename.clone() }));
+    head.insert(1, (Ok(Op::G), Loc { lin: -2, ind: -2, filename: filename.clone() }));
+    eprintln!("match main: \nmain{:?}\nhead{:#?}", main, head);
     return Some(LinkResult {
         head: head,
         data: data,
@@ -1773,23 +1820,6 @@ use crate::Op::*;
         return (stopped, global_filename);
     }
     let mut stack: Vec<i64> = vec![];
-    let main: i64 = match pr.pop() {
-        Some(x) => match x.0 {
-            Ok(y) => match y {
-                Op::Push(z) => {
-                    //println!("sim: debug: main is {}", y);
-                    z
-                },
-                _ => {
-                    return (errs("main label not found".to_owned()), global_filename);
-                },
-            },
-            Err(_) => {
-                return (errs("cannot run compiled module".to_string()), global_filename);
-            },
-        },
-        None => return (ok(0), global_filename),
-    };
     let f: Option<File> = match output_to_file {
         Some(ref x) => {
             //clear file
@@ -1817,7 +1847,7 @@ use crate::Op::*;
             None
         },
     };
-    let mut ind: i64 = main - 1;
+    let mut ind: i64 = -1;
     while ind != pr.len() as i64 {
         ind += 1;
         let i: &Op = match &pr[{let tmp: usize = ind as usize; if tmp >= pr.len() {break;} else {tmp}}].0 {
@@ -1983,12 +2013,12 @@ use std::io::stdin;
                 operand_for_not_found!(addr, GIF);
                 operand_for_not_found!(cond, GIF);
                 if cond != 0 {
-                    ind = addr as i64 - 1;
+                    ind = addr;
                 }
             },
             G => {
                 operand_for_not_found!(addr, G);
-                ind = addr as i64 - 1;
+                ind = addr;
             },
             PUSHNTH => {
                 operand_for_not_found!(a, PUSHNTH);
@@ -2320,14 +2350,6 @@ use std::fs::{File, OpenOptions};
 }
 
 fn _test() {
-    println!("{} => {}", repr("Hello, {0} (fuck {1}) {0}!
-    {abc} def {2}"), repr(&Formatstr::from("Hello, {0} (fuck {1}) {0}!
-                         {abc} def {2}").unwrap()
-         .format("world").unwrap()
-         .format("you").unwrap()
-         .format("ebal").unwrap()
-         .to_string()
-    ));
 }
 fn _main() {
     let args: Vec<String> = std::env::args().collect();

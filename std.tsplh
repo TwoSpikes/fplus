@@ -1,21 +1,30 @@
+pub fn main {
+  dbgmsg "main"
+  3 exit
+}
+
 /* return maximum from two I64 numbers */
 pub fn max_2_I64 {
-  0 dropnth
-  1 pushnth 1 pushnth < :max_2_I64_less if
-  0 dropnth 1 nbrot #()
-pub fn max_2_I64_less {
-  2 dropnth #()
-}
+  pub fn main {
+    0 dropnth
+    1 pushnth 1 pushnth < :max_2_I64_less if
+    0 dropnth 1 nbrot #()
+  }
+  pub fn max_2_I64_less {
+    2 dropnth #()
+  }
 }
 
 /* return minimum from two I64 numbers */
 pub fn min_2_I64 {
-  0 dropnth
-  1 pushnth 1 pushnth < :min_2_I64_more if
-  1 dropnth 1 nbrot #()
-pub fn min_2_I64_more {
-  1 dropnth #()
-}
+  pub fn main {
+    0 dropnth
+    1 pushnth 1 pushnth < :min_2_I64_more if
+    1 dropnth 1 nbrot #()
+  }
+  pub fn min_2_I64_more {
+    1 dropnth #()
+  }
 }
 
 /* convert signed number to unsigned */
@@ -32,20 +41,22 @@ pub fn U64ToI64 {
 
 /* copy a vector (or a string) */
 pub fn veccpy /* *abc3 */ {
-  0
-  #veccpy_loop
-pub fn veccpy_end {
-  0 pushnth 1 + nbrot
-  0 pushnth 2 * 2 + pushnth 1 nbrot
-  0 pushnth 2 * 3 + dropnth 1 nbrot
-  #()
-}
-pub fn veccpy_loop {
-1 +
-  1 pushnth 1 pushnth -- + 2 + pushnth 2 pushnth 2 + nbrot
-  0 pushnth 2 pushnth < ! :veccpy_end if
-  :#veccpy_loop()
-}
+  pub fn main {
+    0
+    #veccpy_loop
+  }
+  pub fn veccpy_end {
+    0 pushnth 1 + nbrot
+    0 pushnth 2 * 2 + pushnth 1 nbrot
+    0 pushnth 2 * 3 + dropnth 1 nbrot
+    #()
+  }
+  pub fn veccpy_loop {
+  1 +
+    1 pushnth 1 pushnth -- + 2 + pushnth 2 pushnth 2 + nbrot
+    0 pushnth 2 pushnth < ! :veccpy_end if
+    :#veccpy_loop()
+  }
 }
 
 /*
@@ -65,19 +76,22 @@ pub fn ->> {
 
 /* throw a string from a pointer */
 pub fn ->vec {
-  1 nbrot 0 pushnth -> 0
-  #->vec_loop
-pub fn ->vec_end {
-  2 dropnth 0 dropnth
-  0 pushnth 1 + pushnth
-  1 pushnth 2 + dropnth #()
-}
-pub fn ->vec_loop {
-  1 +
-  2 pushnth 1 pushnth -- + -> 3 nbrot
-  0 pushnth 2 pushnth < ! :->vec_end if
-  #->vec_loop
-}
+  pub fn main {
+    0 dropnth
+    1 nbrot 0 pushnth -> 0
+    #->vec_loop
+  }
+  pub fn ->vec_end {
+    2 dropnth 0 dropnth
+    0 pushnth 1 + pushnth
+    1 pushnth 2 + dropnth #()
+  }
+  pub fn ->vec_loop {
+    1 +
+    2 pushnth 1 pushnth -- + -> 3 nbrot
+    0 pushnth 2 pushnth < ! :->vec_end if
+    #->vec_loop
+  }
 }
 
 /*
@@ -90,36 +104,44 @@ pub fn <<- {
 
 /* put a string from stack to data and reverse it (intrinsic) */
 pub fn <-rev_vec {
-  1 pushnth 1 + nbrot
-  0
-  #<-rev_vec_loop
-pub fn <-rev_vec_end {
-  0 dropnth <- 1 nbrot #()
-}
-pub fn <-rev_vec_loop {
-  1 +
-  1 pushnth 1 pushnth -- + 3 + 0 pushnth pushnth
-  1 nbrot dropnth
-  <- 0 dropnth
-  0 pushnth 2 pushnth < ! :<-rev_vec_end if
-  #<-rev_vec_loop
-}
+  pub fn main {
+    1 pushnth 1 + nbrot
+    0
+    #<-rev_vec_loop
+  }
+  pub fn <-rev_vec_end {
+    0 dropnth <- 1 nbrot #()
+  }
+  pub fn <-rev_vec_loop {
+    1 +
+    1 pushnth 1 pushnth -- + 3 + 0 pushnth pushnth
+    1 nbrot dropnth
+    <- 0 dropnth
+    0 pushnth 2 pushnth < ! :<-rev_vec_end if
+    #<-rev_vec_loop
+  }
 }
 
 /* put a string from stack to data */
 pub fn <-vec {
-'Z <- 0 dropnth
-  1 pushnth 1 + nbrot
-  0
-  #<-vec_loop
-pub fn <-vec_end {
-  0 dropnth <- 1 nbrot #()
+  pub fn main {
+    'Z <- 0 dropnth
+    1 pushnth 1 + nbrot
+    0
+    #<-vec_loop
+  }
+  pub fn <-vec_end {
+    0 dropnth <- 1 nbrot #()
+  }
+  pub fn <-vec_loop {
+    1 +
+    2 pushnth 3 dropnth
+    <- 0 dropnth
+    0 pushnth 2 pushnth < ! :<-vec_end if
+    #<-vec_loop
+  }
 }
-pub fn <-vec_loop {
-  1 +
-  2 pushnth 3 dropnth
-  <- 0 dropnth
-  0 pushnth 2 pushnth < ! :<-vec_end if
-  #<-vec_loop
-}
+
+pub fn foo {
+  #foo
 }
