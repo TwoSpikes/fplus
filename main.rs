@@ -1460,7 +1460,7 @@ macro_rules! match_callmode {
                             &mut pr[ind as usize+1..],
                             filename.clone(),
                             include_level+1,
-                            first_ind+head.len()+tail.len(),
+                            first_ind+tail.len(),
                             &mut labels.clone()).unwrap();
                         tail.append(&mut tokens.tail);
                         data.append(&mut tokens.data);
@@ -1475,7 +1475,7 @@ macro_rules! match_callmode {
                                 //head.len()
                                 tail.len()
                                 +first_ind
-                                -3);
+                                +1);
                         };
                         link_remained!(labels, &mut labmod);
                         return Some(ParseResult {
@@ -1512,7 +1512,8 @@ macro_rules! match_callmode {
                         if let "main" = &*val.as_str() {
                             main = Some(
                                 head.len()
-                                +tail.len());
+                                +tail.len()
+                                +1);
                         }
                         labels.push((val.to_string(), None));
                         labmod.push(curmod);
@@ -1532,7 +1533,8 @@ eprintln!("fnsuckasucka2");
 eprintln!("fnsuckasucka");
                                     main = Some(
                                         head.len() as usize
-                                        +tail.len());
+                                        +tail.len()
+                                        +1);
                                     dbg!(main);
                                 }
                                 labels.push((val.to_string(), Some((
@@ -1768,7 +1770,7 @@ fn link<'a>(filename: Box<String>,
         };
     }
     head.insert(0, (Ok(Op::Push(match main {
-        Some(x) => *x as i64 + 2,
+        Some(x) => *x as i64,
         None => 1,
     })), Loc { lin: -2, ind: -2, filename: filename.clone() }));
     head.insert(1, (Ok(Op::G), Loc { lin: -2, ind: -2, filename: filename.clone() }));
