@@ -129,11 +129,12 @@ macro_rules! error_debug {
 
 //get string from token
 fn getstrfromtok(x: &String) -> Box<String> {
-    return Box::new(if x.chars().nth(0) == Some('\"') {
-        urepr(&x[1..x.len()-1])
-    } else {
-        x.to_string()
-    });
+    return Box::new(
+        if x.chars().nth(0) == Some('\"') {
+            urepr(&x[1..x.len()-1])
+        } else {
+            x.to_string()
+        });
 }
 
 #[derive(Clone)]
@@ -1767,7 +1768,7 @@ fn link<'a>(filename: Box<String>,
         };
     }
     head.insert(0, (Ok(Op::Push(match main {
-        Some(x) => *x as i64,
+        Some(x) => *x as i64 + 2,
         None => 1,
     })), Loc { lin: -2, ind: -2, filename: filename.clone() }));
     head.insert(1, (Ok(Op::G), Loc { lin: -2, ind: -2, filename: filename.clone() }));
